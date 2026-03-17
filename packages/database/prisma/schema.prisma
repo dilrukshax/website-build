@@ -1,0 +1,1147 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // Load .env from monorepo root
+  // Run Prisma commands from root: pnpm db:migrate / pnpm db:seed
+}
+
+// ============================================================
+// USER (Global auth entity — not tenant-scoped)
+// ============================================================
+
+model User {
+  id           String     @id @default(uuid())
+  email        String     @unique
+  passwordHash String     @map("password_hash")
+  fullName     String     @map("full_name")
+  isSuperAdmin Boolean    @default(false) @map("is_super_admin")
+  status       UserStatus @default(active)
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  tenants             UserTenant[]
+  ownedTenants        Tenant[]             @relation("TenantOwner")
+  passwordResetTokens PasswordResetToken[]
+  refreshTokens       RefreshToken[]
+
+  @@map("users")
+}
+
+enum UserStatus {
+  active
+  inactive
+}
+
+// ============================================================
+// TENANT (Organization / business entity)
+// ============================================================
+
+model Tenant {
+  id           String       @id @default(uuid())
+  businessName String       @map("business_name")
+  ownerId      String       @map("owner_id")
+  status       TenantStatus @default(active)
+  plan         PlanTier     @default(free)
+  billingInterval BillingInterval @default(monthly) @map("billing_interval")
+  addonBundles Int          @default(0) @map("addon_bundles")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  owner             User                 @relation("TenantOwner", fields: [ownerId], references: [id])
+  users             UserTenant[]
+  roles             Role[]
+  instances         Instance[]
+  domainRoutes      DomainRoute[]
+  feedbacks         Feedback[]
+  subscription      TenantSubscription?
+  creditWallet      TenantCreditWallet?
+  billingCharges    BillingCharge[]
+  creditLedgerEntries TenantCreditLedger[]
+  redemptions       ReferralRedemption[]
+
+  @@map("tenants")
+}
+
+enum TenantStatus {
+  active
+  inactive
+  suspended
+}
+
+enum PlanTier {
+  free
+  starter
+  freelance
+  enterprise
+}
+
+enum BillingInterval {
+  monthly
+  annual
+}
+
+enum SubscriptionStatus {
+  active
+  inactive
+}
+
+enum BillingChargeType {
+  plan_change
+  addon_bundle
+}
+
+enum BillingChargeStatus {
+  pending
+  confirmed
+  rejected
+}
+
+enum CreditLedgerType {
+  credit
+  debit
+  adjustment
+}
+
+enum ReferralRewardMilestone {
+  free_activation
+  starter_monthly
+  starter_annual
+  freelance_monthly
+  freelance_annual
+  enterprise_small
+  enterprise_medium
+  enterprise_large
+}
+
+enum ReferralRewardStatus {
+  pending
+  granted
+  rejected
+}
+
+enum ReferralPointLedgerType {
+  credit
+  debit
+  expiry
+}
+
+enum ReferralRedemptionStatus {
+  completed
+  cancelled
+}
+
+enum EnterpriseRewardTier {
+  small
+  medium
+  large
+}
+
+enum EnterpriseRewardReviewStatus {
+  approved
+  rejected
+}
+
+model PlanCatalog {
+  id                     String   @id @default(uuid())
+  plan                   PlanTier @unique
+  monthlyPriceCents      Int      @map("monthly_price_cents")
+  annualPriceCents       Int      @map("annual_price_cents")
+  maxInstances           Int?     @map("max_instances")
+  maxCustomDomains       Int?     @map("max_custom_domains")
+  maxPagesPerInstance    Int?     @map("max_pages_per_instance")
+  maxAccessibleThemes    Int?     @map("max_accessible_themes")
+  allowPremiumTemplates  Boolean  @default(false) @map("allow_premium_templates")
+  maxBookingsPerDay      Int?     @map("max_bookings_per_day")
+  maxActiveServices      Int?     @map("max_active_services")
+  allowStaffAccounts     Boolean  @default(false) @map("allow_staff_accounts")
+  allowAddonBundle       Boolean  @default(false) @map("allow_addon_bundle")
+  addonMonthlyPriceCents Int?     @map("addon_monthly_price_cents")
+  addonAnnualPriceCents  Int?     @map("addon_annual_price_cents")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  @@map("plan_catalogs")
+}
+
+model PlanReferralMultiplier {
+  id         String   @id @default(uuid())
+  plan       PlanTier @unique
+  multiplier Decimal  @db.Decimal(6, 3)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("plan_referral_multipliers")
+}
+
+model ReferralRewardRule {
+  id        String                  @id @default(uuid())
+  milestone ReferralRewardMilestone @unique
+  basePoints Int                    @map("base_points")
+  createdAt DateTime                @default(now()) @map("created_at")
+  updatedAt DateTime                @updatedAt @map("updated_at")
+
+  @@map("referral_reward_rules")
+}
+
+model TenantSubscription {
+  id               String             @id @default(uuid())
+  tenantId         String             @unique @map("tenant_id")
+  plan             PlanTier
+  billingInterval  BillingInterval    @map("billing_interval")
+  addonBundles     Int                @default(0) @map("addon_bundles")
+  status           SubscriptionStatus @default(active)
+  startedAt        DateTime           @default(now()) @map("started_at")
+  currentPeriodEnd DateTime?          @map("current_period_end")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([plan, billingInterval])
+  @@map("tenant_subscriptions")
+}
+
+model BillingCharge {
+  id                    String            @id @default(uuid())
+  tenantId              String            @map("tenant_id")
+  requestedByUserId     String            @map("requested_by_user_id")
+  chargeType            BillingChargeType @map("charge_type")
+  requestedPlan         PlanTier?         @map("requested_plan")
+  requestedInterval     BillingInterval?  @map("requested_interval")
+  requestedAddonBundles Int?              @map("requested_addon_bundles")
+  amountCents           Int               @map("amount_cents")
+  creditAppliedCents    Int               @default(0) @map("credit_applied_cents")
+  netAmountCents        Int               @map("net_amount_cents")
+  currency              String            @default("USD")
+  status                BillingChargeStatus @default(pending)
+  notes                 String?
+  metadataJsonb         Json?             @map("metadata_jsonb")
+  reviewedByUserId      String?           @map("reviewed_by_user_id")
+  reviewedAt            DateTime?         @map("reviewed_at")
+  rejectionReason       String?           @map("rejection_reason")
+  createdAt             DateTime          @default(now()) @map("created_at")
+  updatedAt             DateTime          @updatedAt @map("updated_at")
+
+  tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  creditLedgerEntries TenantCreditLedger[]
+  rewardEvents       ReferralRewardEvent[]
+
+  @@index([tenantId, status, createdAt])
+  @@map("billing_charges")
+}
+
+model TenantCreditWallet {
+  id          String   @id @default(uuid())
+  tenantId    String   @unique @map("tenant_id")
+  balanceCents Int     @default(0) @map("balance_cents")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  tenant  Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  entries TenantCreditLedger[]
+
+  @@map("tenant_credit_wallets")
+}
+
+model TenantCreditLedger {
+  id           String           @id @default(uuid())
+  walletId     String           @map("wallet_id")
+  tenantId     String           @map("tenant_id")
+  chargeId     String?          @map("charge_id")
+  redemptionId String?          @map("redemption_id")
+  entryType    CreditLedgerType @map("entry_type")
+  amountCents  Int              @map("amount_cents")
+  note         String?
+  createdAt    DateTime         @default(now()) @map("created_at")
+
+  wallet     TenantCreditWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  tenant     Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  charge     BillingCharge?     @relation(fields: [chargeId], references: [id], onDelete: SetNull)
+  redemption ReferralRedemption? @relation(fields: [redemptionId], references: [id], onDelete: SetNull)
+
+  @@index([walletId, createdAt])
+  @@index([tenantId, createdAt])
+  @@map("tenant_credit_ledger")
+}
+
+// ============================================================
+// INSTANCE (Website / business unit within a tenant)
+// ============================================================
+
+model Instance {
+  id            String         @id @default(uuid())
+  tenantId      String         @map("tenant_id")
+  subdomain     String         @unique
+  fullDomain    String?        @map("full_domain")
+  customDomain  String?        @unique @map("custom_domain")
+  cloudflareAccountId String?  @map("cloudflare_account_id")
+  cloudflareHostnameId String? @map("cloudflare_hostname_id")
+  customDomainHostnameStatus String? @map("custom_domain_hostname_status")
+  customDomainSslStatus String? @map("custom_domain_ssl_status")
+  customDomainLastCheckedAt DateTime? @map("custom_domain_last_checked_at")
+  customDomainActivatedAt DateTime? @map("custom_domain_activated_at")
+  customDomainSetupJsonb Json? @map("custom_domain_setup_jsonb")
+  timezone      String         @default("UTC")
+  name          String
+  businessType  String?        @map("business_type")
+  industryId    String?        @map("industry_id")
+  settingsJsonb Json?          @map("settings_jsonb")
+  status        InstanceStatus @default(active)
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  industry       Industry?       @relation(fields: [industryId], references: [id])
+  customers      Customer[]
+  services       Service[]
+  bookings       Booking[]
+  inquiries      Inquiry[]
+  toggles        FeatureToggle[]
+  pages          Page[]
+  pageSections   PageSection[]
+  publishRecords PublishRecord[]
+  mediaAssets    MediaAsset[]
+  domainRoutes   DomainRoute[]
+  cloudflareAccount CloudflareAccount? @relation(fields: [cloudflareAccountId], references: [id], onDelete: SetNull)
+  domainAccountHistory CustomDomainAccountHistory[]
+
+  @@index([tenantId])
+  @@index([cloudflareAccountId])
+  @@map("instances")
+}
+
+model DomainRoute {
+  id         String   @id @default(uuid())
+  tenantId   String   @map("tenant_id")
+  instanceId String   @map("instance_id")
+  host       String   @unique
+  active     Boolean  @default(true)
+  isPrimary  Boolean  @default(false) @map("is_primary")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  instance Instance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([instanceId, active])
+  @@index([instanceId, isPrimary])
+  @@map("domain_routes")
+}
+
+enum InstanceStatus {
+  active
+  inactive
+}
+
+enum CustomDomainAccountEventType {
+  attached
+  reassigned
+  detached
+  legacy_import
+}
+
+model CloudflareAccount {
+  id                 String   @id @default(uuid())
+  name               String
+  cloudflareAccountId String? @map("cloudflare_account_id")
+  zoneId             String   @unique @map("zone_id")
+  zoneName           String?  @map("zone_name")
+  apiTokenEncrypted  String   @map("api_token_encrypted")
+  isDefault          Boolean  @default(false) @map("is_default")
+  isActive           Boolean  @default(true) @map("is_active")
+  fallbackOrigin     String?  @map("fallback_origin")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  instances     Instance[]
+  historyFrom   CustomDomainAccountHistory[] @relation("DomainHistoryFromAccount")
+  historyTo     CustomDomainAccountHistory[] @relation("DomainHistoryToAccount")
+
+  @@index([isActive, isDefault])
+  @@map("cloudflare_accounts")
+}
+
+model CustomDomainAccountHistory {
+  id           String                       @id @default(uuid())
+  instanceId   String                       @map("instance_id")
+  domain       String
+  eventType    CustomDomainAccountEventType @map("event_type")
+  fromAccountId String?                     @map("from_account_id")
+  toAccountId   String?                     @map("to_account_id")
+  actorUserId  String?                      @map("actor_user_id")
+  metadataJsonb Json?                       @map("metadata_jsonb")
+  createdAt    DateTime                     @default(now()) @map("created_at")
+
+  instance    Instance          @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  fromAccount CloudflareAccount? @relation("DomainHistoryFromAccount", fields: [fromAccountId], references: [id], onDelete: SetNull)
+  toAccount   CloudflareAccount? @relation("DomainHistoryToAccount", fields: [toAccountId], references: [id], onDelete: SetNull)
+
+  @@index([instanceId, createdAt])
+  @@index([domain, createdAt])
+  @@index([fromAccountId])
+  @@index([toAccountId])
+  @@map("custom_domain_account_history")
+}
+
+// ============================================================
+// USER-TENANT (Maps users to tenants with roles)
+// ============================================================
+
+model UserTenant {
+  id        String           @id @default(uuid())
+  userId    String           @map("user_id")
+  tenantId  String           @map("tenant_id")
+  roleId    String           @map("role_id")
+  isOwner   Boolean          @default(false) @map("is_owner")
+  status    UserTenantStatus @default(active)
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, tenantId])
+  @@index([tenantId])
+  @@index([userId])
+  @@map("user_tenants")
+}
+
+enum UserTenantStatus {
+  active
+  inactive
+}
+
+// ============================================================
+// ROLE (Per-tenant custom roles)
+// ============================================================
+
+model Role {
+  id           String   @id @default(uuid())
+  tenantId     String   @map("tenant_id")
+  name         String
+  description  String?
+  isSystemRole Boolean  @default(false) @map("is_system_role")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  permissions RolePermission[]
+  users       UserTenant[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("roles")
+}
+
+// ============================================================
+// PERMISSION (Pre-defined system permissions — not tenant-scoped)
+// ============================================================
+
+model Permission {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  name        String
+  description String?
+  module      String
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  roles RolePermission[]
+
+  @@index([module])
+  @@map("permissions")
+}
+
+// ============================================================
+// ROLE-PERMISSION (Many-to-many junction)
+// ============================================================
+
+model RolePermission {
+  id           String @id @default(uuid())
+  roleId       String @map("role_id")
+  permissionId String @map("permission_id")
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+// ============================================================
+// PASSWORD RESET TOKEN (Not tenant-scoped)
+// ============================================================
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  token     String    @unique
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@map("password_reset_tokens")
+}
+
+// ============================================================
+// REFRESH TOKEN (For logout/token revocation — not tenant-scoped)
+// ============================================================
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+enum ReferralAction {
+  allow
+  verify
+  review
+  block
+}
+
+enum ReferralClaimStatus {
+  pending
+  verify
+  review
+  blocked
+  rewarded
+}
+
+// ============================================================
+// DEVICE FINGERPRINTS + REFERRAL FRAUD (Global, not tenant-scoped)
+// ============================================================
+
+model DeviceFingerprint {
+  id              String   @id @default(uuid())
+  fingerprintHash String   @map("fingerprint_hash")
+  persistentToken String?  @map("persistent_token")
+  ipAddress       String?  @map("ip_address") @db.Inet
+  webglVendor     String?  @map("webgl_vendor")
+  webglRenderer   String?  @map("webgl_renderer")
+  screenSignals   Json?    @map("screen_signals")
+  hardwareSignals Json?    @map("hardware_signals")
+  evasionFlags    Json?    @map("evasion_flags")
+  componentsJsonb Json?    @map("components_jsonb")
+  riskScore       Int      @default(0) @map("risk_score")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  accountDevices   AccountDevice[]
+  referralFraudLog ReferralFraudLog[] @relation("ReferralSharedDevice")
+  referralClaims   ReferralClaim[]
+
+  @@index([fingerprintHash])
+  @@index([persistentToken])
+  @@index([ipAddress, createdAt])
+  @@map("device_fingerprints")
+}
+
+model AccountDevice {
+  id        String   @id @default(uuid())
+  accountId String   @map("account_id")
+  deviceId  String   @map("device_id")
+  linkedAt  DateTime @default(now()) @map("linked_at")
+  isPrimary Boolean  @default(false) @map("is_primary")
+
+  device DeviceFingerprint @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, deviceId])
+  @@index([accountId])
+  @@map("account_devices")
+}
+
+model ReferralProfile {
+  id            String   @id @default(uuid())
+  accountId     String   @unique @map("account_id")
+  referralCode  String   @unique @map("referral_code")
+  totalReferrals Int     @default(0) @map("total_referrals")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  referrerClaims ReferralClaim[] @relation("ReferralClaimsByReferrer")
+  pointsWallet   ReferralPointsWallet?
+
+  @@index([referralCode])
+  @@map("referral_profiles")
+}
+
+model ReferralFraudProof {
+  id             String         @id @default(uuid())
+  accountId      String         @map("account_id")
+  referralCode   String?        @map("referral_code")
+  deviceId       String         @map("device_id")
+  riskScore      Int            @default(0) @map("risk_score")
+  actionTaken    ReferralAction @default(allow) @map("action_taken")
+  flags          String[]
+  proofTokenHash String         @unique @map("proof_token_hash")
+  expiresAt      DateTime       @map("expires_at")
+  consumedAt     DateTime?      @map("consumed_at")
+  createdAt      DateTime       @default(now()) @map("created_at")
+
+  claims ReferralClaim[]
+
+  @@index([accountId, createdAt])
+  @@index([expiresAt])
+  @@map("referral_fraud_proofs")
+}
+
+model ReferralClaim {
+  id           String              @id @default(uuid())
+  referrerId   String              @map("referrer_id")
+  refereeId    String              @unique @map("referee_id")
+  referralCode String              @map("referral_code")
+  riskScore    Int                 @default(0) @map("risk_score")
+  actionTaken  ReferralAction      @default(allow) @map("action_taken")
+  status       ReferralClaimStatus @default(pending)
+  flags        String[]
+  deviceId     String?             @map("device_id")
+  fraudProofId String?             @map("fraud_proof_id")
+  createdAt    DateTime            @default(now()) @map("created_at")
+  reviewedAt   DateTime?           @map("reviewed_at")
+  rewardedAt   DateTime?           @map("rewarded_at")
+
+  referrerProfile    ReferralProfile      @relation("ReferralClaimsByReferrer", fields: [referrerId], references: [accountId], onDelete: Cascade)
+  device             DeviceFingerprint?   @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  fraudProof         ReferralFraudProof?  @relation(fields: [fraudProofId], references: [id], onDelete: SetNull)
+  rewardEvents       ReferralRewardEvent[]
+  enterpriseApprovals EnterpriseRewardApproval[]
+
+  @@index([referrerId])
+  @@index([referralCode])
+  @@index([status])
+  @@map("referral_claims")
+}
+
+model ReferralRewardEvent {
+  id               String                  @id @default(uuid())
+  claimId          String?                 @map("claim_id")
+  chargeId         String?                 @map("charge_id")
+  referrerId       String                  @map("referrer_id")
+  refereeId        String                  @map("referee_id")
+  milestone        ReferralRewardMilestone
+  basePoints       Int                     @map("base_points")
+  multiplier       Decimal                 @db.Decimal(6, 3)
+  awardedPoints    Int                     @map("awarded_points")
+  status           ReferralRewardStatus    @default(granted)
+  approvedByUserId String?                 @map("approved_by_user_id")
+  approvedAt       DateTime?               @map("approved_at")
+  grantedAt        DateTime?               @map("granted_at")
+  rejectionReason  String?                 @map("rejection_reason")
+  createdAt        DateTime                @default(now()) @map("created_at")
+  updatedAt        DateTime                @updatedAt @map("updated_at")
+
+  claim              ReferralClaim?           @relation(fields: [claimId], references: [id], onDelete: SetNull)
+  charge             BillingCharge?           @relation(fields: [chargeId], references: [id], onDelete: SetNull)
+  pointEntries       ReferralPointsLedger[]
+  enterpriseApproval EnterpriseRewardApproval?
+
+  @@unique([refereeId, milestone])
+  @@index([referrerId, status])
+  @@index([claimId])
+  @@map("referral_reward_events")
+}
+
+model ReferralPointsWallet {
+  id             String   @id @default(uuid())
+  accountId      String   @unique @map("account_id")
+  availablePoints Int     @default(0) @map("available_points")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  profile     ReferralProfile @relation(fields: [accountId], references: [accountId], onDelete: Cascade)
+  entries     ReferralPointsLedger[]
+  redemptions ReferralRedemption[]
+
+  @@map("referral_points_wallets")
+}
+
+model ReferralRedemption {
+  id             String                   @id @default(uuid())
+  accountId      String                   @map("account_id")
+  tenantId       String                   @map("tenant_id")
+  walletId       String                   @map("wallet_id")
+  requestedPoints Int                     @map("requested_points")
+  creditedCents  Int                      @map("credited_cents")
+  status         ReferralRedemptionStatus @default(completed)
+  createdAt      DateTime                 @default(now()) @map("created_at")
+  completedAt    DateTime?                @map("completed_at")
+
+  wallet      ReferralPointsWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  tenant      Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  pointEntries ReferralPointsLedger[]
+  creditEntries TenantCreditLedger[]
+
+  @@index([accountId, createdAt])
+  @@index([tenantId, createdAt])
+  @@map("referral_redemptions")
+}
+
+model ReferralPointsLedger {
+  id            String                 @id @default(uuid())
+  walletId      String                 @map("wallet_id")
+  accountId     String                 @map("account_id")
+  rewardEventId String?                @map("reward_event_id")
+  redemptionId  String?                @map("redemption_id")
+  sourceEntryId String?                @map("source_entry_id")
+  entryType     ReferralPointLedgerType @map("entry_type")
+  points        Int
+  remainingPoints Int?                 @map("remaining_points")
+  expiresAt     DateTime?              @map("expires_at")
+  note          String?
+  createdAt     DateTime               @default(now()) @map("created_at")
+
+  wallet            ReferralPointsWallet  @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  rewardEvent       ReferralRewardEvent?  @relation(fields: [rewardEventId], references: [id], onDelete: SetNull)
+  redemption        ReferralRedemption?   @relation(fields: [redemptionId], references: [id], onDelete: SetNull)
+  sourceEntry       ReferralPointsLedger? @relation("ReferralPointsSource", fields: [sourceEntryId], references: [id], onDelete: SetNull)
+  consumptionEntries ReferralPointsLedger[] @relation("ReferralPointsSource")
+
+  @@index([walletId, createdAt])
+  @@index([accountId, expiresAt])
+  @@index([entryType])
+  @@map("referral_points_ledger")
+}
+
+model EnterpriseRewardApproval {
+  id            String                       @id @default(uuid())
+  rewardEventId String                       @unique @map("reward_event_id")
+  claimId       String                       @map("claim_id")
+  reviewerUserId String                      @map("reviewer_user_id")
+  tier          EnterpriseRewardTier
+  approvedPoints Int                         @map("approved_points")
+  status        EnterpriseRewardReviewStatus @default(approved)
+  reason        String?
+  createdAt     DateTime                     @default(now()) @map("created_at")
+
+  rewardEvent ReferralRewardEvent @relation(fields: [rewardEventId], references: [id], onDelete: Cascade)
+  claim       ReferralClaim       @relation(fields: [claimId], references: [id], onDelete: Cascade)
+
+  @@index([claimId])
+  @@index([reviewerUserId, createdAt])
+  @@map("enterprise_reward_approvals")
+}
+
+model ReferralFraudLog {
+  id             String   @id @default(uuid())
+  referrerId     String?  @map("referrer_id")
+  refereeId      String?  @map("referee_id")
+  referralCode   String?  @map("referral_code")
+  riskScore      Int?     @map("risk_score")
+  actionTaken    String?  @map("action_taken")
+  flags          String[]
+  sharedDeviceId String?  @map("shared_device_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  sharedDevice DeviceFingerprint? @relation("ReferralSharedDevice", fields: [sharedDeviceId], references: [id], onDelete: SetNull)
+
+  @@map("referral_fraud_log")
+}
+
+// ============================================================
+// CUSTOMERS (Instance-scoped)
+// ============================================================
+
+model Customer {
+  id         String   @id @default(uuid())
+  tenantId   String   @map("tenant_id")
+  instanceId String   @map("instance_id")
+  firstName  String   @map("first_name")
+  lastName   String   @map("last_name")
+  email      String
+  phone      String?
+  notes      String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  instance  Instance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  bookings  Booking[]
+  inquiries Inquiry[]
+
+  @@unique([instanceId, email])
+  @@index([tenantId])
+  @@index([instanceId])
+  @@map("customers")
+}
+
+// ============================================================
+// SERVICES (Instance-scoped)
+// ============================================================
+
+model Service {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  instanceId  String   @map("instance_id")
+  name        String
+  description String?
+  duration    Int // minutes
+  price       Decimal  @db.Decimal(10, 2)
+  currency    String   @default("USD")
+  isActive    Boolean  @default(true) @map("is_active")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  instance Instance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+
+  @@index([tenantId])
+  @@index([instanceId])
+  @@index([instanceId, isActive])
+  @@index([instanceId, sortOrder])
+  @@map("services")
+}
+
+// ============================================================
+// BOOKINGS (Instance-scoped)
+// ============================================================
+
+model Booking {
+  id         String        @id @default(uuid())
+  tenantId   String        @map("tenant_id")
+  instanceId String        @map("instance_id")
+  customerId String        @map("customer_id")
+  serviceId  String        @map("service_id")
+  startTime  DateTime      @map("start_time")
+  endTime    DateTime      @map("end_time")
+  status     BookingStatus @default(pending)
+  notes      String?
+  totalPrice Decimal       @db.Decimal(10, 2) @map("total_price")
+  currency   String        @default("USD")
+  createdAt  DateTime      @default(now()) @map("created_at")
+  updatedAt  DateTime      @updatedAt @map("updated_at")
+
+  instance Instance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id])
+  service  Service  @relation(fields: [serviceId], references: [id])
+
+  @@index([tenantId])
+  @@index([instanceId])
+  @@index([instanceId, startTime])
+  @@index([instanceId, status])
+  @@map("bookings")
+}
+
+enum BookingStatus {
+  pending
+  confirmed
+  cancelled
+  completed
+  no_show
+}
+
+// ============================================================
+// INQUIRIES (Instance-scoped)
+// ============================================================
+
+model Inquiry {
+  id         String        @id @default(uuid())
+  tenantId   String        @map("tenant_id")
+  instanceId String        @map("instance_id")
+  customerId String?       @map("customer_id")
+  name       String
+  email      String
+  phone      String?
+  message    String
+  sourceType String?       @map("source_type")
+  sourcePageSlug String?   @map("source_page_slug")
+  status     InquiryStatus @default(new)
+  createdAt  DateTime      @default(now()) @map("created_at")
+  updatedAt  DateTime      @updatedAt @map("updated_at")
+
+  instance Instance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  customer Customer? @relation(fields: [customerId], references: [id])
+
+  @@index([tenantId])
+  @@index([instanceId])
+  @@index([instanceId, status])
+  @@index([instanceId, sourceType, sourcePageSlug])
+  @@map("inquiries")
+}
+
+enum InquiryStatus {
+  new
+  in_progress
+  resolved
+  spam
+}
+
+// ============================================================
+// FEEDBACK (Tenant-scoped, immutable submissions)
+// ============================================================
+
+model Feedback {
+  id               String       @id @default(uuid())
+  tenantId         String       @map("tenant_id")
+  type             FeedbackType
+  score            Int?
+  note             String?
+  title            String?
+  message          String?
+  submittedByUserId String      @map("submitted_by_user_id")
+  submittedByEmail String       @map("submitted_by_email")
+  submittedByName  String       @map("submitted_by_name")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, type, createdAt])
+  @@index([createdAt])
+  @@map("feedback_entries")
+}
+
+enum FeedbackType {
+  rating
+  suggestion
+}
+
+// ============================================================
+// FEATURE TOGGLES (Instance-scoped)
+// ============================================================
+
+model FeatureToggle {
+  id         String   @id @default(uuid())
+  tenantId   String   @map("tenant_id")
+  instanceId String   @map("instance_id")
+  toggleKey  String   @map("toggle_key")
+  isEnabled  Boolean  @default(false) @map("is_enabled")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  instance Instance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  @@unique([instanceId, toggleKey])
+  @@index([tenantId])
+  @@index([instanceId])
+  @@map("feature_toggles")
+}
+
+// ============================================================
+// INDUSTRY (Global catalog — not tenant-scoped)
+// ============================================================
+
+model Industry {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  icon      String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  instances Instance[]
+  features  IndustryFeature[]
+
+  @@map("industries")
+}
+
+// ============================================================
+// FEATURE (Global catalog — not tenant-scoped)
+// ============================================================
+
+model Feature {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  industries IndustryFeature[]
+  themes     Theme[]
+
+  @@map("features")
+}
+
+// ============================================================
+// INDUSTRY-FEATURE (Junction table)
+// ============================================================
+
+model IndustryFeature {
+  id         String @id @default(uuid())
+  industryId String @map("industry_id")
+  featureId  String @map("feature_id")
+
+  industry Industry @relation(fields: [industryId], references: [id], onDelete: Cascade)
+  feature  Feature  @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@unique([industryId, featureId])
+  @@map("industry_features")
+}
+
+// ============================================================
+// THEME (Global catalog — not tenant-scoped)
+// ============================================================
+
+model Theme {
+  id                String   @id @default(uuid())
+  featureId         String   @map("feature_id")
+  name              String
+  slug              String
+  version           Int      @default(1)
+  componentKey      String   @map("component_key")
+  accessRank        Int      @default(100) @map("access_rank")
+  schemaJsonb       Json     @map("schema_jsonb")
+  defaultStylesJsonb Json    @map("default_styles_jsonb")
+  previewImageUrl   String?  @map("preview_image_url")
+  isActive          Boolean  @default(true) @map("is_active")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  feature      Feature       @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  pageSections PageSection[]
+
+  @@unique([slug, version])
+  @@index([featureId])
+  @@map("themes")
+}
+
+// ============================================================
+// PAGE TEMPLATE (Global catalog — predefined sections layout)
+// ============================================================
+
+model PageTemplate {
+  id              String   @id @default(uuid())
+  name            String
+  description     String?
+  previewImageUrl String?  @map("preview_image_url")
+  sectionsJsonb   Json     @map("sections_jsonb")
+  isPremium       Boolean  @default(false) @map("is_premium")
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("page_templates")
+}
+
+enum MediaUploadStatus {
+  pending
+  uploaded
+  failed
+}
+
+model MediaAsset {
+  id            String            @id @default(uuid())
+  tenantId      String            @map("tenant_id")
+  instanceId    String            @map("instance_id")
+  uploadedBy    String?           @map("uploaded_by")
+  fileName      String            @map("file_name")
+  objectKey     String            @unique @map("object_key")
+  mimeType      String            @map("mime_type")
+  fileSize      Int               @map("file_size")
+  bucketName    String            @map("bucket_name")
+  publicUrl     String            @map("public_url")
+  status        MediaUploadStatus @default(pending)
+  metadataJsonb Json?             @map("metadata_jsonb")
+  uploadedAt    DateTime?         @map("uploaded_at")
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  instance Instance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([instanceId])
+  @@index([status])
+  @@index([instanceId, createdAt])
+  @@map("media_assets")
+}
+
+
+// ============================================================
+// PAGE (Instance-scoped — website pages)
+// ============================================================
+
+model Page {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  instanceId  String   @map("instance_id")
+  slug        String
+  title       String
+  seoJsonb    Json?    @map("seo_jsonb")
+  isPublished Boolean  @default(false) @map("is_published")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  instance Instance      @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  sections PageSection[]
+
+  @@unique([instanceId, slug])
+  @@index([tenantId])
+  @@index([instanceId])
+  @@map("pages")
+}
+
+// ============================================================
+// PAGE SECTION (Instance-scoped — ordered theme instances on a page)
+// ============================================================
+
+model PageSection {
+  id               String   @id @default(uuid())
+  tenantId         String   @map("tenant_id")
+  instanceId       String   @map("instance_id")
+  pageId           String   @map("page_id")
+  themeId          String   @map("theme_id")
+  themeVersionUsed Int      @default(1) @map("theme_version_used")
+  position         Int      @default(0)
+  enabled          Boolean  @default(true)
+  contentJsonb     Json     @default("{}") @map("content_jsonb")
+  stylesJsonb      Json     @default("{}") @map("styles_jsonb")
+  conditionsJsonb  Json?    @map("conditions_jsonb")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  instance Instance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  page     Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  theme    Theme    @relation(fields: [themeId], references: [id])
+
+  @@index([pageId, position])
+  @@index([tenantId])
+  @@index([instanceId])
+  @@map("page_sections")
+}
+
+// ============================================================
+// PUBLISH RECORD (Instance-scoped — tracks published versions)
+// ============================================================
+
+model PublishRecord {
+  id          String        @id @default(uuid())
+  tenantId    String        @map("tenant_id")
+  instanceId  String        @map("instance_id")
+  version     Int
+  status      PublishStatus @default(draft)
+  publishedAt DateTime?     @map("published_at")
+  publishedBy String        @map("published_by")
+  artifactUrl String?       @map("artifact_url")
+  manifestJsonb Json?       @map("manifest_jsonb")
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  instance Instance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  @@unique([instanceId, version])
+  @@index([tenantId])
+  @@index([instanceId])
+  @@map("publish_records")
+}
+
+enum PublishStatus {
+  draft
+  publishing
+  published
+  failed
+}

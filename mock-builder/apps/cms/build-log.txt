@@ -1,0 +1,10 @@
+
+> @booking-engine/cms@1.0.0 build /home/dilan/Project/Booking-Engine-CMS/apps/cms
+> next build
+
+  ▲ Next.js 14.2.25
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @booking-engine/cms@1.0.0 build: `next build`
+Command failed with signal "SIGINT"

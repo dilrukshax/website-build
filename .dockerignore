@@ -1,0 +1,53 @@
+# Dependencies
+node_modules
+**/node_modules
+
+# Build outputs
+**/dist
+**/.next
+**/.turbo
+**/out
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Environment files (handled via compose/secrets)
+.env
+.env.*
+!.env.example
+
+# Documentation & Agent config
+CLAUDE.md
+.claude/
+README.md
+LICENSE
+*.md
+
+# Tests
+**/__tests__
+**/*.test.ts
+**/*.spec.ts
+**/vitest.config.*
+**/coverage
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker files (avoid recursive)
+Dockerfile*
+docker-compose*
+.dockerignore
+!entrypoint.sh
+
+# Misc
+*.log
+npm-debug.log*
+pnpm-debug.log*

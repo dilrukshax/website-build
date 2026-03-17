@@ -1,0 +1,25 @@
+{
+    "name": "booking-engine-monorepo",
+    "version": "1.0.0",
+    "private": true,
+    "packageManager": "pnpm@10.30.3",
+    "description": "Multi-tenant SaaS buildmyonlineweb backend",
+    "scripts": {
+        "dev": "turbo run dev",
+        "build": "turbo run build",
+        "lint": "turbo run lint",
+        "clean": "turbo run clean",
+        "db:migrate": "pnpm --filter @booking-engine/database run migrate",
+        "db:seed": "pnpm --filter @booking-engine/database run db:seed",
+        "db:cleanup-users": "pnpm --filter @booking-engine/database run db:cleanup-users",
+        "start:api": "pnpm --filter @booking-engine/api run start"
+    },
+    "devDependencies": {
+        "turbo": "^2.0.0",
+        "typescript": "^5.3.0"
+    },
+    "engines": {
+        "node": ">=18.0.0",
+        "pnpm": ">=8.0.0"
+    }
+}

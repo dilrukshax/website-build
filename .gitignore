@@ -1,0 +1,128 @@
+# =============================================================
+# DEPENDENCIES
+# =============================================================
+node_modules/
+.pnp
+.pnp.js
+
+# =============================================================
+# BUILD OUTPUTS
+# =============================================================
+dist/
+build/
+out/
+.output/
+*.tsbuildinfo
+
+# Next.js
+.next/
+next-env.d.ts
+
+# Turbo cache
+.turbo/
+
+# Prisma generated client
+packages/database/src/generated/
+packages/database/node_modules/.prisma/
+
+# =============================================================
+# ENVIRONMENT FILES  (never commit secrets!)
+# =============================================================
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.staging
+# Keep the example template
+!.env.example
+
+# =============================================================
+# LOGS
+# =============================================================
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =============================================================
+# RUNTIME & TEMP FILES
+# =============================================================
+*.tmp
+*.temp
+*.pid
+*.seed
+*.pid.lock
+
+# =============================================================
+# TESTING
+# =============================================================
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+
+# =============================================================
+# OS FILES
+# =============================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# =============================================================
+# IDE & EDITOR
+# =============================================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+.history/
+
+# =============================================================
+# DOCKER
+# =============================================================
+docker-data/
+
+# =============================================================
+# SCRATCH / TEMP FILES AT ROOT (one-off scripts / logs)
+# =============================================================
+diff.txt
+diff2.txt
+*.log
+build-output*.log
+cms-build.log
+tsc-errors.log
+tsc_output.txt
+build_output.txt
+complete-errors.log
+booking-engine-errors.log
+test-api.ts
+test-api-local.ts
+final_architecture*.md
+
+# =============================================================
+# AI / AGENT CONFIG (never commit)
+# =============================================================
+.claude/
+.gemini/
+
+# =============================================================
+# PACKAGE MANAGER CACHE
+# =============================================================
+.npm/
+.yarn/cache
+.pnpm-store/
+
+# =============================================================
+# MISC
+# =============================================================
+*.tgz
+*.gz

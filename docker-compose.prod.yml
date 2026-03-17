@@ -1,0 +1,133 @@
+version: '3.8'
+
+# =============================================================
+# Production Docker Compose — Full Stack
+# Database: Neon DB (external) — set DATABASE_URL in .env
+# Usage: docker compose -f docker-compose.prod.yml up -d
+#
+# Before first run:
+#   1. Copy .env.example → .env and fill in production values
+#   2. Set DATABASE_URL to your Neon DB connection string
+#   3. Build images: docker compose -f docker-compose.prod.yml build
+#   4. Run migrations: docker compose -f docker-compose.prod.yml run --rm api-migrate
+# =============================================================
+
+services:
+  # ─── Infrastructure ────────────────────────────────────────
+
+  redis:
+    image: redis:7-alpine
+    container_name: be-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+        --maxmemory 256mb
+        --maxmemory-policy allkeys-lru
+        --requirepass ${REDIS_PASSWORD:-redis}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend
+
+  # ─── Database Migration (run once) ─────────────────────────
+
+  api-migrate:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: installer
+    container_name: be-api-migrate
+    command: >
+      sh -c "
+        cd packages/database &&
+        npx prisma migrate deploy &&
+        echo 'Migrations applied'
+      "
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env (Neon DB connection string)}
+    networks:
+      - backend
+    profiles:
+      - migrate
+
+  # ─── API Server ────────────────────────────────────────────
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: be-api
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-3002}:3002"
+    environment:
+      NODE_ENV: production
+      PORT: 3002
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env (Neon DB connection string)}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?Set JWT_REFRESH_SECRET in .env}
+      JWT_ACCESS_TOKEN_EXPIRY: ${JWT_ACCESS_TOKEN_EXPIRY:-15m}
+      JWT_REFRESH_TOKEN_EXPIRY: ${JWT_REFRESH_TOKEN_EXPIRY:-7d}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3001}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis}@redis:6379
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:?Set CLOUDFLARE_API_TOKEN in .env}
+      CLOUDFLARE_ZONE_ID: ${CLOUDFLARE_ZONE_ID:?Set CLOUDFLARE_ZONE_ID in .env}
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - backend
+      - frontend
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+  # ─── CMS (Next.js) ────────────────────────────────────────
+
+  cms:
+    build:
+      context: .
+      dockerfile: apps/cms/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3002}
+    container_name: be-cms
+    restart: unless-stopped
+    ports:
+      - "${CMS_PORT:-3001}:3001"
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3002}
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - frontend
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+volumes:
+  redis_data:
+    driver: local
+
+networks:
+  backend:
+    driver: bridge
+  frontend:
+    driver: bridge

@@ -1,0 +1,16 @@
+{
+    "extends": "../../packages/config/tsconfig.base.json",
+    "compilerOptions": {
+        "outDir": "./dist",
+        "noUnusedLocals": false,
+        "noUnusedParameters": false
+    },
+    "include": [
+        "src/**/*",
+        "prisma/**/*"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist"
+    ]
+}
