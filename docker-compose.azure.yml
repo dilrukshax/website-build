@@ -1,0 +1,116 @@
+version: '3.8'
+
+# =============================================================
+# Production Docker Compose — Azure VM Single Instance
+# Architecture: Single container running both API & CMS
+# Usage: docker compose -f docker-compose.azure.yml up -d
+# =============================================================
+
+services:
+  # ─── Primary Application (API + CMS) ───────────────────────
+  app:
+    # In Azure production, you can use ACR image URI instead of local build.
+    # Example: image: yourregistry.azurecr.io/booking-engine:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: booking-engine-app
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-3002}:3002"
+      - "${CMS_PORT:-3001}:3001"
+    environment:
+      # --- General ---
+      NODE_ENV: production
+      PORT: 3002
+      CMS_PORT: 3001
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+
+      # --- URLs ---
+      API_BASE_URL: ${API_BASE_URL:?Set API_BASE_URL in .env}
+      CMS_URL: ${CMS_URL:?Set CMS_URL in .env}
+      CORS_ORIGIN: ${CORS_ORIGIN:?Set CORS_ORIGIN in .env}
+      SITE_DOMAIN: ${SITE_DOMAIN:?Set SITE_DOMAIN in .env}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?Set NEXT_PUBLIC_API_URL in .env}
+      NEXT_PUBLIC_SITE_DOMAIN: ${NEXT_PUBLIC_SITE_DOMAIN:?Set NEXT_PUBLIC_SITE_DOMAIN in .env}
+
+      # --- Database & Redis ---
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env (Postgres connection string)}
+      # If using Azure Cache for Redis, set REDIS_URL directly to cache host.
+      REDIS_URL: ${REDIS_URL:-redis://:${REDIS_PASSWORD:-redis}@redis:6379}
+
+      # --- Auth ---
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?Set JWT_REFRESH_SECRET in .env}
+      JWT_ACCESS_TOKEN_EXPIRY: ${JWT_ACCESS_TOKEN_EXPIRY:-15m}
+      JWT_REFRESH_TOKEN_EXPIRY: ${JWT_REFRESH_TOKEN_EXPIRY:-7d}
+
+      # --- Cloudflare (optional) ---
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:-}
+      CLOUDFLARE_ZONE_ID: ${CLOUDFLARE_ZONE_ID:-}
+      R2_ENDPOINT: ${R2_ENDPOINT:-}
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:-}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+      R2_BUCKET_NAME: ${R2_BUCKET_NAME:-}
+      R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
+      PUBLISHED_SITES_BASE_URL: ${PUBLISHED_SITES_BASE_URL:-}
+      ROUTING_INDEX_CURRENT_URL: ${ROUTING_INDEX_CURRENT_URL:-}
+      ROUTING_INDEX_CACHE_TTL_MS: ${ROUTING_INDEX_CACHE_TTL_MS:-30000}
+      WEB_PROXY_SHARED_SECRET: ${WEB_PROXY_SHARED_SECRET:?Set WEB_PROXY_SHARED_SECRET in .env}
+
+      # --- Frontend public runtime config ---
+      NEXT_PUBLIC_PUBLISHED_SITES_BASE_URL: ${NEXT_PUBLIC_PUBLISHED_SITES_BASE_URL:-}
+      NEXT_PUBLIC_ROUTING_INDEX_CURRENT_URL: ${NEXT_PUBLIC_ROUTING_INDEX_CURRENT_URL:-}
+      NEXT_PUBLIC_ROUTING_INDEX_CACHE_TTL_MS: ${NEXT_PUBLIC_ROUTING_INDEX_CACHE_TTL_MS:-30000}
+      NEXT_PUBLIC_PUBLISHER_TAGLINE: ${NEXT_PUBLIC_PUBLISHER_TAGLINE:-Built Your Website with My Online Web}
+      NEXT_PUBLIC_PUBLISHER_URL: ${NEXT_PUBLIC_PUBLISHER_URL:-}
+
+      # --- Device fingerprint / referral fraud controls ---
+      NEXT_PUBLIC_FINGERPRINT_ENABLED: ${NEXT_PUBLIC_FINGERPRINT_ENABLED:-true}
+      FINGERPRINT_ENABLED: ${FINGERPRINT_ENABLED:-true}
+      FINGERPRINT_MODE: ${FINGERPRINT_MODE:-log}
+      DEVICE_CHECK_RATE_LIMIT_PER_MIN: ${DEVICE_CHECK_RATE_LIMIT_PER_MIN:-10}
+      IPINFO_TOKEN: ${IPINFO_TOKEN:-}
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - booking_network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.5'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+  # ─── Redis Cache (local fallback) ──────────────────────────
+  # For production, Azure Cache for Redis is recommended.
+  redis:
+    image: redis:7-alpine
+    container_name: booking-engine-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+        --maxmemory 256mb
+        --maxmemory-policy allkeys-lru
+        --requirepass ${REDIS_PASSWORD:-redis}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - booking_network
+
+volumes:
+  redis_data:
+    driver: local
+
+networks:
+  booking_network:
+    driver: bridge

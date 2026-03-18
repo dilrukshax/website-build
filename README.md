@@ -14,7 +14,9 @@ Multi-tenant SaaS booking and website management platform for service-based busi
 ## Deployment Guides
 
 - AWS EC2 (single instance): `docs/AWS_DEPLOYMENT.md`
+- Azure VM (single instance): `docs/AZURE_DEPLOYMENT.md`
 - AWS environment template: `.env.aws.example`
+- Azure environment template: `.env.azure.example`
 
 ## Prerequisites
 
