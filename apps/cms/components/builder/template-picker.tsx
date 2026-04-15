@@ -3,12 +3,19 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../lib/api-client';
 
+const VISIBLE_TEMPLATE_IDS = new Set([
+    'template-2026-clean-appointments',
+    'template-2026-elegant-concierge',
+    'template-2026-motion-studio',
+    'template-2026-signal-horizon',
+    'template-2026-acquisition-shop',
+]);
+
 interface PageTemplate {
     id: string;
     name: string;
     description: string | null;
     previewImageUrl: string | null;
-    isPremium: boolean;
     isPlanRestricted?: boolean;
 }
 
@@ -22,6 +29,24 @@ export function TemplatePicker({ open, onClose, onSelect }: TemplatePickerProps)
     const [templates, setTemplates] = useState<PageTemplate[]>([]);
     const [loading, setLoading] = useState(false);
     const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+    const [iframeLoading, setIframeLoading] = useState(true);
+    const [iframeError, setIframeError] = useState(false);
+    const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
+
+    useEffect(() => {
+        if (selectedTemplateId) {
+            setIframeLoading(true);
+            setIframeError(false);
+        }
+    }, [selectedTemplateId]);
+
+    useEffect(() => {
+        if (!open) {
+            setPreviewMode('desktop');
+            setIframeError(false);
+            setIframeLoading(true);
+        }
+    }, [open]);
 
     useEffect(() => {
         if (open) {
@@ -29,7 +54,7 @@ export function TemplatePicker({ open, onClose, onSelect }: TemplatePickerProps)
             api.get<PageTemplate[]>('/cms/catalog/page-templates')
                 .then(res => {
                     if (res.success && res.data) {
-                        setTemplates(res.data);
+                        setTemplates(res.data.filter((template) => VISIBLE_TEMPLATE_IDS.has(template.id)));
                     }
                 })
                 .finally(() => setLoading(false));
@@ -60,7 +85,7 @@ export function TemplatePicker({ open, onClose, onSelect }: TemplatePickerProps)
 
     return (
         <div
-            className="fixed inset-0 z-[100] bg-slate-950/80"
+            className="fixed inset-0 z-[2000] bg-slate-950/80"
             onClick={(event) => {
                 if (event.target === event.currentTarget) {
                     onClose();
@@ -117,11 +142,6 @@ export function TemplatePicker({ open, onClose, onSelect }: TemplatePickerProps)
                                         <div className="min-w-0 flex-1">
                                             <div className="mb-1 flex items-center gap-1.5">
                                                 <span className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{template.name}</span>
-                                                {template.isPremium && (
-                                                    <span className="rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:border-amber-900/30 dark:bg-amber-950/30 dark:text-amber-300">
-                                                        Premium
-                                                    </span>
-                                                )}
                                             </div>
                                             <p className="line-clamp-2 text-xs text-slate-500 dark:text-slate-400">
                                                 {template.description || 'No description provided.'}
@@ -141,28 +161,81 @@ export function TemplatePicker({ open, onClose, onSelect }: TemplatePickerProps)
                         ) : selectedTemplate ? (
                             <div className="mx-auto max-w-6xl space-y-4">
                                 <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900 lg:p-4">
-                                    <div
-                                        className="relative aspect-[16/9] w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800"
-                                        style={{ backgroundImage: `url(${selectedTemplate.previewImageUrl || ''})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
-                                    >
-                                        {!selectedTemplate.previewImageUrl && (
-                                            <div className="flex h-full items-center justify-center text-sm text-slate-400 dark:text-slate-500">
-                                                No Preview Available
-                                            </div>
-                                        )}
-                                        <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-                                            {selectedTemplate.isPremium && (
-                                                <span className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:border-amber-900/30 dark:bg-amber-950/30 dark:text-amber-300">
-                                                    Premium
-                                                </span>
-                                            )}
-                                            {selectedTemplate.isPlanRestricted && (
-                                                <span className="rounded-md border border-sky-200 bg-sky-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-sky-700 dark:border-sky-900/30 dark:bg-sky-950/30 dark:text-sky-300">
-                                                    Preview Only
-                                                </span>
-                                            )}
+                                    <div className="mb-3 flex items-center justify-between">
+                                        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                            Interactive Preview
+                                        </p>
+                                        <div className="inline-flex items-center rounded-lg border border-slate-200 bg-white p-1 dark:border-slate-700 dark:bg-slate-900">
+                                            <button
+                                                type="button"
+                                                onClick={() => setPreviewMode('desktop')}
+                                                className={`rounded-md px-2.5 py-1 text-xs font-semibold transition ${
+                                                    previewMode === 'desktop'
+                                                        ? 'bg-[#5048e5] text-white'
+                                                        : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+                                                }`}
+                                            >
+                                                Web
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setPreviewMode('mobile')}
+                                                className={`rounded-md px-2.5 py-1 text-xs font-semibold transition ${
+                                                    previewMode === 'mobile'
+                                                        ? 'bg-[#5048e5] text-white'
+                                                        : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+                                                }`}
+                                            >
+                                                Mobile
+                                            </button>
                                         </div>
                                     </div>
+
+                                    <div className={`relative mx-auto w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800 ${previewMode === 'mobile' ? 'max-w-[430px]' : ''}`}>
+                                        <div className="relative h-[60vh] min-h-[320px] w-full sm:min-h-[420px]">
+                                            {!iframeError && (
+                                                <iframe
+                                                    key={selectedTemplate.id}
+                                                    src={`/builder-preview/${encodeURIComponent(selectedTemplate.id)}`}
+                                                    className="absolute inset-0 h-full w-full border-0 bg-white"
+                                                    onLoad={() => setIframeLoading(false)}
+                                                    onError={() => {
+                                                        setIframeLoading(false);
+                                                        setIframeError(true);
+                                                    }}
+                                                    title={`${selectedTemplate.name} Preview`}
+                                                />
+                                            )}
+
+                                            {iframeError && (
+                                                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-white px-4 text-center dark:bg-slate-900">
+                                                    <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                                                        Preview is temporarily unavailable.
+                                                    </p>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                        You can still apply this template.
+                                                    </p>
+                                                </div>
+                                            )}
+
+                                            {iframeLoading && !iframeError && (
+                                                <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60 backdrop-blur-sm transition-opacity dark:bg-slate-900/60">
+                                                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-[#5048e5]" />
+                                                </div>
+                                            )}
+
+                                            <div className="absolute left-3 top-3 flex flex-wrap gap-2">
+                                                {selectedTemplate.isPlanRestricted && (
+                                                    <span className="rounded-md border border-sky-200 bg-sky-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-sky-700 dark:border-sky-900/30 dark:bg-sky-950/30 dark:text-sky-300">
+                                                        Preview Only
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                                        Scroll inside the preview to inspect the full template layout.
+                                    </p>
                                 </div>
 
                                 <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900 lg:p-5">
@@ -170,18 +243,13 @@ export function TemplatePicker({ open, onClose, onSelect }: TemplatePickerProps)
                                         <div>
                                             <div className="mb-1 flex items-center gap-2">
                                                 <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{selectedTemplate.name}</h3>
-                                                {selectedTemplate.isPremium && (
-                                                    <span className="rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:border-amber-900/30 dark:bg-amber-950/30 dark:text-amber-300">
-                                                        Premium
-                                                    </span>
-                                                )}
                                             </div>
                                             <p className="max-w-3xl text-sm text-slate-600 dark:text-slate-300">
                                                 {selectedTemplate.description || 'No description provided.'}
                                             </p>
                                             {selectedTemplate.isPlanRestricted && (
                                                 <p className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-300">
-                                                    You can apply this template for editing and preview, but publishing will require a premium plan.
+                                                    This template is currently restricted for publishing on your plan.
                                                 </p>
                                             )}
                                         </div>
@@ -198,10 +266,10 @@ export function TemplatePicker({ open, onClose, onSelect }: TemplatePickerProps)
                             </div>
                         ) : null}
                     </div>
-                </div>
+            </div>
 
                 <div className="border-t border-slate-200 bg-white px-6 py-3 text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
-                    Select any template to preview it in full screen. Premium templates can be selected even on restricted plans.
+                    Select any template to preview it in full screen.
                 </div>
             </div>
         </div>

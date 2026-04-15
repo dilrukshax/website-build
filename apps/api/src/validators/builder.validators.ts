@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { websiteSeoSettingsSchema } from './seo.validators';
 
 export const updateWebsiteSettingsSchema = z.object({
     tokens: z.object({
@@ -32,4 +33,5 @@ export const updateWebsiteSettingsSchema = z.object({
             url: z.string(),
         })).optional(),
     }).optional(),
+    seo: websiteSeoSettingsSchema.optional(),
 });

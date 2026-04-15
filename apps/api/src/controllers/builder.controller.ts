@@ -1,13 +1,29 @@
 import { Request, Response, NextFunction } from 'express';
 import { db } from '@booking-engine/database';
 import { ERROR_CODES, DEFAULT_WEBSITE_SETTINGS, logger } from '@booking-engine/core';
-import type { SDUIManifest, SDUISection, WebsiteSettings } from '@booking-engine/core';
+import type { SDUIManifest, SDUISection, SEOData, WebsiteSEOBusiness, WebsiteSettings } from '@booking-engine/core';
 import { AppError } from '../middleware/error';
 import { S3Service } from '../services/s3.service';
 import { invalidatePublishedSiteCache } from '../services/publish-cache-invalidation.service';
 import { PlanPolicyService } from '../services/plan-policy.service';
 import { buildPrimaryFullDomain } from '../utils/domain';
 import { RoutingIndexService } from '../services/routing-index.service';
+
+function normalizeSeoData(raw: unknown): SEOData | null {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+        return null;
+    }
+
+    return raw as SEOData;
+}
+
+function normalizeSeoBusiness(raw: unknown): WebsiteSEOBusiness | null {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+        return null;
+    }
+
+    return raw as WebsiteSEOBusiness;
+}
 
 interface PublishReadinessTheme {
     id: string;
@@ -74,7 +90,7 @@ async function getPublishReadinessForInstance(tenantId: string, instanceId: stri
 
     const blockedThemeNames = blockedThemes.map((theme) => theme.name).join(', ');
     const message = limits.plan === 'free'
-        ? `This website uses premium themes (${blockedThemeNames}). Free plan can preview premium themes, but publishing requires an upgrade.`
+        ? `This website uses sections outside your current theme access (${blockedThemeNames}).`
         : `This website uses themes outside your current plan (${blockedThemeNames}). Upgrade your plan to publish.`;
 
     return {
@@ -277,10 +293,22 @@ export class BuilderController {
             const nextVersion = (lastPublish?.version ?? 0) + 1;
 
             const settings = (instance.settingsJsonb as unknown as WebsiteSettings) || DEFAULT_WEBSITE_SETTINGS;
+            const websiteSeo = settings.seo && typeof settings.seo === 'object' ? settings.seo : null;
+            const websiteSeoDefaults = normalizeSeoData(websiteSeo?.defaults);
+            const websiteSeoBusiness = normalizeSeoBusiness(websiteSeo?.business);
+            const siteName = (typeof websiteSeo?.siteName === 'string' && websiteSeo.siteName.trim())
+                ? websiteSeo.siteName.trim()
+                : instance.name;
+            const primaryDomain = instance.customDomain || instance.fullDomain || buildPrimaryFullDomain(instance.subdomain);
 
             // Build full manifest for all pages
             const fullManifest = pages.map((page) => ({
-                page: { id: page.id, slug: page.slug, title: page.title },
+                page: {
+                    id: page.id,
+                    slug: page.slug,
+                    title: page.title,
+                    seo: normalizeSeoData(page.seoJsonb),
+                },
                 sections: page.sections.map((sec) => ({
                     id: sec.id,
                     type: sec.theme.componentKey,
@@ -307,6 +335,11 @@ export class BuilderController {
                         instanceId,
                         subdomain: instance.subdomain,
                         fullDomain: instance.fullDomain || buildPrimaryFullDomain(instance.subdomain),
+                        primaryDomain,
+                        defaultPageSlug: fullManifest[0]?.page.slug || '/',
+                        siteName,
+                        seoDefaults: websiteSeoDefaults,
+                        seoBusiness: websiteSeoBusiness,
                         tokens: settings.tokens || DEFAULT_WEBSITE_SETTINGS.tokens,
                         features: settings.features || DEFAULT_WEBSITE_SETTINGS.features,
                         header: settings.header || DEFAULT_WEBSITE_SETTINGS.header,

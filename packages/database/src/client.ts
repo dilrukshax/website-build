@@ -82,6 +82,7 @@ const TENANT_EXEMPT_MODELS = new Set([
 const INSTANCE_SCOPED_MODELS = new Set([
     'Customer',
     'Service',
+    'Product',
     'Booking',
     'Inquiry',
     'FeatureToggle',

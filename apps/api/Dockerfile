@@ -18,12 +18,24 @@ WORKDIR /app
 FROM base AS pruner
 
 COPY . .
+
+# Fail fast with actionable guidance if the Docker build context is not the repo root.
+RUN test -f package.json && test -f pnpm-workspace.yaml && test -f turbo.json || \
+    (echo "[build-error] Monorepo root files are missing in Docker context." && \
+     echo "[build-error] Set Dockerfile path to apps/api/Dockerfile and Docker context to ." && \
+     exit 1)
+
+RUN node -e "const pkg=require('./package.json'); if(!pkg.packageManager){console.error('[build-error] Root package.json is missing packageManager (expected pnpm@10.30.3).'); process.exit(1);}"
+
 RUN npx turbo prune @booking-engine/api --docker
 
 # ----------------------------------------------------------
 # Stage 2: Installer / Builder
 # ----------------------------------------------------------
 FROM base AS installer
+
+# Stabilize constrained CI builders (Coolify) to reduce abrupt build kills.
+ENV NODE_OPTIONS="--max-old-space-size=1536"
 
 # Copy pruned manifests first for better layer caching
 COPY --from=pruner /app/out/json/ .
@@ -46,7 +58,7 @@ RUN pnpm --filter @booking-engine/database run db:generate
 COPY turbo.json tsconfig.json ./
 
 # Build API and its internal dependencies
-RUN pnpm turbo build --filter=@booking-engine/api...
+RUN pnpm turbo build --filter=@booking-engine/api... --concurrency=1
 
 # ----------------------------------------------------------
 # Stage 3: Runner — minimal production image
@@ -70,14 +82,14 @@ COPY --from=installer --chown=apiuser:nodejs /app /app
 USER apiuser
 
 # Metadata only — app must still listen on process.env.PORT in code
-EXPOSE 8081
+EXPOSE 5074
 WORKDIR /app/apps/api
 
 # IMPORTANT:
 # Keep Docker HEALTHCHECK out for now.
 # Configure health checks in Sevalla instead:
 #   Path: /health
-#   Port: 8081
+#   Port: 5074
 #
 # If your compiled entry file is main.js instead of server.js,
 # change the line below accordingly.

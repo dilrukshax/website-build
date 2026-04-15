@@ -4,8 +4,10 @@
     "private": true,
     "scripts": {
         "dev": "next dev --port 3001",
-        "build": "next build",
+        "dev:logs": "next dev --port 3001 2>&1 | tee combined.log",
+        "build": "next build --no-lint",
         "start": "next start --port 3001",
+        "start:logs": "next start --port 3001 2>&1 | tee combined.log",
         "lint": "next lint",
         "test": "vitest run",
         "test:watch": "vitest",

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isPointerJsonPath, PUBLISHED_FALLBACK_CACHE_CONTROL, ROUTING_POINTER_CACHE_CONTROL } from './cache-policy';
 
 const REQUEST_HOP_BY_HOP_HEADERS = new Set([
     'connection',
@@ -77,11 +78,24 @@ function buildUpstreamHeaders(request: NextRequest): Headers {
     return headers;
 }
 
-function buildResponseHeaders(upstreamHeaders: Headers): Headers {
+function buildResponseHeaders(upstreamHeaders: Headers, requestMethod: string, pathSegments: string[]): Headers {
     const headers = new Headers(upstreamHeaders);
     for (const key of RESPONSE_HOP_BY_HOP_HEADERS) {
         headers.delete(key);
     }
+
+    // Published artifacts are always public resources.
+    headers.delete('set-cookie');
+
+    const upperMethod = requestMethod.toUpperCase();
+    if (upperMethod === 'GET' || upperMethod === 'HEAD') {
+        if (isPointerJsonPath(pathSegments)) {
+            headers.set('cache-control', ROUTING_POINTER_CACHE_CONTROL);
+        } else if (!headers.get('cache-control')) {
+            headers.set('cache-control', PUBLISHED_FALLBACK_CACHE_CONTROL);
+        }
+    }
+
     return headers;
 }
 
@@ -112,7 +126,7 @@ export async function proxyPublishedRequest(request: NextRequest, pathSegments: 
         return new NextResponse(upstreamResponse.body, {
             status: upstreamResponse.status,
             statusText: upstreamResponse.statusText,
-            headers: buildResponseHeaders(upstreamResponse.headers),
+            headers: buildResponseHeaders(upstreamResponse.headers, method, pathSegments),
         });
     } catch (error) {
         return NextResponse.json({

@@ -20,11 +20,12 @@ const cspHeader = `
     script-src 'self' 'unsafe-eval' 'unsafe-inline' https:;
     style-src 'self' 'unsafe-inline' https:;
     img-src 'self' blob: data: https:;
+    media-src 'self' blob: data: https:;
     font-src 'self' data: https://fonts.gstatic.com;
     object-src 'none';
     base-uri 'self';
     form-action 'self';
-    frame-ancestors 'none';
+    frame-ancestors 'self';
     connect-src 'self' https: wss:;
 `.replace(/\n/g, '').trim();
 

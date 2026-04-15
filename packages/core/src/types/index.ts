@@ -280,6 +280,7 @@ export interface RegisterRequest {
   email: string;
   password: string;
   fullName: string;
+  whatsappNumber: string;
 }
 
 export interface LoginRequest {
@@ -403,10 +404,22 @@ export interface Page {
 export interface SEOData {
   metaTitle?: string;
   metaDescription?: string;
+  metaKeywords?: string;
+  canonicalPath?: string;
+  robotsIndex?: boolean;
+  robotsFollow?: boolean;
   ogTitle?: string;
   ogDescription?: string;
   ogImageUrl?: string;
+  ogImageAlt?: string;
+  twitterCard?: TwitterCardType;
+  twitterTitle?: string;
+  twitterDescription?: string;
+  twitterImageUrl?: string;
+  twitterImageAlt?: string;
 }
+
+export type TwitterCardType = 'summary' | 'summary_large_image';
 
 export interface PageSection {
   id: string;
@@ -441,7 +454,7 @@ export interface PublishRecord {
   publishedAt: Date | null;
   publishedBy: string;
   artifactUrl: string | null;
-  manifestJsonb: SDUIManifest | null;
+  manifestJsonb: PublishedSiteManifest | SDUIManifest | null;
   createdAt: Date;
 }
 
@@ -454,6 +467,7 @@ export interface WebsiteSettings {
   features: Record<string, boolean>;
   header: WebsiteHeaderSettings;
   footer: WebsiteFooterSettings;
+  seo?: WebsiteSEOSettings;
 }
 
 export interface WebsiteTokens {
@@ -480,6 +494,28 @@ export interface WebsiteFooterSettings {
   social: Array<{ platform: string; url: string }>;
 }
 
+export interface WebsiteSEOSettings {
+  siteName?: string | null;
+  defaults?: SEOData | null;
+  business?: WebsiteSEOBusiness | null;
+}
+
+export interface WebsiteSEOBusiness {
+  businessType?: string | null;
+  name?: string | null;
+  description?: string | null;
+  imageUrl?: string | null;
+  telephone?: string | null;
+  email?: string | null;
+  priceRange?: string | null;
+  streetAddress?: string | null;
+  addressLocality?: string | null;
+  addressRegion?: string | null;
+  postalCode?: string | null;
+  addressCountry?: string | null;
+  sameAs?: string[] | null;
+}
+
 // ============================================================
 // SDUI Manifest Types
 // ============================================================
@@ -494,6 +530,30 @@ export interface SDUIManifest {
   tokens: WebsiteTokens;
   features: Record<string, boolean>;
   sections: SDUISection[];
+}
+
+export interface PublishedSiteManifest {
+  tenantId: string;
+  instanceId: string;
+  subdomain: string;
+  fullDomain?: string | null;
+  primaryDomain?: string | null;
+  siteName?: string | null;
+  seoDefaults?: SEOData | null;
+  seoBusiness?: WebsiteSEOBusiness | null;
+  tokens: WebsiteTokens;
+  features: Record<string, boolean>;
+  header: WebsiteHeaderSettings;
+  footer: WebsiteFooterSettings;
+  pages: Array<{
+    page: {
+      id: string;
+      slug: string;
+      title: string;
+      seo?: SEOData | null;
+    };
+    sections: SDUISection[];
+  }>;
 }
 
 export interface SDUISection {
@@ -545,4 +605,5 @@ export interface UpdateWebsiteSettingsRequest {
   features?: Record<string, boolean>;
   header?: Partial<WebsiteHeaderSettings>;
   footer?: Partial<WebsiteFooterSettings>;
+  seo?: WebsiteSEOSettings;
 }

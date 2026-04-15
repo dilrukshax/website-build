@@ -83,7 +83,7 @@ export function getDefaultWebsiteSetupFormData(): WebsiteSetupFormData {
         businessType: '',
         timezone: getDefaultTimezone(),
         customDomain: '',
-        domainMode: 'subdomain',
+        domainMode: 'customDomain',
     };
 }
 
@@ -140,9 +140,7 @@ export function validateWebsiteSetupForm(formData: WebsiteSetupFormData): Websit
         }
     }
 
-    if (!cleanedBusinessType) {
-        nextErrors.businessType = 'Industry is required';
-    } else if (cleanedBusinessType.length > 255) {
+    if (cleanedBusinessType.length > 255) {
         nextErrors.businessType = 'Industry must be 255 characters or fewer';
     }
 

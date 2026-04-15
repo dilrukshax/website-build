@@ -11,13 +11,6 @@ Multi-tenant SaaS booking and website management platform for service-based busi
 - **Auth**: Custom JWT (session + tenant-scoped tokens)
 - **Styling**: Tailwind CSS v4
 
-## Deployment Guides
-
-- AWS EC2 (single instance): `docs/AWS_DEPLOYMENT.md`
-- Azure VM (single instance): `docs/AZURE_DEPLOYMENT.md`
-- AWS environment template: `.env.aws.example`
-- Azure environment template: `.env.azure.example`
-
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) v18+
@@ -46,9 +39,11 @@ Key variables:
 DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@localhost:5432/booking_engine
 JWT_SECRET=your-secret-key-min-32-chars
 JWT_REFRESH_SECRET=your-refresh-secret-key-min-32-chars
+NEXT_PUBLIC_AUTH_IDLE_TIMEOUT_MINUTES=30
 API_PORT=3002
 API_BASE_URL=http://localhost:3002
 SITE_DOMAIN=buildmyonlineweb.site
+PLATFORM_HOST_BYPASS=
 CMS_URL=http://localhost:3001
 CORS_ORIGIN=http://localhost:3001,http://localhost:3002
 NEXT_PUBLIC_SITE_DOMAIN=buildmyonlineweb.site
@@ -69,6 +64,7 @@ WEB_PROXY_SHARED_SECRET=
 NEXT_PUBLIC_PUBLISHED_SITES_BASE_URL=
 NEXT_PUBLIC_ROUTING_INDEX_CURRENT_URL=
 NEXT_PUBLIC_ROUTING_INDEX_CACHE_TTL_MS=30000
+NEXT_PUBLIC_PLATFORM_HOST_BYPASS=
 NEXT_PUBLIC_FINGERPRINT_ENABLED=true
 FINGERPRINT_ENABLED=true
 FINGERPRINT_MODE=log
@@ -76,7 +72,7 @@ DEVICE_CHECK_RATE_LIMIT_PER_MIN=10
 IPINFO_TOKEN=
 ```
 
-`SITE_DOMAIN` is used by the API to persist each instance primary full domain (`{subdomain}.{SITE_DOMAIN}`), and `NEXT_PUBLIC_SITE_DOMAIN` is used by the CMS to render subdomain domain suffixes in UI. `WEB_PROXY_SHARED_SECRET` must match in API + CMS runtimes for trusted `/web` host routing. `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ZONE_ID` are optional and used only for CDN cache purge operations.
+`SITE_DOMAIN` is used by the API to persist each instance primary full domain (`{subdomain}.{SITE_DOMAIN}`), and `NEXT_PUBLIC_SITE_DOMAIN` is used by the CMS to render subdomain domain suffixes in UI. `PLATFORM_HOST_BYPASS` (and optional `NEXT_PUBLIC_PLATFORM_HOST_BYPASS`) lets you reserve platform hosts (for example `staging.buildmyonlineweb.site,staging-api.buildmyonlineweb.site`) so they are never treated as tenant published hosts. By default, `staging.{SITE_DOMAIN}` and `staging-api.{SITE_DOMAIN}` are already treated as reserved platform hosts. `WEB_PROXY_SHARED_SECRET` must match in API + CMS runtimes for trusted `/web` host routing. `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ZONE_ID` are optional and used only for CDN cache purge operations.
 
 > **Note**: If your database password contains special characters like `@`, URL-encode them (e.g., `@` becomes `%40`).
 
@@ -106,6 +102,7 @@ NEXT_PUBLIC_SITE_DOMAIN=buildmyonlineweb.site
 NEXT_PUBLIC_PUBLISHER_TAGLINE=Built Your Website with My Online Web
 NEXT_PUBLIC_PUBLISHER_URL=https://buildmyonlineweb.site
 WEB_PROXY_SHARED_SECRET=replace-with-a-strong-shared-secret
+NEXT_PUBLIC_PLATFORM_HOST_BYPASS=
 ```
 
 ---

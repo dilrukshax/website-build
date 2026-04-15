@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Activity, CreditCard, Search, ShieldCheck, Users, Globe2 } from 'lucide-react';
+import Link from 'next/link';
 import { useAuth } from '../../../contexts/auth-context';
 import { api } from '../../../lib/api-client';
 import { getInstanceDisplayDomain } from '../../../lib/domain';
@@ -15,6 +16,7 @@ interface SuperAdminDashboardData {
         activeStaffAssignments: number;
         pendingCharges: number;
         pendingReferralClaims: number;
+        pendingCustomDomains?: number;
         activeSuperAdmins: number;
     };
     instances: Array<{
@@ -125,11 +127,19 @@ export default function SuperAdminDashboardPage() {
                         Platform-level overview and instance usage summary.
                     </p>
                 </div>
-                {dashboard?.generatedAt && (
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Updated {new Date(dashboard.generatedAt).toLocaleString()}
-                    </p>
-                )}
+                <div className="flex flex-col items-end gap-2">
+                    <Link
+                        href="/dashboard/superadmin/custom-domains"
+                        className="rounded-lg bg-[#5048e5] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#433bcf]"
+                    >
+                        Open Custom Domains
+                    </Link>
+                    {dashboard?.generatedAt && (
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                            Updated {new Date(dashboard.generatedAt).toLocaleString()}
+                        </p>
+                    )}
+                </div>
             </div>
 
             {error && (
@@ -158,6 +168,11 @@ export default function SuperAdminDashboardPage() {
                     label="Pending Claims"
                     value={String(dashboard?.totals.pendingReferralClaims || 0)}
                     icon={<Activity className="h-5 w-5" />}
+                />
+                <SummaryCard
+                    label="Pending Domains"
+                    value={String(dashboard?.totals.pendingCustomDomains || 0)}
+                    icon={<Globe2 className="h-5 w-5" />}
                 />
                 <SummaryCard
                     label="Active Staff Assignments"

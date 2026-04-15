@@ -17,13 +17,12 @@ import { createDynamicCorsOptionsDelegate } from './middleware/cors';
 import { normalizeDomainHost } from './utils/domain';
 import { RoutingIndexService } from './services/routing-index.service';
 
-// Load .env from monorepo root — apps/api/src is 3 levels up from root
-if (process.env.NODE_ENV !== 'production') {
-    dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
-}
+// Load .env from monorepo root in all environments as a best-effort fallback.
+// Runtime-provided environment variables still take precedence.
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 const app: Express = express();
-const port = Number(process.env.PORT || 8081);
+const port = Number(process.env.PORT || 5074);
 app.set('trust proxy', true);
 
 function buildStaticCorsOrigins(): string {

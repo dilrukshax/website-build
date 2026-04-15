@@ -3,14 +3,13 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, ArrowRight, Info } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { DomainSupportContact } from '../../../../components/domain-support-contact';
 import { api } from '../../../../lib/api-client';
 import { setStorageItem } from '../../../../lib/browser-storage';
 import { useAuth } from '../../../../contexts/auth-context';
 import { getPrimaryDomainSuffix } from '../../../../lib/domain';
 import {
-    WEBSITE_SETUP_INDUSTRY_SUGGESTIONS,
-    WEBSITE_SETUP_TIMEZONE_SUGGESTIONS,
     generateAutoSubdomain,
     getDefaultWebsiteSetupFormData,
     mapWebsiteSetupServerField,
@@ -386,63 +385,16 @@ export default function NewInstancePage() {
                                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                                     Enter hostname only (no https:// and no path).
                                 </p>
+                                <DomainSupportContact
+                                    domain={formData.customDomain}
+                                    className="mt-3"
+                                />
                                 {fieldErrors.customDomain && (
                                     <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.customDomain}</p>
                                 )}
                             </div>
                         </>
                     )}
-
-                    <div>
-                        <label htmlFor="businessType" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                            Industry
-                        </label>
-                        <input
-                            id="businessType"
-                            type="text"
-                            required
-                            list="industry-suggestions"
-                            value={formData.businessType}
-                            onChange={(e) => updateField('businessType', e.target.value)}
-                            className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#5048e5] focus:ring-2 focus:ring-[#5048e5]/20 dark:bg-slate-900 dark:text-slate-100 ${fieldErrors.businessType ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
-                            placeholder="Salon & Spa"
-                        />
-                        <datalist id="industry-suggestions">
-                            {WEBSITE_SETUP_INDUSTRY_SUGGESTIONS.map((item) => (
-                                <option key={item} value={item} />
-                            ))}
-                        </datalist>
-                        {fieldErrors.businessType && (
-                            <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.businessType}</p>
-                        )}
-                    </div>
-
-                    <div>
-                        <label htmlFor="timezone" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                            Website timezone
-                        </label>
-                        <input
-                            id="timezone"
-                            type="text"
-                            list="timezone-suggestions"
-                            value={formData.timezone}
-                            onChange={(e) => updateField('timezone', e.target.value)}
-                            className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#5048e5] focus:ring-2 focus:ring-[#5048e5]/20 dark:bg-slate-900 dark:text-slate-100 ${fieldErrors.timezone ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
-                            placeholder="Asia/Colombo"
-                        />
-                        <datalist id="timezone-suggestions">
-                            {WEBSITE_SETUP_TIMEZONE_SUGGESTIONS.map((item) => (
-                                <option key={item} value={item} />
-                            ))}
-                        </datalist>
-                        <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                            <Info className="h-3.5 w-3.5" />
-                            Booking windows use this timezone.
-                        </p>
-                        {fieldErrors.timezone && (
-                            <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.timezone}</p>
-                        )}
-                    </div>
 
                     <div className="flex flex-col gap-2 pt-2 sm:flex-row">
                         <button

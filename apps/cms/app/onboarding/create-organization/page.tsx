@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Inter } from 'next/font/google';
 import { ArrowRight, CheckCircle2, Circle, Sparkles, X } from 'lucide-react';
@@ -10,8 +10,6 @@ import { api } from '../../../lib/api-client';
 import { setStorageItem } from '../../../lib/browser-storage';
 import { getPrimaryDomainSuffix } from '../../../lib/domain';
 import {
-    WEBSITE_SETUP_INDUSTRY_SUGGESTIONS,
-    WEBSITE_SETUP_TIMEZONE_SUGGESTIONS,
     buildWorkspaceName,
     clearOnboardingWebsiteSetupDraft,
     generateAutoSubdomain,
@@ -60,6 +58,7 @@ function isInstanceContextError(message?: string): boolean {
 
 export default function CreateOrganizationPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const {
         createTenant,
         currentTenant,
@@ -92,6 +91,19 @@ export default function CreateOrganizationPage() {
 
         setReferralNotice(getOnboardingReferralNotice(outcome));
     }, []);
+
+    useEffect(() => {
+        const requestedDomainMode = searchParams.get('domainMode');
+        if (requestedDomainMode !== 'subdomain' && requestedDomainMode !== 'customDomain') {
+            return;
+        }
+
+        setFormData((prev) => (
+            prev.domainMode === requestedDomainMode
+                ? prev
+                : { ...prev, domainMode: requestedDomainMode }
+        ));
+    }, [searchParams]);
 
     function updateField(field: WebsiteSetupField, value: string) {
         const nextValue = field === 'subdomain'
@@ -299,7 +311,7 @@ export default function CreateOrganizationPage() {
             if (domainRes.success) {
                 clearOnboardingWebsiteSetupDraft();
                 setIsSubmitting(false);
-                router.push('/dashboard');
+                router.push(`/onboarding/custom-domain/setup?instanceId=${encodeURIComponent(createRes.data.id)}`);
                 return;
             }
 
@@ -375,7 +387,7 @@ export default function CreateOrganizationPage() {
                                     </h1>
                                     <p className="mt-4 max-w-xl text-sm leading-relaxed text-white/85">
                                         We will create your workspace automatically. Just enter your website setup details, domain mode,
-                                        and required industry details now.
+                                        and continue onboarding.
                                     </p>
                                 </div>
 
@@ -408,7 +420,7 @@ export default function CreateOrganizationPage() {
                             <div className="mb-6">
                                 <h2 className="text-2xl font-black text-slate-900 dark:text-white">Website information</h2>
                                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                                    Enter domain and business details. Industry is required.
+                                    Enter domain details and continue.
                                 </p>
                             </div>
 
@@ -547,49 +559,6 @@ export default function CreateOrganizationPage() {
                                         </div>
                                     </>
                                 )}
-
-                                <div>
-                                    <label htmlFor="businessType" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                                        Industry
-                                    </label>
-                                    <input
-                                        id="businessType"
-                                        type="text"
-                                        required
-                                        list="industry-suggestions"
-                                        value={formData.businessType}
-                                        onChange={(e) => updateField('businessType', e.target.value)}
-                                        className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#5048e5] focus:ring-2 focus:ring-[#5048e5]/20 dark:bg-slate-900 dark:text-slate-100 ${fieldErrors.businessType ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
-                                        placeholder="Salon & Spa"
-                                    />
-                                    <datalist id="industry-suggestions">
-                                        {WEBSITE_SETUP_INDUSTRY_SUGGESTIONS.map((item) => (
-                                            <option key={item} value={item} />
-                                        ))}
-                                    </datalist>
-                                    {fieldErrors.businessType && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.businessType}</p>}
-                                </div>
-
-                                <div>
-                                    <label htmlFor="timezone" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                                        Website timezone
-                                    </label>
-                                    <input
-                                        id="timezone"
-                                        type="text"
-                                        list="timezone-suggestions"
-                                        value={formData.timezone}
-                                        onChange={(e) => updateField('timezone', e.target.value)}
-                                        className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#5048e5] focus:ring-2 focus:ring-[#5048e5]/20 dark:bg-slate-900 dark:text-slate-100 ${fieldErrors.timezone ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
-                                        placeholder="Asia/Colombo"
-                                    />
-                                    <datalist id="timezone-suggestions">
-                                        {WEBSITE_SETUP_TIMEZONE_SUGGESTIONS.map((item) => (
-                                            <option key={item} value={item} />
-                                        ))}
-                                    </datalist>
-                                    {fieldErrors.timezone && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.timezone}</p>}
-                                </div>
 
                                 <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-700 dark:bg-slate-950/40">
                                     <p className="text-sm font-semibold text-slate-900 dark:text-white">What happens next?</p>

@@ -92,7 +92,7 @@ describe('CMS middleware host routing via CDN index', () => {
         expect(rewriteTarget).toContain('/preview/mysalon/services');
     });
 
-    it('rewrites unresolved custom hosts to __unknown__', async () => {
+    it('keeps normal CMS routing for unresolved custom hosts', async () => {
         mockRoutingIndex({});
 
         const middleware = await loadMiddleware();
@@ -100,7 +100,7 @@ describe('CMS middleware host routing via CDN index', () => {
         const response = await middleware(request);
 
         const rewriteTarget = response.headers.get('x-middleware-rewrite');
-        expect(rewriteTarget).toContain('/preview/__unknown__/services');
+        expect(rewriteTarget).toBeNull();
     });
 
     it('does not rewrite /web proxy paths on published hosts', async () => {
@@ -192,6 +192,46 @@ describe('CMS middleware host routing via CDN index', () => {
 
         const middleware = await loadMiddleware();
         const request = createRequest('https://mysalon.buildmyonlineweb.site/web/services');
+        const response = await middleware(request);
+
+        const rewriteTarget = response.headers.get('x-middleware-rewrite');
+        expect(rewriteTarget).toBeNull();
+    });
+
+    it('does not rewrite requests for reserved platform hosts', async () => {
+        mockRoutingIndex({
+            'staging-api.buildmyonlineweb.site': {
+                instanceId: 'inst-1',
+                tenantId: 'tenant-1',
+                subdomain: 'mysalon',
+                manifestUrl: 'https://cdn.example.com/sites/inst-1/current.json',
+                active: true,
+            },
+        });
+
+        vi.stubEnv('NEXT_PUBLIC_API_URL', 'https://staging-api.buildmyonlineweb.site');
+
+        const middleware = await loadMiddleware();
+        const request = createRequest('https://staging-api.buildmyonlineweb.site/');
+        const response = await middleware(request);
+
+        const rewriteTarget = response.headers.get('x-middleware-rewrite');
+        expect(rewriteTarget).toBeNull();
+    });
+
+    it('does not rewrite default reserved staging host without explicit bypass env', async () => {
+        mockRoutingIndex({
+            'staging.buildmyonlineweb.site': {
+                instanceId: 'inst-1',
+                tenantId: 'tenant-1',
+                subdomain: 'mysalon',
+                manifestUrl: 'https://cdn.example.com/sites/inst-1/current.json',
+                active: true,
+            },
+        });
+
+        const middleware = await loadMiddleware();
+        const request = createRequest('https://staging.buildmyonlineweb.site/');
         const response = await middleware(request);
 
         const rewriteTarget = response.headers.get('x-middleware-rewrite');

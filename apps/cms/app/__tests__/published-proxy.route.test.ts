@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 import { GET as getPublished } from '../published/[...path]/route';
 import { GET as getPreviewPublished } from '../preview/[subdomain]/published/[...path]/route';
+import { PUBLISHED_FALLBACK_CACHE_CONTROL, ROUTING_POINTER_CACHE_CONTROL } from '../../lib/cache-policy';
 
 describe('CMS published artifact proxy routes', () => {
     beforeEach(() => {
@@ -34,6 +35,7 @@ describe('CMS published artifact proxy routes', () => {
         expect(fetchMock).toHaveBeenCalledTimes(1);
         expect(fetchMock.mock.calls[0]?.[0]).toBe('https://cdn.example.com/routing-index/v-1.json?foo=bar');
         expect(response.status).toBe(200);
+        expect(response.headers.get('cache-control')).toBe(PUBLISHED_FALLBACK_CACHE_CONTROL);
         expect(payload).toEqual({ ok: true });
     });
 
@@ -57,6 +59,7 @@ describe('CMS published artifact proxy routes', () => {
         expect(fetchMock).toHaveBeenCalledTimes(1);
         expect(fetchMock.mock.calls[0]?.[0]).toBe('https://cdn.example.com/sites/i/current.json');
         expect(response.status).toBe(200);
+        expect(response.headers.get('cache-control')).toBe(ROUTING_POINTER_CACHE_CONTROL);
         expect(body).toBe('manifest');
     });
 });

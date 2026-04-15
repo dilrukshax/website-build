@@ -1,6 +1,10 @@
 import { getStorageItem } from './browser-storage';
 
 const API_PROXY_BASE_URL = (process.env.NEXT_PUBLIC_API_PROXY_BASE || '/api').trim().replace(/\/+$/, '') || '/api';
+const ACCESS_TOKEN_COOKIE_NAME = 'accessToken';
+const ACCESS_TOKEN_COOKIE_MAX_AGE_SECONDS = 60 * 60;
+const PARALLEL_REFRESH_RECOVERY_TIMEOUT_MS = 1500;
+const PARALLEL_REFRESH_RECOVERY_POLL_MS = 100;
 
 function buildApiUrl(path: string): string {
     const normalizedPath = path.startsWith('/') ? path : `/${path}`;
@@ -32,33 +36,31 @@ interface RequestOptions {
 
 class ApiClient {
     private accessToken: string | null = null;
+    private refreshPromise: Promise<boolean> | null = null;
 
     setAccessToken(token: string | null) {
         this.accessToken = token;
         if (typeof document !== 'undefined') {
             if (token) {
-                document.cookie = `accessToken=${token}; path=/; max-age=${60 * 60}; SameSite=Lax`;
+                document.cookie = `${ACCESS_TOKEN_COOKIE_NAME}=${token}; path=/; max-age=${ACCESS_TOKEN_COOKIE_MAX_AGE_SECONDS}; SameSite=Lax`;
             } else {
-                document.cookie = 'accessToken=; path=/; max-age=0';
+                document.cookie = `${ACCESS_TOKEN_COOKIE_NAME}=; path=/; max-age=0`;
             }
         }
     }
 
     getAccessToken(): string | null {
-        if (this.accessToken) return this.accessToken;
-        // Read from cookie
-        if (typeof document !== 'undefined') {
-            const match = document.cookie.match(/(?:^|; )accessToken=([^;]*)/);
-            return match ? match[1]! : null;
+        if (typeof document === 'undefined') {
+            return this.accessToken;
         }
-        return null;
+
+        const cookieToken = this.readAccessTokenFromCookie();
+        this.accessToken = cookieToken;
+        return cookieToken;
     }
 
     clearTokens() {
-        this.accessToken = null;
-        if (typeof document !== 'undefined') {
-            document.cookie = 'accessToken=; path=/; max-age=0';
-        }
+        this.setAccessToken(null);
     }
 
     private async request<T>(
@@ -70,11 +72,12 @@ class ApiClient {
         const headers: Record<string, string> = {
             'Content-Type': 'application/json',
         };
+        let activeAccessToken: string | null = null;
 
         if (!options?.skipAuth) {
-            const token = this.getAccessToken();
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
+            activeAccessToken = this.getAccessToken();
+            if (activeAccessToken) {
+                headers['Authorization'] = `Bearer ${activeAccessToken}`;
             }
         }
 
@@ -115,7 +118,12 @@ class ApiClient {
             const refreshed = await this.tryRefresh();
             if (refreshed) {
                 // Retry the original request with new token
-                headers['Authorization'] = `Bearer ${this.getAccessToken()}`;
+                const refreshedToken = this.getAccessToken();
+                if (refreshedToken) {
+                    headers['Authorization'] = `Bearer ${refreshedToken}`;
+                } else {
+                    delete headers['Authorization'];
+                }
                 let retryRes: Response;
                 try {
                     retryRes = await fetch(buildApiUrl(path), {
@@ -135,6 +143,34 @@ class ApiClient {
                 }
                 return this.parseResponse<T>(retryRes);
             }
+
+            // Another tab/process may have refreshed and rotated tokens concurrently.
+            const tokenFromParallelRefresh = await this.waitForTokenUpdate(activeAccessToken);
+            if (tokenFromParallelRefresh) {
+                headers['Authorization'] = `Bearer ${tokenFromParallelRefresh}`;
+                let retryRes: Response;
+                try {
+                    retryRes = await fetch(buildApiUrl(path), {
+                        method,
+                        headers,
+                        credentials: 'include',
+                        body: body ? JSON.stringify(body) : undefined,
+                    });
+                } catch (error) {
+                    return {
+                        success: false,
+                        error: {
+                            code: 'NETWORK_ERROR',
+                            message: error instanceof Error ? error.message : 'Unable to reach server',
+                        },
+                    };
+                }
+
+                if (retryRes.status !== 401) {
+                    return this.parseResponse<T>(retryRes);
+                }
+            }
+
             // Refresh failed — redirect to login
             this.clearTokens();
             if (typeof window !== 'undefined') {
@@ -237,7 +273,110 @@ class ApiClient {
         return details;
     }
 
+    private readAccessTokenFromCookie(): string | null {
+        if (typeof document === 'undefined') {
+            return this.accessToken;
+        }
+
+        const pattern = new RegExp(`(?:^|; )${ACCESS_TOKEN_COOKIE_NAME}=([^;]*)`);
+        const match = document.cookie.match(pattern);
+        return match ? match[1]! : null;
+    }
+
+    private async waitForTokenUpdate(previousToken: string | null): Promise<string | null> {
+        if (typeof document === 'undefined') {
+            return null;
+        }
+
+        const startedAt = Date.now();
+        while ((Date.now() - startedAt) < PARALLEL_REFRESH_RECOVERY_TIMEOUT_MS) {
+            const latestToken = this.readAccessTokenFromCookie();
+            if (latestToken && latestToken !== previousToken) {
+                this.accessToken = latestToken;
+                return latestToken;
+            }
+            await new Promise((resolve) => setTimeout(resolve, PARALLEL_REFRESH_RECOVERY_POLL_MS));
+        }
+
+        return null;
+    }
+
+    async refreshSessionIfExpiringSoon(bufferMs: number = 2 * 60 * 1000): Promise<boolean> {
+        const token = this.getAccessToken();
+        if (!token) {
+            return false;
+        }
+
+        if (!this.isTokenExpiringSoon(token, bufferMs)) {
+            return true;
+        }
+
+        return this.tryRefresh();
+    }
+
+    private isTokenExpiringSoon(token: string, bufferMs: number): boolean {
+        const expiresAt = this.getTokenExpiryMs(token);
+        if (expiresAt === null) {
+            // If we cannot parse the token safely, prefer refreshing.
+            return true;
+        }
+
+        return (expiresAt - Date.now()) <= bufferMs;
+    }
+
+    private getTokenExpiryMs(token: string): number | null {
+        const segments = token.split('.');
+        if (segments.length < 2 || !segments[1]) {
+            return null;
+        }
+
+        const payloadText = this.decodeBase64Url(segments[1]);
+        if (!payloadText) {
+            return null;
+        }
+
+        try {
+            const parsed = JSON.parse(payloadText) as { exp?: unknown };
+            if (typeof parsed.exp !== 'number' || !Number.isFinite(parsed.exp)) {
+                return null;
+            }
+
+            return parsed.exp * 1000;
+        } catch {
+            return null;
+        }
+    }
+
+    private decodeBase64Url(value: string): string | null {
+        const paddedValue = value
+            .replace(/-/g, '+')
+            .replace(/_/g, '/')
+            .padEnd(Math.ceil(value.length / 4) * 4, '=');
+
+        try {
+            if (typeof globalThis.atob === 'function') {
+                return globalThis.atob(paddedValue);
+            }
+            return null;
+        } catch {
+            return null;
+        }
+    }
+
     private async tryRefresh(): Promise<boolean> {
+        if (this.refreshPromise) {
+            return this.refreshPromise;
+        }
+
+        this.refreshPromise = this.performRefresh();
+        try {
+            return await this.refreshPromise;
+        } finally {
+            this.refreshPromise = null;
+        }
+    }
+
+    private async performRefresh(): Promise<boolean> {
         try {
             const res = await fetch(buildApiUrl('/auth/refresh'), {
                 method: 'POST',

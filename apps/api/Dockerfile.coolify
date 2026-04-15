@@ -1,0 +1,71 @@
+# ============================================================
+# API Dockerfile for Coolify subdirectory builds
+# Works when build context is apps/api by importing monorepo root
+# via BuildKit named context: --build-context monorepo=..
+# ============================================================
+
+FROM node:20-alpine AS base
+RUN corepack enable && corepack prepare pnpm@10.30.3 --activate
+RUN apk add --no-cache libc6-compat openssl
+WORKDIR /app
+
+# ----------------------------------------------------------
+# Stage 1: Prune
+# ----------------------------------------------------------
+FROM base AS pruner
+WORKDIR /app
+
+# Requires docker build option:
+#   --build-context monorepo=..
+COPY --from=monorepo . .
+
+RUN test -f package.json && test -f pnpm-workspace.yaml && test -f turbo.json || \
+    (echo "[build-error] Named context 'monorepo' did not include monorepo root files." && \
+     echo "[build-error] In Coolify set Custom Docker Options to: --build-context monorepo=.." && \
+     exit 1)
+
+RUN node -e "const pkg=require('./package.json'); if(!pkg.packageManager){console.error('[build-error] Root package.json is missing packageManager (expected pnpm@10.30.3).'); process.exit(1);}"
+
+RUN npx turbo prune @booking-engine/api --docker
+
+# ----------------------------------------------------------
+# Stage 2: Installer / Builder
+# ----------------------------------------------------------
+FROM base AS installer
+
+# Stabilize constrained CI builders (Coolify) to reduce abrupt build kills.
+ENV NODE_OPTIONS="--max-old-space-size=1536"
+
+COPY --from=pruner /app/out/json/ .
+COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=pruner /app/out/pnpm-workspace.yaml ./pnpm-workspace.yaml
+
+RUN pnpm install --frozen-lockfile --prefer-offline
+
+COPY --from=pruner /app/out/full/ .
+
+# Ensure Prisma schema exists where generate expects it
+COPY --from=pruner /app/out/full/packages/database/prisma ./packages/database/prisma
+
+RUN pnpm --filter @booking-engine/database run db:generate
+RUN pnpm turbo build --filter=@booking-engine/api... --concurrency=1
+
+# ----------------------------------------------------------
+# Stage 3: Runner
+# ----------------------------------------------------------
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+RUN apk add --no-cache libc6-compat openssl
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 apiuser
+
+ENV NODE_ENV=production
+
+COPY --from=installer --chown=apiuser:nodejs /app /app
+
+USER apiuser
+EXPOSE 5074
+WORKDIR /app/apps/api
+
+CMD ["sh", "-c", "cd /app/packages/database && for i in 1 2 3 4 5; do npx prisma migrate deploy && break; echo \"[startup] prisma migrate deploy failed (attempt ${i}/5), retrying in 5s...\"; if [ \"${i}\" -eq 5 ]; then echo \"[startup] prisma migrate deploy failed after 5 attempts\"; exit 1; fi; sleep 5; done && cd /app/apps/api && node dist/server.js"]

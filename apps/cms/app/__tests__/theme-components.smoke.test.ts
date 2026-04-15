@@ -22,4 +22,13 @@ describe('Theme component smoke checks', () => {
             expect(markup.trim().length, `Empty markup for ${key}`).toBeGreaterThan(0);
         }
     });
+
+    it('resolves normalized and aliased versioned keys', () => {
+        const variants = [' Product / V6 ', 'products/v6', 'PRODUCT/V999', 'product／v5', 'product/v5\u200b', 'product/v9'];
+
+        for (const key of variants) {
+            const Component = getThemeComponent(key);
+            expect(Component, `Failed to resolve variant key: ${key}`).not.toBeNull();
+        }
+    });
 });

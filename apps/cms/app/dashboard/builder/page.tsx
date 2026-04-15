@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import {
     ChevronsLeft,
     ChevronsRight,
@@ -31,9 +32,52 @@ interface PageData {
     id: string;
     slug: string;
     title: string;
+    seoJsonb: SEOData | null;
     isPublished: boolean;
     sortOrder: number;
     sectionCount: number;
+}
+
+type TwitterCardType = 'summary' | 'summary_large_image';
+
+interface SEOData {
+    metaTitle?: string | null;
+    metaDescription?: string | null;
+    metaKeywords?: string | null;
+    canonicalPath?: string | null;
+    robotsIndex?: boolean | null;
+    robotsFollow?: boolean | null;
+    ogTitle?: string | null;
+    ogDescription?: string | null;
+    ogImageUrl?: string | null;
+    ogImageAlt?: string | null;
+    twitterCard?: TwitterCardType | null;
+    twitterTitle?: string | null;
+    twitterDescription?: string | null;
+    twitterImageUrl?: string | null;
+    twitterImageAlt?: string | null;
+}
+
+interface WebsiteSEOBusiness {
+    businessType?: string | null;
+    name?: string | null;
+    description?: string | null;
+    imageUrl?: string | null;
+    telephone?: string | null;
+    email?: string | null;
+    priceRange?: string | null;
+    streetAddress?: string | null;
+    addressLocality?: string | null;
+    addressRegion?: string | null;
+    postalCode?: string | null;
+    addressCountry?: string | null;
+    sameAs?: string[] | null;
+}
+
+interface WebsiteSEOSettings {
+    siteName?: string | null;
+    defaults?: SEOData | null;
+    business?: WebsiteSEOBusiness | null;
 }
 
 
@@ -67,6 +111,7 @@ interface WebsiteSettings {
     features: Record<string, boolean>;
     header: Record<string, unknown>;
     footer: Record<string, unknown>;
+    seo?: WebsiteSEOSettings;
 }
 
 interface BillingUsageSnapshot {
@@ -100,35 +145,95 @@ const DEFAULT_TOKENS = {
 };
 
 const SERVICES_SECTION_DEFAULT_CONTENT = {
-    showAllServices: false,
+    showAllServices: true,
     featuredCount: 3,
     showSelectButton: true,
     selectButtonText: 'Select Service',
+    ctaText: '',
+    ctaLink: '',
+    bottomCtaText: 'Book Your Setup Call',
+    bottomCtaLink: '#booking-widget',
 } as const;
 const PAGE_TITLE_SUGGESTIONS = ['About', 'Team', 'Services', 'Contact'] as const;
 
 const SECTION_AUTOSAVE_DELAY_MS = 700;
+interface PendingSectionSave {
+    sectionId: string;
+    contentJsonb: Record<string, unknown>;
+    stylesJsonb: Record<string, unknown>;
+}
+
+type BuilderOperation =
+    | 'createPage'
+    | 'deletePage'
+    | 'addSection'
+    | 'changeSectionTheme'
+    | 'applyTemplate'
+    | 'deleteSection'
+    | 'moveSection'
+    | 'publish';
+
+const OPERATION_MESSAGES: Record<BuilderOperation, string> = {
+    createPage: 'Creating page...',
+    deletePage: 'Deleting page...',
+    addSection: 'Adding section...',
+    changeSectionTheme: 'Updating section theme...',
+    applyTemplate: 'Applying template...',
+    deleteSection: 'Deleting section...',
+    moveSection: 'Reordering section...',
+    publish: 'Publishing website...',
+};
+
+function isHeaderComponentKey(componentKey: string): boolean {
+    return componentKey.startsWith('header/');
+}
+
+function isFooterComponentKey(componentKey: string): boolean {
+    return componentKey.startsWith('footer/');
+}
 
 function normalizeServicesSchema(
     schema: React.ComponentProps<typeof SchemaForm>['schema']
 ): React.ComponentProps<typeof SchemaForm>['schema'] {
     const rawProperties = schema.properties || {};
-    const remaining = { ...rawProperties };
-    delete (remaining as Record<string, unknown>).services;
+    const normalized: Record<string, unknown> = {};
+
+    const withFallback = (key: string, fallback: Record<string, unknown>) => {
+        normalized[key] = (rawProperties as Record<string, unknown>)[key] ?? fallback;
+    };
+
+    withFallback('title', { type: 'string', title: 'Section Title' });
+    withFallback('subtitle', { type: 'string', title: 'Subtitle', format: 'textarea' });
+
+    if ((rawProperties as Record<string, unknown>).items) {
+        normalized.items = (rawProperties as Record<string, unknown>).items;
+    }
+    if ((rawProperties as Record<string, unknown>).servicesList) {
+        normalized.servicesList = (rawProperties as Record<string, unknown>).servicesList;
+    }
+    if ((rawProperties as Record<string, unknown>).services) {
+        normalized.services = (rawProperties as Record<string, unknown>).services;
+    }
+
+    withFallback('ctaText', { type: 'string', title: 'Button Text (Optional)' });
+    withFallback('ctaLink', { type: 'string', title: 'Button Link', format: 'page-link' });
+    withFallback('bottomCtaText', { type: 'string', title: 'Bottom Button Text' });
+    withFallback('bottomCtaLink', { type: 'string', title: 'Bottom Button Link', format: 'page-link' });
+    withFallback('showAllServices', { type: 'boolean', title: 'Show All Services' });
+    withFallback('featuredCount', { type: 'number', title: 'Featured Services Count' });
+    withFallback('showSelectButton', { type: 'boolean', title: 'Show Select Service Button' });
+    withFallback('selectButtonText', { type: 'string', title: 'Select Button Text' });
+
+    for (const [key, value] of Object.entries(rawProperties)) {
+        if (!(key in normalized)) {
+            normalized[key] = value;
+        }
+    }
 
     return {
         ...schema,
-        properties: {
-            title: remaining.title ?? { type: 'string', title: 'Section Title' },
-            subtitle: remaining.subtitle ?? { type: 'string', title: 'Subtitle' },
-            ctaText: remaining.ctaText ?? { type: 'string', title: 'Button Text (Optional)' },
-            ctaLink: remaining.ctaLink ?? { type: 'string', title: 'Button Link', format: 'page-link' },
-            showAllServices: { type: 'boolean', title: 'Show All Services' },
-            featuredCount: { type: 'number', title: 'Featured Services Count' },
-            showSelectButton: { type: 'boolean', title: 'Show Select Service Button' },
-            selectButtonText: { type: 'string', title: 'Select Button Text' },
-        },
-        required: (schema.required || []).filter((key) => key !== 'services'),
+        properties: normalized as React.ComponentProps<typeof SchemaForm>['schema']['properties'],
+        required: schema.required || [],
     };
 }
 
@@ -164,6 +269,7 @@ function normalizeHeaderSchema(
 
 export default function BuilderPage() {
     const { currentTenant, currentInstance } = useAuth();
+    const router = useRouter();
 
     const [pages, setPages] = useState<PageData[]>([]);
     const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
@@ -171,9 +277,13 @@ export default function BuilderPage() {
     const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
     const [settings, setSettings] = useState<WebsiteSettings | null>(null);
     const [loading, setLoading] = useState(true);
+    const [pageSwitching, setPageSwitching] = useState(false);
+    const [pageSwitchingTargetId, setPageSwitchingTargetId] = useState<string | null>(null);
     const [settingsSaving, setSettingsSaving] = useState(false);
     const [publishing, setPublishing] = useState(false);
     const [themePickerOpen, setThemePickerOpen] = useState(false);
+    const [themePickerMode, setThemePickerMode] = useState<'add' | 'replace'>('add');
+    const [themePickerTargetSectionId, setThemePickerTargetSectionId] = useState<string | null>(null);
     const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
     const [newPageTitle, setNewPageTitle] = useState('');
     const [showNewPage, setShowNewPage] = useState(false);
@@ -184,19 +294,25 @@ export default function BuilderPage() {
     const [billingUsage, setBillingUsage] = useState<BillingUsageSnapshot | null>(null);
     const [publishReadiness, setPublishReadiness] = useState<PublishReadinessSnapshot | null>(null);
     const [sectionDrafts, setSectionDrafts] = useState<Record<string, Record<string, unknown>>>({});
+    const [sectionStyleDrafts, setSectionStyleDrafts] = useState<Record<string, Record<string, unknown>>>({});
     const [sectionSaveState, setSectionSaveState] = useState<'idle' | 'pending' | 'saving' | 'saved' | 'error'>('idle');
     const [sectionSaveError, setSectionSaveError] = useState('');
     const sectionAutosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const sectionSaveResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const pendingSectionSaveRef = useRef<{ sectionId: string; contentJsonb: Record<string, unknown> } | null>(null);
+    const pendingSectionSaveRef = useRef<PendingSectionSave | null>(null);
     const latestSectionSaveRequestIdRef = useRef(0);
     const isMountedRef = useRef(true);
+    const activeInstanceIdRef = useRef<string | null>(null);
+    const selectedPageIdRef = useRef<string | null>(null);
+    const activeOperationRef = useRef<BuilderOperation | null>(null);
+    const [activeOperation, setActiveOperation] = useState<BuilderOperation | null>(null);
 
     const tokens = settings?.tokens || DEFAULT_TOKENS;
     useHostedFont(tokens.font);
 
     const selectedPage = pages.find((page) => page.id === selectedPageId) || null;
     const selectedSection = sections.find((s) => s.id === selectedSectionId);
+    const themePickerTargetSection = sections.find((section) => section.id === themePickerTargetSectionId) || null;
     const isServicesSection = selectedSection?.theme.componentKey.startsWith('services/') === true;
     const selectedSectionIndex = selectedSection
         ? sections.findIndex((section) => section.id === selectedSection.id)
@@ -206,7 +322,7 @@ export default function BuilderPage() {
             ? normalizeServicesSchema(
                 selectedSection.theme.schemaJsonb as unknown as React.ComponentProps<typeof SchemaForm>['schema']
             )
-            : selectedSection.theme.componentKey === 'header/v1'
+            : isHeaderComponentKey(selectedSection.theme.componentKey)
                 ? normalizeHeaderSchema(
                     selectedSection.theme.schemaJsonb as unknown as React.ComponentProps<typeof SchemaForm>['schema']
                 )
@@ -218,7 +334,7 @@ export default function BuilderPage() {
                 ...SERVICES_SECTION_DEFAULT_CONTENT,
                 ...selectedSection.contentJsonb,
             }
-            : selectedSection.theme.componentKey === 'header/v1'
+            : isHeaderComponentKey(selectedSection.theme.componentKey)
                 ? {
                     projectName: ((selectedSection.contentJsonb as Record<string, unknown>).projectName as string | undefined)
                         || ((selectedSection.contentJsonb as Record<string, unknown>).logoAlt as string | undefined)
@@ -230,22 +346,70 @@ export default function BuilderPage() {
     const selectedSectionValues = selectedSection
         ? sectionDrafts[selectedSection.id] || selectedSectionBaseValues
         : {};
+    const selectedSectionStyleValues = selectedSection
+        ? sectionStyleDrafts[selectedSection.id] || selectedSection.stylesJsonb
+        : {};
     const pageLimitReached = billingUsage?.limits.maxPagesPerInstance !== null
         && (billingUsage?.instanceUsage?.pages || 0) >= (billingUsage?.limits.maxPagesPerInstance || 0);
-    const homePage = pages.find((page) => page.slug === '/');
-    const homePageExists = Boolean(homePage);
-    const homePageReadyForAdditionalPages = homePageExists && (homePage?.sectionCount || 0) > 0;
-    const canCreateHomePage = !homePageExists && !pageLimitReached;
-    const canCreateAdditionalPages = homePageReadyForAdditionalPages && !pageLimitReached;
+    const canCreatePages = !pageLimitReached;
     const publishBlockedByPlan = Boolean(publishReadiness && !publishReadiness.canPublish);
-    const existingGlobalLayoutKeys = ['header/v1', 'footer/v1'].filter((componentKey) =>
-        sections.some((section) => section.theme.componentKey === componentKey)
+    const existingGlobalLayoutKeys = Array.from(
+        new Set(
+            sections
+                .map((section) => section.theme.componentKey)
+                .filter((componentKey) => isHeaderComponentKey(componentKey) || isFooterComponentKey(componentKey)),
+        ),
     );
+    const existingGlobalLayoutFeatureSlugs = Array.from(
+        new Set(
+            sections
+                .map((section) => section.theme.componentKey)
+                .filter((componentKey) => isHeaderComponentKey(componentKey) || isFooterComponentKey(componentKey))
+                .map((componentKey) => (isHeaderComponentKey(componentKey) ? 'header' : 'footer')),
+        ),
+    );
+    const isOperationInProgress = activeOperation !== null;
+    const isCreatingPage = activeOperation === 'createPage';
+    const activeOperationMessage = activeOperation ? OPERATION_MESSAGES[activeOperation] : '';
+
+    const beginOperation = useCallback((operation: BuilderOperation): boolean => {
+        if (activeOperationRef.current) {
+            return false;
+        }
+
+        activeOperationRef.current = operation;
+        setActiveOperation(operation);
+        return true;
+    }, []);
+
+    const endOperation = useCallback(() => {
+        activeOperationRef.current = null;
+        setActiveOperation(null);
+    }, []);
 
     function openSectionInspector(sectionId: string) {
         setSelectedSectionId(sectionId);
         setShowSettings(false);
         setIsRightPanelOpen(true);
+    }
+
+    function openAddSectionThemePicker() {
+        setThemePickerMode('add');
+        setThemePickerTargetSectionId(null);
+        setThemePickerOpen(true);
+    }
+
+    function openReplaceSectionThemePicker(sectionId: string) {
+        setThemePickerMode('replace');
+        setThemePickerTargetSectionId(sectionId);
+        setShowSettings(false);
+        setThemePickerOpen(true);
+    }
+
+    function closeThemePicker() {
+        setThemePickerOpen(false);
+        setThemePickerMode('add');
+        setThemePickerTargetSectionId(null);
     }
 
     function openWebsiteSettingsInspector() {
@@ -254,64 +418,105 @@ export default function BuilderPage() {
         setIsRightPanelOpen(true);
     }
 
+    useEffect(() => {
+        activeInstanceIdRef.current = currentInstance?.id || null;
+    }, [currentInstance?.id]);
+
+    useEffect(() => {
+        selectedPageIdRef.current = selectedPageId;
+    }, [selectedPageId]);
+
     // Load pages
-    const loadPages = useCallback(async () => {
+    const loadPages = useCallback(async (preferredPageId: string | null = null): Promise<PageData[]> => {
+        const requestInstanceId = activeInstanceIdRef.current;
         const res = await api.get<PageData[]>('/cms/pages');
         if (res.success && res.data) {
-            setPages(res.data);
-            if (res.data.length > 0 && !selectedPageId) {
-                setSelectedPageId(res.data[0]!.id);
+            if (requestInstanceId !== activeInstanceIdRef.current) {
+                return [];
             }
+
+            const nextPages = res.data;
+            setPages(nextPages);
+            setSelectedPageId((currentPageId) => {
+                const candidateId = preferredPageId || currentPageId;
+                if (candidateId && nextPages.some((page) => page.id === candidateId)) {
+                    return candidateId;
+                }
+                return nextPages[0]?.id || null;
+            });
+            return nextPages;
         }
-    }, [selectedPageId]);
+        return [];
+    }, []);
 
     // Load sections for selected page
     const loadSections = useCallback(async () => {
         if (!selectedPageId) return;
+        const requestInstanceId = activeInstanceIdRef.current;
+        const requestPageId = selectedPageId;
         const res = await api.get<SectionData[]>(`/cms/pages/${selectedPageId}/sections`);
         if (res.success && res.data) {
+            if (requestInstanceId !== activeInstanceIdRef.current || requestPageId !== selectedPageIdRef.current) {
+                return;
+            }
             setSections(res.data);
         }
     }, [selectedPageId]);
 
     // Load settings
     const loadSettings = useCallback(async () => {
+        const requestInstanceId = activeInstanceIdRef.current;
         const res = await api.get<{ settings: WebsiteSettings }>('/cms/builder/settings');
         if (res.success && res.data) {
+            if (requestInstanceId !== activeInstanceIdRef.current) {
+                return;
+            }
             setSettings(res.data.settings);
         }
     }, []);
 
     const loadInstanceUsage = useCallback(async () => {
-        if (!currentInstance?.id) {
+        const requestInstanceId = activeInstanceIdRef.current;
+        if (!requestInstanceId) {
             setBillingUsage(null);
             return;
         }
 
-        const res = await api.get<BillingUsageSnapshot>(`/cms/billing/usage?instanceId=${encodeURIComponent(currentInstance.id)}`);
+        const res = await api.get<BillingUsageSnapshot>(`/cms/billing/usage?instanceId=${encodeURIComponent(requestInstanceId)}`);
         if (res.success && res.data) {
+            if (requestInstanceId !== activeInstanceIdRef.current) {
+                return;
+            }
             setBillingUsage(res.data);
         }
-    }, [currentInstance?.id]);
+    }, []);
 
     const loadPublishReadiness = useCallback(async () => {
-        if (!currentInstance?.id) {
+        const requestInstanceId = activeInstanceIdRef.current;
+        if (!requestInstanceId) {
             setPublishReadiness(null);
             return;
         }
 
         const res = await api.get<PublishReadinessSnapshot>('/cms/builder/publish-readiness');
         if (res.success && res.data) {
+            if (requestInstanceId !== activeInstanceIdRef.current) {
+                return;
+            }
             setPublishReadiness(res.data);
         }
-    }, [currentInstance?.id]);
+    }, []);
 
-    const persistSectionContent = useCallback(async (sectionId: string, contentJsonb: Record<string, unknown>) => {
+    const persistSectionChanges = useCallback(async (
+        sectionId: string,
+        contentJsonb: Record<string, unknown>,
+        stylesJsonb: Record<string, unknown>,
+    ) => {
         const requestId = ++latestSectionSaveRequestIdRef.current;
         setSectionSaveState('saving');
         setSectionSaveError('');
 
-        const res = await api.put<SectionData>(`/cms/sections/${sectionId}`, { contentJsonb });
+        const res = await api.put<SectionData>(`/cms/sections/${sectionId}`, { contentJsonb, stylesJsonb });
 
         if (!isMountedRef.current || requestId !== latestSectionSaveRequestIdRef.current) {
             return;
@@ -325,7 +530,7 @@ export default function BuilderPage() {
 
         setSections((prevSections) => prevSections.map((section) =>
             section.id === sectionId
-                ? { ...section, contentJsonb }
+                ? { ...section, contentJsonb, stylesJsonb }
                 : section,
         ));
         setSectionSaveState('saved');
@@ -354,11 +559,28 @@ export default function BuilderPage() {
         }
 
         pendingSectionSaveRef.current = null;
-        await persistSectionContent(pending.sectionId, pending.contentJsonb);
-    }, [persistSectionContent]);
+        await persistSectionChanges(pending.sectionId, pending.contentJsonb, pending.stylesJsonb);
+    }, [persistSectionChanges]);
 
-    const scheduleSectionAutosave = useCallback((sectionId: string, contentJsonb: Record<string, unknown>) => {
-        pendingSectionSaveRef.current = { sectionId, contentJsonb };
+    const handleSelectPage = useCallback(async (pageId: string) => {
+        if (pageId === selectedPageId || pageSwitching || activeOperationRef.current) {
+            return;
+        }
+
+        setPageSwitching(true);
+        setPageSwitchingTargetId(pageId);
+        await flushPendingSectionSave();
+        setSelectedPageId(pageId);
+        setSelectedSectionId(null);
+        setShowSettings(false);
+    }, [flushPendingSectionSave, pageSwitching, selectedPageId]);
+
+    const scheduleSectionAutosave = useCallback((
+        sectionId: string,
+        contentJsonb: Record<string, unknown>,
+        stylesJsonb: Record<string, unknown>,
+    ) => {
+        pendingSectionSaveRef.current = { sectionId, contentJsonb, stylesJsonb };
 
         if (sectionAutosaveTimerRef.current) {
             clearTimeout(sectionAutosaveTimerRef.current);
@@ -371,11 +593,14 @@ export default function BuilderPage() {
             }
 
             pendingSectionSaveRef.current = null;
-            void persistSectionContent(pending.sectionId, pending.contentJsonb);
+            void persistSectionChanges(pending.sectionId, pending.contentJsonb, pending.stylesJsonb);
         }, SECTION_AUTOSAVE_DELAY_MS);
-    }, [persistSectionContent]);
+    }, [persistSectionChanges]);
 
     const handleSectionDraftChange = useCallback((sectionId: string, contentJsonb: Record<string, unknown>) => {
+        const currentStyles = sectionStyleDrafts[sectionId]
+            || sections.find((section) => section.id === sectionId)?.stylesJsonb
+            || {};
         setSectionDrafts((prevDrafts) => ({ ...prevDrafts, [sectionId]: contentJsonb }));
         setSections((prevSections) => prevSections.map((section) =>
             section.id === sectionId
@@ -384,24 +609,114 @@ export default function BuilderPage() {
         ));
         setSectionSaveState('pending');
         setSectionSaveError('');
-        scheduleSectionAutosave(sectionId, contentJsonb);
-    }, [scheduleSectionAutosave]);
+        scheduleSectionAutosave(sectionId, contentJsonb, currentStyles);
+    }, [scheduleSectionAutosave, sectionStyleDrafts, sections]);
+
+    const handleSectionStyleDraftChange = useCallback((sectionId: string, stylesJsonb: Record<string, unknown>) => {
+        const currentContent = sectionDrafts[sectionId]
+            || sections.find((section) => section.id === sectionId)?.contentJsonb
+            || {};
+        setSectionStyleDrafts((prevDrafts) => ({ ...prevDrafts, [sectionId]: stylesJsonb }));
+        setSections((prevSections) => prevSections.map((section) =>
+            section.id === sectionId
+                ? { ...section, stylesJsonb }
+                : section,
+        ));
+        setSectionSaveState('pending');
+        setSectionSaveError('');
+        scheduleSectionAutosave(sectionId, currentContent, stylesJsonb);
+    }, [scheduleSectionAutosave, sectionDrafts, sections]);
 
     useEffect(() => {
-        if (currentInstance) {
-            setLoading(true);
-            Promise.all([loadPages(), loadSettings(), loadInstanceUsage(), loadPublishReadiness()]).then(() => setLoading(false));
+        if (!currentInstance?.id) {
+            setPages([]);
+            setSections([]);
+            setSelectedPageId(null);
+            setSelectedSectionId(null);
+            setShowSettings(false);
+            setShowNewPage(false);
+            setNewPageTitle('');
+            setSectionDrafts({});
+            setSectionStyleDrafts({});
+            setPageSwitching(false);
+            setPageSwitchingTargetId(null);
+            setLoading(false);
+            endOperation();
+            return;
         }
-    }, [currentInstance, loadPages, loadSettings, loadInstanceUsage, loadPublishReadiness]);
+
+        let cancelled = false;
+
+        setPages([]);
+        setSections([]);
+        setSelectedPageId(null);
+        setSelectedSectionId(null);
+        setShowSettings(false);
+        setShowNewPage(false);
+        setNewPageTitle('');
+        setSectionDrafts({});
+        setSectionStyleDrafts({});
+        setPageSwitching(false);
+        setPageSwitchingTargetId(null);
+        setLoading(true);
+        endOperation();
+
+        void Promise.all([loadPages(), loadSettings(), loadInstanceUsage(), loadPublishReadiness()]).finally(() => {
+            if (!cancelled) {
+                setLoading(false);
+            }
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [currentInstance?.id, endOperation, loadPages, loadSettings, loadInstanceUsage, loadPublishReadiness]);
 
     useEffect(() => {
         if (selectedPageId) {
-            loadSections();
+            let cancelled = false;
+            void loadSections().finally(() => {
+                if (!cancelled) {
+                    setPageSwitching(false);
+                    setPageSwitchingTargetId(null);
+                }
+            });
+            return () => {
+                cancelled = true;
+            };
         }
+        setSections([]);
+        setPageSwitching(false);
+        setPageSwitchingTargetId(null);
     }, [selectedPageId, loadSections]);
 
     useEffect(() => {
+        if (selectedPageId) {
+            return;
+        }
+        setSelectedSectionId(null);
+    }, [selectedPageId]);
+
+    useEffect(() => {
         setSectionDrafts((prevDrafts) => {
+            const validSectionIds = new Set(sections.map((section) => section.id));
+            let changed = false;
+            const nextDrafts: Record<string, Record<string, unknown>> = {};
+
+            for (const [sectionId, draft] of Object.entries(prevDrafts)) {
+                if (validSectionIds.has(sectionId)) {
+                    nextDrafts[sectionId] = draft;
+                } else {
+                    changed = true;
+                }
+            }
+
+            return changed ? nextDrafts : prevDrafts;
+        });
+    }, [sections]);
+
+    useEffect(() => {
+        setSectionStyleDrafts((prevDrafts) => {
             const validSectionIds = new Set(sections.map((section) => section.id));
             let changed = false;
             const nextDrafts: Record<string, Record<string, unknown>> = {};
@@ -427,6 +742,7 @@ export default function BuilderPage() {
     useEffect(() => {
         return () => {
             isMountedRef.current = false;
+            activeOperationRef.current = null;
             if (sectionAutosaveTimerRef.current) {
                 clearTimeout(sectionAutosaveTimerRef.current);
             }
@@ -435,154 +751,275 @@ export default function BuilderPage() {
             }
             const pending = pendingSectionSaveRef.current;
             if (pending) {
-                void api.put(`/cms/sections/${pending.sectionId}`, { contentJsonb: pending.contentJsonb });
+                void api.put(`/cms/sections/${pending.sectionId}`, {
+                    contentJsonb: pending.contentJsonb,
+                    stylesJsonb: pending.stylesJsonb,
+                });
             }
         };
     }, []);
 
+    const createPageRecord = useCallback(async (input: {
+        title: string;
+        slug: string;
+        openTemplatePicker?: boolean;
+        resetNewPageState?: boolean;
+    }): Promise<PageData | null> => {
+        if (!canCreatePages) {
+            alert('Page limit reached for this plan.');
+            return null;
+        }
+
+        if (!beginOperation('createPage')) {
+            return null;
+        }
+
+        try {
+            const res = await api.post<PageData>('/cms/pages', { title: input.title, slug: input.slug });
+            if (!res.success || !res.data) {
+                alert(res.error?.message || 'Failed to create page');
+                return null;
+            }
+
+            if (input.resetNewPageState !== false) {
+                setNewPageTitle('');
+                setShowNewPage(false);
+            }
+            setSelectedSectionId(null);
+            setShowSettings(false);
+            await loadPages(res.data.id);
+            await loadInstanceUsage();
+            await loadPublishReadiness();
+            if (input.openTemplatePicker !== false) {
+                setTemplatePickerOpen(true);
+            }
+            return res.data;
+        } finally {
+            endOperation();
+        }
+    }, [beginOperation, canCreatePages, endOperation, loadInstanceUsage, loadPages, loadPublishReadiness]);
+
     // Create page
     const handleCreatePage = async () => {
-        const creatingHomePage = !homePageExists;
-        if (!creatingHomePage && !canCreateAdditionalPages) {
-            alert('Set up your Home page with a template or at least one section before adding more pages.');
-            return;
-        }
-
-        const title = creatingHomePage ? 'Home' : newPageTitle.trim();
+        const title = newPageTitle.trim();
         if (!title) return;
 
-        const slug = creatingHomePage
-            ? '/'
-            : title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        await createPageRecord({ title, slug: slug || 'page' });
+    };
 
-        const res = await api.post<PageData>('/cms/pages', { title, slug: slug || 'page' });
-        if (!res.success || !res.data) {
-            alert(res.error?.message || 'Failed to create page');
+    const handleCreateHomePage = useCallback(async () => {
+        const existingHome = pages.find((page) => page.slug === '/');
+        if (existingHome) {
+            setSelectedPageId(existingHome.id);
+            setTemplatePickerOpen(true);
             return;
         }
 
-        setNewPageTitle('');
-        setShowNewPage(false);
-        setSelectedSectionId(null);
-        setShowSettings(false);
-        await loadPages();
-        await loadInstanceUsage();
-        setSelectedPageId(res.data.id);
-        setTemplatePickerOpen(true);
-    };
+        await createPageRecord({
+            title: 'Home',
+            slug: '/',
+            openTemplatePicker: true,
+            resetNewPageState: true,
+        });
+    }, [createPageRecord, pages]);
 
     // Delete page
     const handleDeletePage = async (pageId: string) => {
         const page = pages.find((entry) => entry.id === pageId);
         if (!page) return;
-        if (page.slug === '/') {
-            alert('Home page cannot be deleted.');
-            return;
-        }
 
         if (!confirm(`Delete "${page.title}" page?`)) return;
-        const res = await api.del(`/cms/pages/${pageId}`);
-        if (!res.success) {
-            alert(res.error?.message || 'Failed to delete page');
+        if (!beginOperation('deletePage')) {
             return;
         }
 
-        if (selectedPageId === pageId) setSelectedPageId(null);
-        await loadPages();
-        await loadInstanceUsage();
-        await loadPublishReadiness();
+        try {
+            await flushPendingSectionSave();
+            const res = await api.del(`/cms/pages/${pageId}`);
+            if (!res.success) {
+                alert(res.error?.message || 'Failed to delete page');
+                return;
+            }
+
+            if (selectedPageId === pageId) {
+                setSelectedPageId(null);
+                setSelectedSectionId(null);
+                setShowSettings(false);
+            }
+            await loadPages();
+            await loadInstanceUsage();
+            await loadPublishReadiness();
+        } finally {
+            endOperation();
+        }
     };
 
     // Add section
     const handleAddSection = async (theme: ThemeCatalogTheme) => {
         if (!selectedPageId) return;
-        await flushPendingSectionSave();
-        const res = await api.post<SectionData>(`/cms/pages/${selectedPageId}/sections`, { themeId: theme.id });
-        if (res.success) {
-            await loadSections();
-            await loadPages();
-            await loadPublishReadiness();
-            const maxAccessibleThemes = publishReadiness?.maxAccessibleThemes ?? null;
-            if (maxAccessibleThemes !== null && theme.accessRank > maxAccessibleThemes) {
-                alert('Premium section added for preview. Upgrade your plan to publish this website.');
-            }
+        if (!beginOperation('addSection')) {
             return;
         }
-        alert(res.error?.message || 'Failed to add this section.');
+
+        try {
+            await flushPendingSectionSave();
+            const res = await api.post<SectionData>(`/cms/pages/${selectedPageId}/sections`, { themeId: theme.id });
+            if (res.success) {
+                await loadSections();
+                await loadPages();
+                await loadPublishReadiness();
+                return;
+            }
+            alert(res.error?.message || 'Failed to add this section.');
+        } finally {
+            endOperation();
+        }
+    };
+
+    const handleReplaceSectionTheme = async (theme: ThemeCatalogTheme) => {
+        const targetSectionId = themePickerTargetSectionId || selectedSectionId;
+        if (!targetSectionId) {
+            return;
+        }
+
+        const targetSection = sections.find((section) => section.id === targetSectionId);
+        if (!targetSection || targetSection.theme.id === theme.id) {
+            return;
+        }
+
+        if (!beginOperation('changeSectionTheme')) {
+            return;
+        }
+
+        try {
+            await flushPendingSectionSave();
+            const res = await api.put<SectionData>(`/cms/sections/${targetSectionId}`, { themeId: theme.id });
+            if (res.success) {
+                setSectionDrafts((prevDrafts) => {
+                    if (!prevDrafts[targetSectionId]) {
+                        return prevDrafts;
+                    }
+                    const nextDrafts = { ...prevDrafts };
+                    delete nextDrafts[targetSectionId];
+                    return nextDrafts;
+                });
+                setSectionStyleDrafts((prevDrafts) => {
+                    if (!prevDrafts[targetSectionId]) {
+                        return prevDrafts;
+                    }
+                    const nextDrafts = { ...prevDrafts };
+                    delete nextDrafts[targetSectionId];
+                    return nextDrafts;
+                });
+                setSectionSaveState('idle');
+                setSectionSaveError('');
+                setSelectedSectionId(targetSectionId);
+                await loadSections();
+                await loadPublishReadiness();
+                return;
+            }
+            alert(res.error?.message || 'Failed to update section theme.');
+        } finally {
+            endOperation();
+        }
     };
 
     // Apply template
     const handleApplyTemplate = async (templateId: string) => {
         if (!selectedPageId) return;
-        await flushPendingSectionSave();
-        setTemplatePickerOpen(false);
-        setLoading(true);
-        const res = await api.post(`/cms/pages/${selectedPageId}/apply-template`, { templateId });
-        if (res.success) {
-            await loadSections();
-            await loadPages();
-            await loadPublishReadiness();
-        } else {
-            alert(res.error?.message || 'Failed to apply template');
+        if (!beginOperation('applyTemplate')) {
+            return;
         }
-        setLoading(false);
+
+        try {
+            await flushPendingSectionSave();
+            setTemplatePickerOpen(false);
+            const res = await api.post(`/cms/pages/${selectedPageId}/apply-template`, { templateId });
+            if (res.success) {
+                await loadSections();
+                await loadPages();
+                await loadSettings();
+                await loadPublishReadiness();
+            } else {
+                alert(res.error?.message || 'Failed to apply template');
+            }
+        } finally {
+            endOperation();
+        }
     };
 
     // Delete section
     const handleDeleteSection = async (sectionId: string) => {
         if (!confirm('Remove this section?')) return;
-        await flushPendingSectionSave();
-
-        const previousSections = [...sections];
-        // Optimistic delete
-        setSections(sections.filter(s => s.id !== sectionId));
-        if (selectedSectionId === sectionId) setSelectedSectionId(null);
+        if (!beginOperation('deleteSection')) {
+            return;
+        }
 
         try {
-            const res = await api.del(`/cms/sections/${sectionId}`);
-            if (!res.success) {
-                throw new Error(res.error?.message || 'Failed to delete section');
+            await flushPendingSectionSave();
+
+            const previousSections = [...sections];
+            // Optimistic delete
+            setSections(sections.filter(s => s.id !== sectionId));
+            if (selectedSectionId === sectionId) setSelectedSectionId(null);
+
+            try {
+                const res = await api.del(`/cms/sections/${sectionId}`);
+                if (!res.success) {
+                    throw new Error(res.error?.message || 'Failed to delete section');
+                }
+                await loadSections();
+                await loadPages();
+                await loadPublishReadiness();
+            } catch (error) {
+                console.error('Failed to delete section', error);
+                setSections(previousSections);
+                alert('Failed to delete section');
             }
-            await loadSections();
-            await loadPages();
-            await loadPublishReadiness();
-        } catch (error) {
-            console.error('Failed to delete section', error);
-            setSections(previousSections);
-            alert('Failed to delete section');
+        } finally {
+            endOperation();
         }
     };
 
     // Move section
     const handleMoveSection = async (sectionId: string, direction: 'up' | 'down') => {
-        await flushPendingSectionSave();
         const idx = sections.findIndex((s) => s.id === sectionId);
         if (idx < 0) return;
         const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
         if (swapIdx < 0 || swapIdx >= sections.length) return;
-
-        const previousSections = [...sections];
-
-        const reorderedPayload = sections.map((s, i) => ({
-            id: s.id,
-            position: i === idx ? sections[swapIdx]!.position : i === swapIdx ? sections[idx]!.position : s.position,
-        }));
-
-        // Optimistic UI sorting locally
-        const updatedSections = [...sections];
-        const temp = { ...updatedSections[idx]! };
-        updatedSections[idx] = { ...updatedSections[swapIdx]!, position: reorderedPayload.find(r => r.id === updatedSections[swapIdx]!.id)!.position };
-        updatedSections[swapIdx] = { ...temp, position: reorderedPayload.find(r => r.id === temp.id)!.position };
-
-        setSections(updatedSections.sort((a, b) => a.position - b.position));
+        if (!beginOperation('moveSection')) {
+            return;
+        }
 
         try {
-            await api.put(`/cms/pages/${selectedPageId}/sections/reorder`, { sections: reorderedPayload });
-            await loadSections();
-        } catch (error) {
-            console.error('Failed to move section', error);
-            setSections(previousSections);
-            alert('Failed to move section');
+            await flushPendingSectionSave();
+
+            const previousSections = [...sections];
+
+            const reorderedPayload = sections.map((s, i) => ({
+                id: s.id,
+                position: i === idx ? sections[swapIdx]!.position : i === swapIdx ? sections[idx]!.position : s.position,
+            }));
+
+            // Optimistic UI sorting locally
+            const updatedSections = [...sections];
+            const temp = { ...updatedSections[idx]! };
+            updatedSections[idx] = { ...updatedSections[swapIdx]!, position: reorderedPayload.find(r => r.id === updatedSections[swapIdx]!.id)!.position };
+            updatedSections[swapIdx] = { ...temp, position: reorderedPayload.find(r => r.id === temp.id)!.position };
+
+            setSections(updatedSections.sort((a, b) => a.position - b.position));
+
+            try {
+                await api.put(`/cms/pages/${selectedPageId}/sections/reorder`, { sections: reorderedPayload });
+                await loadSections();
+            } catch (error) {
+                console.error('Failed to move section', error);
+                setSections(previousSections);
+                alert('Failed to move section');
+            }
+        } finally {
+            endOperation();
         }
     };
 
@@ -604,22 +1041,27 @@ export default function BuilderPage() {
             alert(publishReadiness?.message || 'This website cannot be published on the current plan.');
             return;
         }
-
-        await flushPendingSectionSave();
-        setPublishing(true);
-        const res = await api.post<{ version: number }>('/cms/builder/publish');
-        if (res.success && res.data) {
-            const liveSiteUrl = await resolveLiveSiteUrl();
-            if (liveSiteUrl) {
-                const cacheBuster = res.data.version || Date.now();
-                const separator = liveSiteUrl.includes('?') ? '&' : '?';
-                window.open(`${liveSiteUrl}${separator}v=${encodeURIComponent(String(cacheBuster))}`, '_blank', 'noreferrer');
-            }
-        } else {
-            alert(res.error?.message || 'Publish failed. Please try again.');
-            await loadPublishReadiness();
+        if (!beginOperation('publish')) {
+            return;
         }
-        setPublishing(false);
+
+        try {
+            await flushPendingSectionSave();
+            setPublishing(true);
+            const res = await api.post<{ version: number }>('/cms/builder/publish');
+            if (res.success && res.data) {
+                const liveSiteUrl = await resolveLiveSiteUrl();
+                if (liveSiteUrl) {
+                    window.open(liveSiteUrl, '_blank', 'noreferrer');
+                }
+            } else {
+                alert(res.error?.message || 'Publish failed. Please try again.');
+                await loadPublishReadiness();
+            }
+        } finally {
+            setPublishing(false);
+            endOperation();
+        }
     };
 
     // Save settings
@@ -633,14 +1075,41 @@ export default function BuilderPage() {
         setSettingsSaving(false);
     };
 
+    const handleSavePageSeo = async (pageId: string, seoJsonb: SEOData | null): Promise<{ success: boolean; message?: string }> => {
+        await flushPendingSectionSave();
+        const res = await api.put<PageData>(`/cms/pages/${pageId}`, { seoJsonb });
+        if (!res.success) {
+            return {
+                success: false,
+                message: res.error?.message || 'Failed to save page metadata.',
+            };
+        }
+
+        await loadPages(pageId);
+        await loadPublishReadiness();
+        return { success: true };
+    };
+
     if (!currentInstance) {
         return (
             <div className="be-card flex min-h-[320px] items-center justify-center p-6">
-                <div className="space-y-2 text-center">
-                    <p className="text-sm text-slate-500">Select a website to start building.</p>
+                <div className="space-y-4 text-center">
+                    <p className="text-sm text-slate-500">
+                        {currentTenant
+                            ? 'Select a website to start building.'
+                            : 'Create an organization first to start building.'}
+                    </p>
                     <p className="text-xs text-slate-400">
                         Instance means one website. Each connected custom domain points to one website.
                     </p>
+                    <button
+                        type="button"
+                        onClick={() => router.push(currentTenant ? '/dashboard/instances/new' : '/onboarding/create-organization?domainMode=subdomain')}
+                        className="inline-flex items-center gap-2 rounded-lg bg-[#5048e5] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#433bcf]"
+                    >
+                        <Plus className="h-4 w-4" />
+                        {currentTenant ? 'Create Website' : 'Create Organization'}
+                    </button>
                 </div>
             </div>
         );
@@ -655,7 +1124,7 @@ export default function BuilderPage() {
     }
 
     return (
-        <div className="flex h-full overflow-hidden rounded-none border-y border-[#5048e5]/10 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+        <div className="relative flex h-full overflow-hidden rounded-none border-y border-[#5048e5]/10 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <aside className={`${isLeftPanelOpen ? 'w-72' : 'w-14'} flex shrink-0 flex-col border-r border-slate-200 bg-white transition-all duration-300 dark:border-slate-700 dark:bg-slate-900`}>
                 <div className="flex items-center justify-between border-b border-slate-200 p-3 dark:border-slate-700">
                     {isLeftPanelOpen && <h2 className="text-sm font-bold text-slate-700 dark:text-slate-200">Builder</h2>}
@@ -677,53 +1146,36 @@ export default function BuilderPage() {
                                 <button
                                     type="button"
                                     onClick={() => {
-                                        if (!homePageExists) {
-                                            void handleCreatePage();
+                                        if (isOperationInProgress) {
                                             return;
                                         }
                                         setShowNewPage(true);
                                     }}
-                                    disabled={!canCreateHomePage && !canCreateAdditionalPages}
+                                    disabled={isOperationInProgress || !canCreatePages}
                                     className="rounded-md p-1 text-[#5048e5] transition-colors hover:bg-[#5048e5]/10 disabled:cursor-not-allowed disabled:opacity-40"
                                     title={
                                         pageLimitReached
                                             ? 'Page limit reached for this plan'
-                                            : !homePageExists
-                                                ? 'Create Home page first'
-                                                : !canCreateAdditionalPages
-                                                    ? 'Set up Home page first'
-                                                    : 'Create page'
+                                            : 'Create page'
                                     }
                                 >
                                     <Plus className="h-4 w-4" />
                                 </button>
                             </div>
 
-                            {!homePageExists && (
-                                <div className="mb-3 rounded-xl border border-dashed border-[#5048e5]/35 bg-[#5048e5]/5 px-3 py-3">
-                                    <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Start with your Home page</p>
-                                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                        Create Home (/) first, then apply a template or add sections.
-                                    </p>
-                                    <button
-                                        type="button"
-                                        onClick={() => void handleCreatePage()}
-                                        disabled={!canCreateHomePage}
-                                        className="mt-3 inline-flex rounded-lg bg-[#5048e5] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#433bcf] disabled:cursor-not-allowed disabled:opacity-40"
-                                    >
-                                        {pageLimitReached ? 'Page Limit Reached' : 'Create Home Page'}
-                                    </button>
-                                </div>
-                            )}
-
-                            {homePageExists && showNewPage && (
+                            {showNewPage && (
                                 <div className="mb-3 space-y-2">
                                     <input
                                         type="text"
                                         value={newPageTitle}
                                         onChange={(e) => setNewPageTitle(e.target.value)}
                                         placeholder="Page title (About, Team, Services...)"
-                                        onKeyDown={(e) => e.key === 'Enter' && handleCreatePage()}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                void handleCreatePage();
+                                            }
+                                        }}
                                         autoFocus
                                         className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-[#5048e5] focus:ring-2 focus:ring-[#5048e5]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                                     />
@@ -743,10 +1195,14 @@ export default function BuilderPage() {
                                         <button
                                             type="button"
                                             onClick={handleCreatePage}
-                                            disabled={!canCreateAdditionalPages}
+                                            disabled={!canCreatePages || isOperationInProgress}
                                             className="rounded-lg bg-[#5048e5] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#433bcf]"
                                         >
-                                            {pageLimitReached ? 'Page Limit Reached' : 'Add Page'}
+                                            {pageLimitReached
+                                                ? 'Page Limit Reached'
+                                                : isCreatingPage
+                                                    ? 'Creating...'
+                                                    : 'Add Page'}
                                         </button>
                                         <button
                                             type="button"
@@ -768,14 +1224,35 @@ export default function BuilderPage() {
                                         Page creation disabled on the current plan.
                                     </div>
                                 )}
-                                {homePageExists && !homePageReadyForAdditionalPages && (
-                                    <div className="rounded-lg border border-sky-200 bg-sky-50 px-2 py-1.5 text-xs text-sky-700 dark:border-sky-900/40 dark:bg-sky-950/20 dark:text-sky-300">
-                                        Apply a template or add sections to the Home page first. This unlocks additional pages.
+                                {pages.length === 0 && !showNewPage && (
+                                    <div className="space-y-2 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/40">
+                                        <p className="text-xs text-slate-600 dark:text-slate-300">
+                                            No pages yet. Create a Home page to start and then apply a template.
+                                        </p>
+                                        <div className="grid grid-cols-1 gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => { void handleCreateHomePage(); }}
+                                                disabled={!canCreatePages || isOperationInProgress}
+                                                className="rounded-lg bg-[#5048e5] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#433bcf] disabled:cursor-not-allowed disabled:opacity-60"
+                                            >
+                                                Create Home Page
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowNewPage(true)}
+                                                disabled={!canCreatePages || isOperationInProgress}
+                                                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                                            >
+                                                Create Custom Page
+                                            </button>
+                                        </div>
                                     </div>
                                 )}
                                 {pages.map((page) => {
                                     const active = selectedPageId === page.id;
                                     const isHomePage = page.slug === '/';
+                                    const isSwitchingToThisPage = pageSwitching && pageSwitchingTargetId === page.id;
 
                                     return (
                                         <div
@@ -788,11 +1265,8 @@ export default function BuilderPage() {
                                         >
                                             <button
                                                 type="button"
-                                                onClick={() => {
-                                                    setSelectedPageId(page.id);
-                                                    setSelectedSectionId(null);
-                                                    setShowSettings(false);
-                                                }}
+                                                onClick={() => { void handleSelectPage(page.id); }}
+                                                disabled={pageSwitching || isOperationInProgress}
                                                 className="flex min-w-0 flex-1 items-center justify-between gap-2 text-left"
                                             >
                                                 <div className="min-w-0">
@@ -804,19 +1278,21 @@ export default function BuilderPage() {
                                                     </p>
                                                 </div>
                                                 <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${active ? 'bg-[#5048e5]/20 text-[#5048e5]' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300'}`}>
-                                                    {page.sectionCount}
+                                                    {isSwitchingToThisPage ? (
+                                                        <span className="inline-flex h-3 w-3 animate-spin rounded-full border-[1.5px] border-current border-t-transparent" />
+                                                    ) : (
+                                                        page.sectionCount
+                                                    )}
                                                 </span>
                                             </button>
                                             <button
                                                 type="button"
                                                 onClick={() => handleDeletePage(page.id)}
-                                                disabled={isHomePage}
+                                                disabled={isOperationInProgress}
                                                 className={`rounded-md p-1 transition-colors ${
-                                                    isHomePage
-                                                        ? 'cursor-not-allowed text-slate-300 dark:text-slate-600'
-                                                        : active ? 'text-[#5048e5] hover:bg-[#5048e5]/15' : 'text-slate-400 hover:bg-slate-100 hover:text-red-500 dark:hover:bg-slate-700'
+                                                    active ? 'text-[#5048e5] hover:bg-[#5048e5]/15' : 'text-slate-400 hover:bg-slate-100 hover:text-red-500 dark:hover:bg-slate-700'
                                                 }`}
-                                                title={isHomePage ? 'Home page cannot be deleted' : 'Delete page'}
+                                                title="Delete page"
                                             >
                                                 <Trash2 className="h-3.5 w-3.5" />
                                             </button>
@@ -831,8 +1307,8 @@ export default function BuilderPage() {
                                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Active Sections</h3>
                                 <button
                                     type="button"
-                                    onClick={() => setThemePickerOpen(true)}
-                                    disabled={!selectedPageId}
+                                    onClick={openAddSectionThemePicker}
+                                    disabled={!selectedPageId || isOperationInProgress}
                                     className="rounded-md p-1 text-[#5048e5] transition-colors hover:bg-[#5048e5]/10 disabled:cursor-not-allowed disabled:opacity-40"
                                     title="Add section"
                                 >
@@ -841,7 +1317,11 @@ export default function BuilderPage() {
                             </div>
 
                             <div className="space-y-2">
-                                {sections.length === 0 ? (
+                                {!selectedPageId ? (
+                                    <div className="rounded-xl border border-dashed border-slate-300 p-4 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                                        Create or select a page to add sections.
+                                    </div>
+                                ) : sections.length === 0 ? (
                                     <div className="rounded-xl border border-dashed border-slate-300 p-4 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
                                         No sections yet for this page.
                                     </div>
@@ -899,10 +1379,11 @@ export default function BuilderPage() {
                             <button
                                 type="button"
                                 onClick={openWebsiteSettingsInspector}
+                                disabled={isOperationInProgress}
                                 className={`inline-flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition ${
                                     showSettings
                                         ? 'bg-[#5048e5] text-white'
-                                        : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800'
+                                        : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800'
                                 }`}
                             >
                                 <Settings2 className="h-4 w-4" />
@@ -910,25 +1391,31 @@ export default function BuilderPage() {
                             </button>
                             <button
                                 type="button"
-                                onClick={() => setTemplatePickerOpen(true)}
-                                disabled={!selectedPageId}
+                                onClick={() => {
+                                    if (selectedPageId) {
+                                        setTemplatePickerOpen(true);
+                                        return;
+                                    }
+                                    void handleCreateHomePage();
+                                }}
+                                disabled={isOperationInProgress || (!selectedPageId && !canCreatePages)}
                                 className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                             >
                                 <LayoutTemplate className="h-4 w-4" />
-                                Apply Template
+                                {selectedPageId ? 'Apply Template' : 'Create Home + Template'}
                             </button>
                             <button
                                 type="button"
                                 onClick={handlePublish}
-                                disabled={publishing || publishBlockedByPlan}
+                                disabled={publishing || publishBlockedByPlan || isOperationInProgress}
                                 className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#5048e5] px-3 py-2 text-sm font-semibold text-white shadow-md shadow-[#5048e5]/20 transition hover:bg-[#433bcf] disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 <Upload className="h-4 w-4" />
-                                {publishing ? 'Publishing...' : publishBlockedByPlan ? 'Upgrade Required to Publish' : 'Publish Website'}
+                                {publishing ? 'Publishing...' : publishBlockedByPlan ? 'Publish Blocked' : 'Publish Website'}
                             </button>
                             {publishBlockedByPlan && (
                                 <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300">
-                                    {publishReadiness?.message || 'This website uses premium themes and cannot be published on your current plan.'}
+                                    {publishReadiness?.message || 'This website cannot be published right now.'}
                                 </div>
                             )}
                             {liveSiteUrl && (
@@ -956,7 +1443,8 @@ export default function BuilderPage() {
                         </button>
                         <button
                             type="button"
-                            onClick={() => setThemePickerOpen(true)}
+                            onClick={openAddSectionThemePicker}
+                            disabled={isOperationInProgress || !selectedPageId}
                             className="rounded-lg border border-slate-200 p-2 text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                             title="Add section"
                         >
@@ -965,6 +1453,7 @@ export default function BuilderPage() {
                         <button
                             type="button"
                             onClick={openWebsiteSettingsInspector}
+                            disabled={isOperationInProgress}
                             className="rounded-lg border border-slate-200 p-2 text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                             title="Website settings"
                         >
@@ -1012,16 +1501,22 @@ export default function BuilderPage() {
                             </div>
                             <button
                                 type="button"
-                                onClick={() => setTemplatePickerOpen(true)}
-                                disabled={!selectedPageId}
+                                onClick={() => {
+                                    if (selectedPageId) {
+                                        setTemplatePickerOpen(true);
+                                        return;
+                                    }
+                                    void handleCreateHomePage();
+                                }}
+                                disabled={isOperationInProgress || (!selectedPageId && !canCreatePages)}
                                 className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
                             >
-                                Use Template
+                                {selectedPageId ? 'Use Template' : 'Create Home + Template'}
                             </button>
                             <button
                                 type="button"
-                                onClick={() => setThemePickerOpen(true)}
-                                disabled={!selectedPageId}
+                                onClick={openAddSectionThemePicker}
+                                disabled={!selectedPageId || isOperationInProgress}
                                 className="rounded-md bg-[#5048e5] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#433bcf] disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 Add Section
@@ -1039,7 +1534,50 @@ export default function BuilderPage() {
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-4">
-                    <div className={`mx-auto overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl transition-all dark:border-slate-700 dark:bg-slate-900 ${previewMode === 'mobile' ? 'max-w-[430px]' : 'w-full'}`}>
+                    <div className={`relative mx-auto overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl transition-all dark:border-slate-700 dark:bg-slate-900 ${previewMode === 'mobile' ? 'max-w-[430px]' : 'w-full'}`}>
+                        {pageSwitching && (
+                            <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/75 backdrop-blur-sm dark:bg-slate-900/75">
+                                <div className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                                    <span className="inline-flex h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                    Loading page...
+                                </div>
+                            </div>
+                        )}
+                        {!selectedPageId && (
+                            <div className="px-6 py-20 text-center">
+                                <p className="mb-2 text-base text-slate-600 dark:text-slate-300">
+                                    {pages.length === 0
+                                        ? 'No pages found for this website.'
+                                        : 'Select a page to start editing.'}
+                                </p>
+                                {pages.length === 0 && (
+                                    <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
+                                        Create a Home page first, then apply a template and start customizing sections.
+                                    </p>
+                                )}
+                                {pages.length === 0 && (
+                                    <div className="flex flex-wrap justify-center gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => { void handleCreateHomePage(); }}
+                                            disabled={!canCreatePages || isOperationInProgress}
+                                            className="rounded-lg bg-[#5048e5] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#433bcf] disabled:cursor-not-allowed disabled:opacity-60"
+                                        >
+                                            Create Home Page
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowNewPage(true)}
+                                            disabled={!canCreatePages || isOperationInProgress}
+                                            className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                                        >
+                                            Create Custom Page
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         {sections.length === 0 && selectedPageId && (
                             <div className="px-6 py-20 text-center">
                                 <p className="mb-4 text-base text-slate-500 dark:text-slate-400">This page has no sections yet.</p>
@@ -1047,13 +1585,15 @@ export default function BuilderPage() {
                                     <button
                                         type="button"
                                         onClick={() => setTemplatePickerOpen(true)}
+                                        disabled={isOperationInProgress}
                                         className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
                                     >
                                         Choose Template
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => setThemePickerOpen(true)}
+                                        onClick={openAddSectionThemePicker}
+                                        disabled={isOperationInProgress}
                                         className="rounded-lg bg-[#5048e5] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#433bcf]"
                                     >
                                         Add First Section
@@ -1083,6 +1623,7 @@ export default function BuilderPage() {
                                                 e.stopPropagation();
                                                 handleMoveSection(section.id, 'up');
                                             }}
+                                            disabled={isOperationInProgress}
                                             className="rounded p-1 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700 dark:hover:text-slate-100"
                                             title="Move up"
                                         >
@@ -1096,6 +1637,7 @@ export default function BuilderPage() {
                                                 e.stopPropagation();
                                                 handleMoveSection(section.id, 'down');
                                             }}
+                                            disabled={isOperationInProgress}
                                             className="rounded p-1 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700 dark:hover:text-slate-100"
                                             title="Move down"
                                         >
@@ -1108,6 +1650,7 @@ export default function BuilderPage() {
                                             e.stopPropagation();
                                             handleDeleteSection(section.id);
                                         }}
+                                        disabled={isOperationInProgress}
                                         className="rounded p-1 text-red-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30"
                                         title="Delete section"
                                     >
@@ -1134,7 +1677,8 @@ export default function BuilderPage() {
                             <div className="border-t border-dashed border-slate-200 px-6 py-8 text-center dark:border-slate-700">
                                 <button
                                     type="button"
-                                    onClick={() => setThemePickerOpen(true)}
+                                    onClick={openAddSectionThemePicker}
+                                    disabled={isOperationInProgress}
                                     className="rounded-lg border-2 border-dashed border-[#5048e5]/40 bg-[#5048e5]/5 px-5 py-2 text-sm font-semibold text-[#5048e5] transition hover:bg-[#5048e5]/10"
                                 >
                                     Add New Section
@@ -1193,7 +1737,7 @@ export default function BuilderPage() {
                                             : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                                     }`}
                                 >
-                                    Theme
+                                    Website
                                 </button>
                             </div>
 
@@ -1201,8 +1745,17 @@ export default function BuilderPage() {
                                 <div className="mt-3 flex items-center gap-2">
                                     <button
                                         type="button"
+                                        onClick={() => openReplaceSectionThemePicker(selectedSection.id)}
+                                        disabled={isOperationInProgress}
+                                        className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                                    >
+                                        <LayoutTemplate className="h-3.5 w-3.5" />
+                                        Change Theme
+                                    </button>
+                                    <button
+                                        type="button"
                                         onClick={() => handleMoveSection(selectedSection.id, 'up')}
-                                        disabled={selectedSectionIndex <= 0}
+                                        disabled={selectedSectionIndex <= 0 || isOperationInProgress}
                                         className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                                     >
                                         <ChevronUp className="h-3.5 w-3.5" />
@@ -1211,7 +1764,7 @@ export default function BuilderPage() {
                                     <button
                                         type="button"
                                         onClick={() => handleMoveSection(selectedSection.id, 'down')}
-                                        disabled={selectedSectionIndex >= sections.length - 1}
+                                        disabled={selectedSectionIndex >= sections.length - 1 || isOperationInProgress}
                                         className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                                     >
                                         <ChevronDown className="h-3.5 w-3.5" />
@@ -1220,6 +1773,7 @@ export default function BuilderPage() {
                                     <button
                                         type="button"
                                         onClick={() => handleDeleteSection(selectedSection.id)}
+                                        disabled={isOperationInProgress}
                                         className="inline-flex items-center gap-1 rounded-md border border-red-200 px-2 py-1 text-xs font-medium text-red-600 transition hover:bg-red-50 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-900/20"
                                     >
                                         <Trash2 className="h-3.5 w-3.5" />
@@ -1235,7 +1789,13 @@ export default function BuilderPage() {
 
                         <div className="min-h-0 flex-1 overflow-y-auto">
                             {showSettings ? (
-                                <SettingsPanel settings={settings} onSave={handleSaveSettings} saving={settingsSaving} />
+                                <SettingsPanel
+                                    settings={settings}
+                                    pages={pages}
+                                    onSave={handleSaveSettings}
+                                    onSavePageSeo={handleSavePageSeo}
+                                    saving={settingsSaving}
+                                />
                             ) : selectedSection ? (
                                 <div className="p-4">
                                     {sectionSaveState !== 'idle' && (
@@ -1258,6 +1818,10 @@ export default function BuilderPage() {
                                         onChange={(values) => handleSectionDraftChange(selectedSection.id, values)}
                                         pages={pages}
                                     />
+                                    <SectionAppearanceControls
+                                        values={selectedSectionStyleValues as Record<string, unknown>}
+                                        onChange={(values) => handleSectionStyleDraftChange(selectedSection.id, values)}
+                                    />
                                 </div>
                             ) : (
                                 <div className="flex h-full flex-col items-center justify-center px-6 text-center">
@@ -1275,14 +1839,202 @@ export default function BuilderPage() {
                 )}
             </aside>
 
+            {isOperationInProgress && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/70 backdrop-blur-[1px] dark:bg-slate-900/70">
+                    <div className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                        <span className="inline-flex h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                        {activeOperationMessage}
+                    </div>
+                </div>
+            )}
+
             <ThemePicker
                 open={themePickerOpen}
-                onClose={() => setThemePickerOpen(false)}
-                onSelect={handleAddSection}
-                maxAccessibleThemes={publishReadiness?.maxAccessibleThemes ?? null}
+                onClose={closeThemePicker}
+                onSelect={(theme) => {
+                    if (themePickerMode === 'replace') {
+                        void handleReplaceSectionTheme(theme);
+                        return;
+                    }
+                    void handleAddSection(theme);
+                }}
                 disallowedComponentKeys={existingGlobalLayoutKeys}
+                disallowedFeatureSlugs={existingGlobalLayoutFeatureSlugs}
+                mode={themePickerMode}
+                replaceTarget={themePickerTargetSection ? {
+                    sectionId: themePickerTargetSection.id,
+                    themeId: themePickerTargetSection.theme.id,
+                    featureSlug: themePickerTargetSection.theme.feature?.slug,
+                    featureName: themePickerTargetSection.theme.feature?.name,
+                } : null}
             />
             <TemplatePicker open={templatePickerOpen} onClose={() => setTemplatePickerOpen(false)} onSelect={handleApplyTemplate} />
+        </div>
+    );
+}
+
+function normalizeHexColorInput(value: string): string | null {
+    const trimmed = value.trim();
+    const threeDigit = /^#[0-9a-fA-F]{3}$/;
+    const sixDigit = /^#[0-9a-fA-F]{6}$/;
+
+    if (threeDigit.test(trimmed)) {
+        const chars = trimmed.slice(1).split('');
+        return `#${chars.map((char) => `${char}${char}`).join('')}`.toLowerCase();
+    }
+
+    if (sixDigit.test(trimmed)) {
+        return trimmed.toLowerCase();
+    }
+
+    return null;
+}
+
+function toSectionColorPickerValue(value: string): string {
+    return normalizeHexColorInput(value) || '#000000';
+}
+
+function readStyleColorValue(values: Record<string, unknown>, keys: string[]): string {
+    for (const key of keys) {
+        const candidate = values[key];
+        if (typeof candidate === 'string' && candidate.trim().length > 0) {
+            return candidate.trim();
+        }
+    }
+    return '';
+}
+
+function SectionAppearanceControls({ values, onChange }: {
+    values: Record<string, unknown>;
+    onChange: (values: Record<string, unknown>) => void;
+}) {
+    const backgroundAliases = ['sectionBackgroundColor', 'backgroundColor', 'bgColor'];
+    const textAliases = ['sectionTextColor', 'textColor', 'foregroundColor', 'color'];
+
+    const backgroundColor = readStyleColorValue(values, backgroundAliases);
+    const textColor = readStyleColorValue(values, textAliases);
+    const autoTextContrast = (values.autoTextContrast as boolean | undefined) !== false;
+    const colorInputStyle: React.CSSProperties = {
+        width: '100%',
+        padding: '8px 12px',
+        border: '1px solid var(--be-form-border, #cbd5e1)',
+        borderRadius: '6px',
+        fontSize: '14px',
+        boxSizing: 'border-box',
+        backgroundColor: 'var(--be-form-bg, #ffffff)',
+        color: 'var(--be-form-text, #0f172a)',
+    };
+    const resetButtonStyle: React.CSSProperties = {
+        padding: '6px 10px',
+        backgroundColor: 'var(--be-form-surface, #f8fafc)',
+        color: 'var(--be-form-label, #475569)',
+        border: '1px solid var(--be-form-border, #cbd5e1)',
+        borderRadius: '6px',
+        cursor: 'pointer',
+        fontSize: '12px',
+        fontWeight: 500,
+    };
+
+    const updateColor = (aliases: string[], value: string) => {
+        const next = { ...values };
+        aliases.forEach((alias) => { delete next[alias]; });
+
+        const trimmed = value.trim();
+        if (trimmed.length > 0) {
+            next[aliases[0]!] = trimmed;
+        }
+
+        onChange(next);
+    };
+
+    const clearColor = (aliases: string[]) => {
+        const next = { ...values };
+        aliases.forEach((alias) => { delete next[alias]; });
+        onChange(next);
+    };
+
+    return (
+        <div style={{
+            marginTop: '18px',
+            borderTop: '1px solid var(--be-form-border, #e2e8f0)',
+            paddingTop: '14px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+        }}>
+            <p style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: 'var(--be-form-heading, #0f172a)' }}>
+                Section Appearance
+            </p>
+            <p style={{ margin: 0, fontSize: '12px', color: 'var(--be-form-muted, #64748b)' }}>
+                Override this section text/background colors without changing the whole website theme.
+            </p>
+
+            <div style={{ display: 'grid', gap: '10px' }}>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--be-form-label, #475569)' }}>Background Color</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input
+                            type="color"
+                            value={toSectionColorPickerValue(backgroundColor)}
+                            onChange={(event) => updateColor(backgroundAliases, event.target.value)}
+                            style={{ width: '40px', height: '32px', padding: 0, border: 'none', background: 'transparent' }}
+                        />
+                        <input
+                            type="text"
+                            value={backgroundColor}
+                            onChange={(event) => updateColor(backgroundAliases, event.target.value)}
+                            placeholder="#0b1121"
+                            style={colorInputStyle}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => clearColor(backgroundAliases)}
+                            style={resetButtonStyle}
+                        >
+                            Reset
+                        </button>
+                    </div>
+                </label>
+
+                <label style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--be-form-label, #475569)' }}>Text Color</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input
+                            type="color"
+                            value={toSectionColorPickerValue(textColor)}
+                            onChange={(event) => updateColor(textAliases, event.target.value)}
+                            style={{ width: '40px', height: '32px', padding: 0, border: 'none', background: 'transparent' }}
+                        />
+                        <input
+                            type="text"
+                            value={textColor}
+                            onChange={(event) => updateColor(textAliases, event.target.value)}
+                            placeholder="#f8fafc"
+                            style={colorInputStyle}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => clearColor(textAliases)}
+                            style={resetButtonStyle}
+                        >
+                            Reset
+                        </button>
+                    </div>
+                </label>
+
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: 'var(--be-form-label, #475569)' }}>
+                    <input
+                        type="checkbox"
+                        checked={autoTextContrast}
+                        onChange={(event) => onChange({
+                            ...values,
+                            autoTextContrast: event.target.checked,
+                        })}
+                        style={{ width: '14px', height: '14px' }}
+                    />
+                    Auto-pick readable text color when only background is set
+                </label>
+            </div>
         </div>
     );
 }
@@ -1416,22 +2168,93 @@ function toColorInputValue(value: string): string {
     return /^#[0-9a-fA-F]{6}$/.test(value.trim()) ? value : '#000000';
 }
 
-function SettingsPanel({ settings, onSave, saving }: {
+function normalizeNullableString(value: string): string | null {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+}
+
+function cloneSeoData(value: SEOData | null | undefined): SEOData {
+    if (!value) return {};
+    return { ...value };
+}
+
+function cloneSeoBusiness(value: WebsiteSEOBusiness | null | undefined): WebsiteSEOBusiness {
+    if (!value) return { businessType: 'Organization', sameAs: [] };
+    return {
+        ...value,
+        sameAs: Array.isArray(value.sameAs) ? [...value.sameAs] : value.sameAs || [],
+    };
+}
+
+function cloneSeoSettings(value: WebsiteSEOSettings | null | undefined): WebsiteSEOSettings {
+    if (!value) {
+        return {
+            siteName: '',
+            defaults: { robotsIndex: true, robotsFollow: true, twitterCard: 'summary_large_image' },
+            business: { businessType: 'Organization', sameAs: [] },
+        };
+    }
+
+    return {
+        siteName: value.siteName ?? '',
+        defaults: cloneSeoData(value.defaults),
+        business: cloneSeoBusiness(value.business),
+    };
+}
+
+function SettingsPanel({ settings, pages, onSave, onSavePageSeo, saving }: {
     settings: WebsiteSettings | null;
+    pages: PageData[];
     onSave: (settings: Partial<WebsiteSettings>) => void;
+    onSavePageSeo: (pageId: string, seoJsonb: SEOData | null) => Promise<{ success: boolean; message?: string }>;
     saving: boolean;
 }) {
     const [tokens, setTokens] = useState<WebsiteSettings['tokens']>(settings?.tokens || DEFAULT_TOKENS);
     const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(findMatchingTemplateId(settings?.tokens || DEFAULT_TOKENS));
+    const [websiteSettingsTab, setWebsiteSettingsTab] = useState<'themes' | 'metadata'>('themes');
+    const [seoMode, setSeoMode] = useState<'website' | 'page'>('website');
+    const [seoSettings, setSeoSettings] = useState<WebsiteSEOSettings>(cloneSeoSettings(settings?.seo));
+    const [selectedSeoPageId, setSelectedSeoPageId] = useState<string>(pages[0]?.id || '');
+    const [pageSeoDraft, setPageSeoDraft] = useState<SEOData | null>(pages[0]?.seoJsonb ? cloneSeoData(pages[0].seoJsonb) : null);
+    const [pageSeoSaving, setPageSeoSaving] = useState(false);
+    const [pageSeoMessage, setPageSeoMessage] = useState<string | null>(null);
 
     useEffect(() => {
         if (!settings?.tokens) return;
         setTokens(settings.tokens);
         setSelectedTemplateId(findMatchingTemplateId(settings.tokens));
-    }, [settings]);
+    }, [settings?.tokens]);
+
+    useEffect(() => {
+        setSeoSettings(cloneSeoSettings(settings?.seo));
+    }, [settings?.seo]);
+
+    useEffect(() => {
+        if (pages.length === 0) {
+            setSelectedSeoPageId('');
+            setPageSeoDraft(null);
+            return;
+        }
+
+        setSelectedSeoPageId((current) => {
+            if (current && pages.some((page) => page.id === current)) {
+                return current;
+            }
+            return pages[0]!.id;
+        });
+    }, [pages]);
+
+    useEffect(() => {
+        if (!selectedSeoPageId) {
+            setPageSeoDraft(null);
+            return;
+        }
+        const page = pages.find((entry) => entry.id === selectedSeoPageId);
+        setPageSeoDraft(page?.seoJsonb ? cloneSeoData(page.seoJsonb) : null);
+    }, [pages, selectedSeoPageId]);
 
     const handleSave = () => {
-        onSave({ tokens });
+        onSave({ tokens, seo: seoSettings });
     };
 
     const updateTokens = (nextTokens: WebsiteSettings['tokens']) => {
@@ -1450,145 +2273,783 @@ function SettingsPanel({ settings, onSave, saving }: {
         updateTokens({ ...tokens, [key]: value });
     };
 
+    const updateWebsiteSeoField = <K extends keyof SEOData>(key: K, value: SEOData[K]) => {
+        setSeoSettings((prev) => ({
+            ...prev,
+            defaults: {
+                ...(prev.defaults || {}),
+                [key]: value,
+            },
+        }));
+    };
+
+    const updateBusinessSeoField = <K extends keyof WebsiteSEOBusiness>(key: K, value: WebsiteSEOBusiness[K]) => {
+        setSeoSettings((prev) => ({
+            ...prev,
+            business: {
+                ...(prev.business || {}),
+                [key]: value,
+            },
+        }));
+    };
+
+    const updatePageSeoField = <K extends keyof SEOData>(key: K, value: SEOData[K]) => {
+        setPageSeoDraft((prev) => ({
+            ...(prev || {}),
+            [key]: value,
+        }));
+    };
+
+    const selectedSeoPage = pages.find((page) => page.id === selectedSeoPageId) || null;
     const activeTemplate = selectedTemplateId ? THEME_TEMPLATES.find((template) => template.id === selectedTemplateId) : null;
     const fontSuggestions = Array.from(new Set([...(activeTemplate?.fontSuggestions || []), ...DEFAULT_FONT_SUGGESTIONS, tokens.font]));
+    const websiteSeoDefaults = seoSettings.defaults || {};
+    const businessSeo = seoSettings.business || {};
+    const pageSeo = pageSeoDraft || {};
+    const websiteSameAsCsv = Array.isArray(businessSeo.sameAs) ? businessSeo.sameAs.join(', ') : '';
+
+    const getSeoFieldLength = (value: string | null | undefined): number => (value || '').trim().length;
+
+    const savePageSeoDraft = async () => {
+        if (!selectedSeoPageId) return;
+        setPageSeoSaving(true);
+        setPageSeoMessage(null);
+        const result = await onSavePageSeo(selectedSeoPageId, pageSeoDraft && Object.keys(pageSeoDraft).length > 0 ? pageSeoDraft : null);
+        if (result.success) {
+            setPageSeoMessage('Page metadata saved.');
+        } else {
+            setPageSeoMessage(result.message || 'Failed to save page metadata.');
+        }
+        setPageSeoSaving(false);
+    };
+
+    const resetPageSeoDraft = async () => {
+        if (!selectedSeoPageId) return;
+        setPageSeoSaving(true);
+        setPageSeoMessage(null);
+        const result = await onSavePageSeo(selectedSeoPageId, null);
+        if (result.success) {
+            setPageSeoDraft(null);
+            setPageSeoMessage('Page metadata reset to website defaults.');
+        } else {
+            setPageSeoMessage(result.message || 'Failed to reset page metadata.');
+        }
+        setPageSeoSaving(false);
+    };
 
     return (
         <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', height: '100%' }}>
             <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div>
-                    <div style={sectionTitleStyle}>Theme Templates</div>
-                    <p style={{ fontSize: '12px', color: 'var(--be-form-muted, #64748b)', margin: '0 0 10px 0' }}>
-                        Select a predefined template to update the full website colors instantly.
-                    </p>
-                    <div style={{ display: 'grid', gap: '8px' }}>
-                        {THEME_TEMPLATES.map((template) => {
-                            const isActive = selectedTemplateId === template.id;
-                            return (
-                                <button
-                                    key={template.id}
-                                    onClick={() => handleApplyTemplate(template)}
-                                    style={{
-                                        width: '100%',
-                                        textAlign: 'left',
-                                        border: `1px solid ${isActive ? '#3b82f6' : 'var(--be-form-border, #cbd5e1)'}`,
-                                        backgroundColor: isActive ? 'var(--be-form-active-bg, #eff6ff)' : 'var(--be-form-bg, #ffffff)',
-                                        borderRadius: '8px',
-                                        padding: '10px',
-                                        cursor: 'pointer',
-                                    }}
-                                >
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-                                        <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--be-form-heading, #0f172a)' }}>{template.name}</div>
-                                        {isActive && (
-                                            <span style={{ fontSize: '11px', color: '#2563eb', fontWeight: 600 }}>Applied</span>
-                                        )}
-                                    </div>
-                                    <div style={{ fontSize: '12px', color: 'var(--be-form-muted, #64748b)', marginTop: '2px' }}>{template.description}</div>
-                                    <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
-                                        {TEMPLATE_SWATCH_ORDER.map((key) => (
-                                            <span
-                                                key={key}
-                                                title={`${key}: ${template.tokens[key]}`}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <button
+                        type="button"
+                        onClick={() => setWebsiteSettingsTab('themes')}
+                        style={{
+                            ...actionBtnStyle,
+                            backgroundColor: websiteSettingsTab === 'themes' ? 'var(--be-form-active-bg, #eff6ff)' : actionBtnStyle.backgroundColor,
+                            borderColor: websiteSettingsTab === 'themes' ? '#3b82f6' : 'var(--be-form-border, #cbd5e1)',
+                            color: websiteSettingsTab === 'themes' ? 'var(--be-form-active-text, #1d4ed8)' : 'var(--be-form-label, #475569)',
+                        }}
+                    >
+                        Themes
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setWebsiteSettingsTab('metadata')}
+                        style={{
+                            ...actionBtnStyle,
+                            backgroundColor: websiteSettingsTab === 'metadata' ? 'var(--be-form-active-bg, #eff6ff)' : actionBtnStyle.backgroundColor,
+                            borderColor: websiteSettingsTab === 'metadata' ? '#3b82f6' : 'var(--be-form-border, #cbd5e1)',
+                            color: websiteSettingsTab === 'metadata' ? 'var(--be-form-active-text, #1d4ed8)' : 'var(--be-form-label, #475569)',
+                        }}
+                    >
+                        Metadata
+                    </button>
+                </div>
+
+                {websiteSettingsTab === 'themes' && (
+                    <>
+                        <div>
+                            <div style={sectionTitleStyle}>Theme Templates</div>
+                            <p style={{ fontSize: '12px', color: 'var(--be-form-muted, #64748b)', margin: '0 0 10px 0' }}>
+                                Select a predefined template to update the full website colors instantly.
+                            </p>
+                            <div style={{ display: 'grid', gap: '8px' }}>
+                                {THEME_TEMPLATES.map((template) => {
+                                    const isActive = selectedTemplateId === template.id;
+                                    return (
+                                        <button
+                                            key={template.id}
+                                            onClick={() => handleApplyTemplate(template)}
+                                            style={{
+                                                width: '100%',
+                                                textAlign: 'left',
+                                                border: `1px solid ${isActive ? '#3b82f6' : 'var(--be-form-border, #cbd5e1)'}`,
+                                                backgroundColor: isActive ? 'var(--be-form-active-bg, #eff6ff)' : 'var(--be-form-bg, #ffffff)',
+                                                borderRadius: '8px',
+                                                padding: '10px',
+                                                cursor: 'pointer',
+                                            }}
+                                        >
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                                                <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--be-form-heading, #0f172a)' }}>{template.name}</div>
+                                                {isActive && (
+                                                    <span style={{ fontSize: '11px', color: '#2563eb', fontWeight: 600 }}>Applied</span>
+                                                )}
+                                            </div>
+                                            <div style={{ fontSize: '12px', color: 'var(--be-form-muted, #64748b)', marginTop: '2px' }}>{template.description}</div>
+                                            <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
+                                                {TEMPLATE_SWATCH_ORDER.map((key) => (
+                                                    <span
+                                                        key={key}
+                                                        title={`${key}: ${template.tokens[key]}`}
+                                                        style={{
+                                                            width: '14px',
+                                                            height: '14px',
+                                                            borderRadius: '999px',
+                                                            border: '1px solid var(--be-form-swatch-border, rgba(15, 23, 42, 0.15))',
+                                                            backgroundColor: template.tokens[key],
+                                                            display: 'inline-block',
+                                                        }}
+                                                    />
+                                                ))}
+                                            </div>
+                                            <div style={{ fontSize: '12px', color: 'var(--be-form-label, #475569)', marginTop: '8px' }}>
+                                                Suggested font: <span style={{ fontWeight: 600 }}>{template.recommendedFont}</span>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            {!selectedTemplateId && (
+                                <p style={{ fontSize: '12px', color: 'var(--be-form-muted, #64748b)', margin: '10px 0 0 0' }}>
+                                    Current palette is custom.
+                                </p>
+                            )}
+                        </div>
+
+                        <div>
+                            <div style={sectionTitleStyle}>Font Suggestions</div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                {fontSuggestions.map((fontName) => {
+                                    const isActive = tokens.font === fontName;
+                                    return (
+                                        <button
+                                            key={fontName}
+                                            onClick={() => updateTokens({ ...tokens, font: fontName })}
+                                            style={{
+                                                padding: '6px 10px',
+                                                borderRadius: '999px',
+                                                border: `1px solid ${isActive ? '#3b82f6' : 'var(--be-form-border, #cbd5e1)'}`,
+                                                backgroundColor: isActive ? 'var(--be-form-active-bg, #eff6ff)' : 'var(--be-form-bg, #ffffff)',
+                                                color: isActive ? 'var(--be-form-active-text, #1d4ed8)' : 'var(--be-form-label, #475569)',
+                                                cursor: 'pointer',
+                                                fontSize: '12px',
+                                                fontFamily: fontName,
+                                            }}
+                                        >
+                                            {fontName}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            <div style={{ marginTop: '10px' }}>
+                                <label style={labelStyle}>Custom Font Family</label>
+                                <input
+                                    type="text"
+                                    value={tokens.font}
+                                    onChange={(e) => updateTokens({ ...tokens, font: e.target.value })}
+                                    placeholder="e.g. Poppins"
+                                    style={inputStyle}
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <div style={sectionTitleStyle}>Fine-tune Colors</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                {COLOR_INPUT_ORDER.map((key) => (
+                                    <div key={key}>
+                                        <label style={{ ...labelStyle, textTransform: 'capitalize' }}>{key}</label>
+                                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                            <input
+                                                type="color"
+                                                value={toColorInputValue(tokens[key])}
+                                                onChange={(e) => handleColorTokenChange(key, e.target.value)}
                                                 style={{
-                                                    width: '14px',
-                                                    height: '14px',
-                                                    borderRadius: '999px',
-                                                    border: '1px solid var(--be-form-swatch-border, rgba(15, 23, 42, 0.15))',
-                                                    backgroundColor: template.tokens[key],
-                                                    display: 'inline-block',
+                                                    width: '36px',
+                                                    height: '36px',
+                                                    border: '1px solid var(--be-form-border, #cbd5e1)',
+                                                    borderRadius: '6px',
+                                                    cursor: 'pointer',
+                                                    padding: '2px',
+                                                    backgroundColor: 'var(--be-form-bg, #ffffff)',
                                                 }}
                                             />
-                                        ))}
+                                            <input
+                                                type="text"
+                                                value={tokens[key]}
+                                                onChange={(e) => handleColorTokenChange(key, e.target.value)}
+                                                style={{ ...inputStyle, width: 'auto', flex: 1 }}
+                                            />
+                                        </div>
                                     </div>
-                                    <div style={{ fontSize: '12px', color: 'var(--be-form-label, #475569)', marginTop: '8px' }}>
-                                        Suggested font: <span style={{ fontWeight: 600 }}>{template.recommendedFont}</span>
-                                    </div>
+                                ))}
+                            </div>
+                            <div style={{ marginTop: '12px' }}>
+                                <button onClick={() => updateTokens(DEFAULT_TOKENS)} style={actionBtnStyle}>
+                                    Reset to Default
                                 </button>
-                            );
-                        })}
-                    </div>
-                    {!selectedTemplateId && (
-                        <p style={{ fontSize: '12px', color: 'var(--be-form-muted, #64748b)', margin: '10px 0 0 0' }}>
-                            Current palette is custom.
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {websiteSettingsTab === 'metadata' && (
+                    <div>
+                        <div style={sectionTitleStyle}>Metadata</div>
+                        <p style={{ fontSize: '12px', color: 'var(--be-form-muted, #64748b)', margin: '0 0 10px 0' }}>
+                            Configure defaults for this website, then override metadata for specific pages when needed.
                         </p>
-                    )}
-                </div>
+                        <p style={{ fontSize: '12px', color: 'var(--be-form-muted, #64748b)', margin: '0 0 10px 0' }}>
+                            This section includes only the new SEO metadata fields.
+                        </p>
 
-                <div>
-                    <div style={sectionTitleStyle}>Font Suggestions</div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                        {fontSuggestions.map((fontName) => {
-                            const isActive = tokens.font === fontName;
-                            return (
-                                <button
-                                    key={fontName}
-                                    onClick={() => updateTokens({ ...tokens, font: fontName })}
-                                    style={{
-                                        padding: '6px 10px',
-                                        borderRadius: '999px',
-                                        border: `1px solid ${isActive ? '#3b82f6' : 'var(--be-form-border, #cbd5e1)'}`,
-                                        backgroundColor: isActive ? 'var(--be-form-active-bg, #eff6ff)' : 'var(--be-form-bg, #ffffff)',
-                                        color: isActive ? 'var(--be-form-active-text, #1d4ed8)' : 'var(--be-form-label, #475569)',
-                                        cursor: 'pointer',
-                                        fontSize: '12px',
-                                        fontFamily: fontName,
-                                    }}
-                                >
-                                    {fontName}
-                                </button>
-                            );
-                        })}
-                    </div>
-                    <div style={{ marginTop: '10px' }}>
-                        <label style={labelStyle}>Custom Font Family</label>
-                        <input
-                            type="text"
-                            value={tokens.font}
-                            onChange={(e) => updateTokens({ ...tokens, font: e.target.value })}
-                            placeholder="e.g. Poppins"
-                            style={inputStyle}
-                        />
-                    </div>
-                </div>
+                        <div style={{ marginBottom: '10px' }}>
+                            <label style={labelStyle}>Site Name</label>
+                            <input
+                                type="text"
+                                value={seoSettings.siteName ?? ''}
+                                onChange={(e) => setSeoSettings((prev) => ({ ...prev, siteName: normalizeNullableString(e.target.value) }))}
+                                placeholder="Business name used in metadata"
+                                style={inputStyle}
+                            />
+                        </div>
 
-                <div>
-                    <div style={sectionTitleStyle}>Fine-tune Colors</div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {COLOR_INPUT_ORDER.map((key) => (
-                            <div key={key}>
-                                <label style={{ ...labelStyle, textTransform: 'capitalize' }}>{key}</label>
-                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+                        <button
+                            type="button"
+                            onClick={() => setSeoMode('website')}
+                            style={{
+                                ...actionBtnStyle,
+                                backgroundColor: seoMode === 'website' ? 'var(--be-form-active-bg, #eff6ff)' : actionBtnStyle.backgroundColor,
+                                borderColor: seoMode === 'website' ? '#3b82f6' : 'var(--be-form-border, #cbd5e1)',
+                                color: seoMode === 'website' ? 'var(--be-form-active-text, #1d4ed8)' : 'var(--be-form-label, #475569)',
+                            }}
+                        >
+                            Website Defaults
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setSeoMode('page')}
+                            style={{
+                                ...actionBtnStyle,
+                                backgroundColor: seoMode === 'page' ? 'var(--be-form-active-bg, #eff6ff)' : actionBtnStyle.backgroundColor,
+                                borderColor: seoMode === 'page' ? '#3b82f6' : 'var(--be-form-border, #cbd5e1)',
+                                color: seoMode === 'page' ? 'var(--be-form-active-text, #1d4ed8)' : 'var(--be-form-label, #475569)',
+                            }}
+                        >
+                            Page Overrides
+                        </button>
+                    </div>
+
+                    {seoMode === 'website' ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div>
+                                <label style={labelStyle}>Meta Title</label>
+                                <input
+                                    type="text"
+                                    value={websiteSeoDefaults.metaTitle ?? ''}
+                                    onChange={(e) => updateWebsiteSeoField('metaTitle', normalizeNullableString(e.target.value))}
+                                    style={inputStyle}
+                                />
+                                <div style={{ fontSize: '11px', color: 'var(--be-form-muted, #64748b)', marginTop: '4px' }}>
+                                    Recommended 50-60 chars ({getSeoFieldLength(websiteSeoDefaults.metaTitle)}/60)
+                                </div>
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Meta Description</label>
+                                <textarea
+                                    value={websiteSeoDefaults.metaDescription ?? ''}
+                                    onChange={(e) => updateWebsiteSeoField('metaDescription', normalizeNullableString(e.target.value))}
+                                    rows={3}
+                                    style={{ ...inputStyle, resize: 'vertical' }}
+                                />
+                                <div style={{ fontSize: '11px', color: 'var(--be-form-muted, #64748b)', marginTop: '4px' }}>
+                                    Recommended 140-160 chars ({getSeoFieldLength(websiteSeoDefaults.metaDescription)}/160)
+                                </div>
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Meta Keywords</label>
+                                <input
+                                    type="text"
+                                    value={websiteSeoDefaults.metaKeywords ?? ''}
+                                    onChange={(e) => updateWebsiteSeoField('metaKeywords', normalizeNullableString(e.target.value))}
+                                    placeholder="spa, massage, skincare"
+                                    style={inputStyle}
+                                />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Canonical Path (optional)</label>
+                                <input
+                                    type="text"
+                                    value={websiteSeoDefaults.canonicalPath ?? ''}
+                                    onChange={(e) => updateWebsiteSeoField('canonicalPath', normalizeNullableString(e.target.value))}
+                                    placeholder="/"
+                                    style={inputStyle}
+                                />
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                <label style={{ ...labelStyle, marginBottom: 0 }}>
                                     <input
-                                        type="color"
-                                        value={toColorInputValue(tokens[key])}
-                                        onChange={(e) => handleColorTokenChange(key, e.target.value)}
-                                        style={{
-                                            width: '36px',
-                                            height: '36px',
-                                            border: '1px solid var(--be-form-border, #cbd5e1)',
-                                            borderRadius: '6px',
-                                            cursor: 'pointer',
-                                            padding: '2px',
-                                            backgroundColor: 'var(--be-form-bg, #ffffff)',
-                                        }}
+                                        type="checkbox"
+                                        checked={websiteSeoDefaults.robotsIndex !== false}
+                                        onChange={(e) => updateWebsiteSeoField('robotsIndex', e.target.checked)}
+                                        style={{ marginRight: '6px' }}
                                     />
+                                    Index
+                                </label>
+                                <label style={{ ...labelStyle, marginBottom: 0 }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={websiteSeoDefaults.robotsFollow !== false}
+                                        onChange={(e) => updateWebsiteSeoField('robotsFollow', e.target.checked)}
+                                        style={{ marginRight: '6px' }}
+                                    />
+                                    Follow
+                                </label>
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Open Graph Title</label>
+                                <input
+                                    type="text"
+                                    value={websiteSeoDefaults.ogTitle ?? ''}
+                                    onChange={(e) => updateWebsiteSeoField('ogTitle', normalizeNullableString(e.target.value))}
+                                    style={inputStyle}
+                                />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Open Graph Description</label>
+                                <textarea
+                                    value={websiteSeoDefaults.ogDescription ?? ''}
+                                    onChange={(e) => updateWebsiteSeoField('ogDescription', normalizeNullableString(e.target.value))}
+                                    rows={2}
+                                    style={{ ...inputStyle, resize: 'vertical' }}
+                                />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Open Graph Image URL</label>
+                                <input
+                                    type="url"
+                                    value={websiteSeoDefaults.ogImageUrl ?? ''}
+                                    onChange={(e) => updateWebsiteSeoField('ogImageUrl', normalizeNullableString(e.target.value))}
+                                    placeholder="https://example.com/og-image.jpg"
+                                    style={inputStyle}
+                                />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Open Graph Image Alt</label>
+                                <input
+                                    type="text"
+                                    value={websiteSeoDefaults.ogImageAlt ?? ''}
+                                    onChange={(e) => updateWebsiteSeoField('ogImageAlt', normalizeNullableString(e.target.value))}
+                                    style={inputStyle}
+                                />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Twitter Card</label>
+                                <select
+                                    value={websiteSeoDefaults.twitterCard ?? 'summary_large_image'}
+                                    onChange={(e) => updateWebsiteSeoField('twitterCard', (e.target.value as TwitterCardType))}
+                                    style={inputStyle}
+                                >
+                                    <option value="summary_large_image">summary_large_image</option>
+                                    <option value="summary">summary</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Twitter Title</label>
+                                <input
+                                    type="text"
+                                    value={websiteSeoDefaults.twitterTitle ?? ''}
+                                    onChange={(e) => updateWebsiteSeoField('twitterTitle', normalizeNullableString(e.target.value))}
+                                    style={inputStyle}
+                                />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Twitter Description</label>
+                                <textarea
+                                    value={websiteSeoDefaults.twitterDescription ?? ''}
+                                    onChange={(e) => updateWebsiteSeoField('twitterDescription', normalizeNullableString(e.target.value))}
+                                    rows={2}
+                                    style={{ ...inputStyle, resize: 'vertical' }}
+                                />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Twitter Image URL</label>
+                                <input
+                                    type="url"
+                                    value={websiteSeoDefaults.twitterImageUrl ?? ''}
+                                    onChange={(e) => updateWebsiteSeoField('twitterImageUrl', normalizeNullableString(e.target.value))}
+                                    placeholder="https://example.com/twitter-image.jpg"
+                                    style={inputStyle}
+                                />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Twitter Image Alt</label>
+                                <input
+                                    type="text"
+                                    value={websiteSeoDefaults.twitterImageAlt ?? ''}
+                                    onChange={(e) => updateWebsiteSeoField('twitterImageAlt', normalizeNullableString(e.target.value))}
+                                    style={inputStyle}
+                                />
+                            </div>
+
+                            <div style={{ ...sectionTitleStyle, marginTop: '4px' }}>Structured Data (Business)</div>
+                            <div>
+                                <label style={labelStyle}>Business Type</label>
+                                <input
+                                    type="text"
+                                    value={businessSeo.businessType ?? ''}
+                                    onChange={(e) => updateBusinessSeoField('businessType', normalizeNullableString(e.target.value))}
+                                    placeholder="LocalBusiness / Organization / HealthAndBeautyBusiness"
+                                    style={inputStyle}
+                                />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Business Name</label>
+                                <input
+                                    type="text"
+                                    value={businessSeo.name ?? ''}
+                                    onChange={(e) => updateBusinessSeoField('name', normalizeNullableString(e.target.value))}
+                                    style={inputStyle}
+                                />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Business Description</label>
+                                <textarea
+                                    value={businessSeo.description ?? ''}
+                                    onChange={(e) => updateBusinessSeoField('description', normalizeNullableString(e.target.value))}
+                                    rows={2}
+                                    style={{ ...inputStyle, resize: 'vertical' }}
+                                />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Business Image URL</label>
+                                <input
+                                    type="url"
+                                    value={businessSeo.imageUrl ?? ''}
+                                    onChange={(e) => updateBusinessSeoField('imageUrl', normalizeNullableString(e.target.value))}
+                                    placeholder="https://example.com/business.jpg"
+                                    style={inputStyle}
+                                />
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                <div>
+                                    <label style={labelStyle}>Telephone</label>
                                     <input
                                         type="text"
-                                        value={tokens[key]}
-                                        onChange={(e) => handleColorTokenChange(key, e.target.value)}
-                                        style={{ ...inputStyle, width: 'auto', flex: 1 }}
+                                        value={businessSeo.telephone ?? ''}
+                                        onChange={(e) => updateBusinessSeoField('telephone', normalizeNullableString(e.target.value))}
+                                        style={inputStyle}
+                                    />
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Email</label>
+                                    <input
+                                        type="email"
+                                        value={businessSeo.email ?? ''}
+                                        onChange={(e) => updateBusinessSeoField('email', normalizeNullableString(e.target.value))}
+                                        style={inputStyle}
                                     />
                                 </div>
                             </div>
-                        ))}
+                            <div>
+                                <label style={labelStyle}>Price Range</label>
+                                <input
+                                    type="text"
+                                    value={businessSeo.priceRange ?? ''}
+                                    onChange={(e) => updateBusinessSeoField('priceRange', normalizeNullableString(e.target.value))}
+                                    placeholder="$$"
+                                    style={inputStyle}
+                                />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Street Address</label>
+                                <input
+                                    type="text"
+                                    value={businessSeo.streetAddress ?? ''}
+                                    onChange={(e) => updateBusinessSeoField('streetAddress', normalizeNullableString(e.target.value))}
+                                    style={inputStyle}
+                                />
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                <div>
+                                    <label style={labelStyle}>City</label>
+                                    <input
+                                        type="text"
+                                        value={businessSeo.addressLocality ?? ''}
+                                        onChange={(e) => updateBusinessSeoField('addressLocality', normalizeNullableString(e.target.value))}
+                                        style={inputStyle}
+                                    />
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Region/State</label>
+                                    <input
+                                        type="text"
+                                        value={businessSeo.addressRegion ?? ''}
+                                        onChange={(e) => updateBusinessSeoField('addressRegion', normalizeNullableString(e.target.value))}
+                                        style={inputStyle}
+                                    />
+                                </div>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                <div>
+                                    <label style={labelStyle}>Postal Code</label>
+                                    <input
+                                        type="text"
+                                        value={businessSeo.postalCode ?? ''}
+                                        onChange={(e) => updateBusinessSeoField('postalCode', normalizeNullableString(e.target.value))}
+                                        style={inputStyle}
+                                    />
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Country</label>
+                                    <input
+                                        type="text"
+                                        value={businessSeo.addressCountry ?? ''}
+                                        onChange={(e) => updateBusinessSeoField('addressCountry', normalizeNullableString(e.target.value))}
+                                        style={inputStyle}
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Social Links (`sameAs`)</label>
+                                <textarea
+                                    value={websiteSameAsCsv}
+                                    onChange={(e) =>
+                                        updateBusinessSeoField(
+                                            'sameAs',
+                                            e.target.value
+                                                .split(',')
+                                                .map((entry) => entry.trim())
+                                                .filter(Boolean),
+                                        )
+                                    }
+                                    rows={2}
+                                    placeholder="https://facebook.com/yourbrand, https://instagram.com/yourbrand"
+                                    style={{ ...inputStyle, resize: 'vertical' }}
+                                />
+                            </div>
+                        </div>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div>
+                                <label style={labelStyle}>Select Page</label>
+                                <select
+                                    value={selectedSeoPageId}
+                                    onChange={(e) => {
+                                        setSelectedSeoPageId(e.target.value);
+                                        setPageSeoMessage(null);
+                                    }}
+                                    style={inputStyle}
+                                >
+                                    {pages.map((page) => (
+                                        <option key={page.id} value={page.id}>
+                                            {page.slug === '/' ? 'Home (/)': `${page.title} (/${page.slug})`}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {selectedSeoPage ? (
+                                <>
+                                    <div>
+                                        <label style={labelStyle}>Meta Title</label>
+                                        <input
+                                            type="text"
+                                            value={pageSeo.metaTitle ?? ''}
+                                            onChange={(e) => updatePageSeoField('metaTitle', normalizeNullableString(e.target.value))}
+                                            style={inputStyle}
+                                        />
+                                        <div style={{ fontSize: '11px', color: 'var(--be-form-muted, #64748b)', marginTop: '4px' }}>
+                                            Recommended 50-60 chars ({getSeoFieldLength(pageSeo.metaTitle)}/60)
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label style={labelStyle}>Meta Description</label>
+                                        <textarea
+                                            value={pageSeo.metaDescription ?? ''}
+                                            onChange={(e) => updatePageSeoField('metaDescription', normalizeNullableString(e.target.value))}
+                                            rows={3}
+                                            style={{ ...inputStyle, resize: 'vertical' }}
+                                        />
+                                        <div style={{ fontSize: '11px', color: 'var(--be-form-muted, #64748b)', marginTop: '4px' }}>
+                                            Recommended 140-160 chars ({getSeoFieldLength(pageSeo.metaDescription)}/160)
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label style={labelStyle}>Meta Keywords</label>
+                                        <input
+                                            type="text"
+                                            value={pageSeo.metaKeywords ?? ''}
+                                            onChange={(e) => updatePageSeoField('metaKeywords', normalizeNullableString(e.target.value))}
+                                            style={inputStyle}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={labelStyle}>Canonical Path</label>
+                                        <input
+                                            type="text"
+                                            value={pageSeo.canonicalPath ?? ''}
+                                            onChange={(e) => updatePageSeoField('canonicalPath', normalizeNullableString(e.target.value))}
+                                            placeholder={selectedSeoPage.slug === '/' ? '/' : `/${selectedSeoPage.slug}`}
+                                            style={inputStyle}
+                                        />
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                        <label style={{ ...labelStyle, marginBottom: 0 }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={pageSeo.robotsIndex !== false}
+                                                onChange={(e) => updatePageSeoField('robotsIndex', e.target.checked)}
+                                                style={{ marginRight: '6px' }}
+                                            />
+                                            Index
+                                        </label>
+                                        <label style={{ ...labelStyle, marginBottom: 0 }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={pageSeo.robotsFollow !== false}
+                                                onChange={(e) => updatePageSeoField('robotsFollow', e.target.checked)}
+                                                style={{ marginRight: '6px' }}
+                                            />
+                                            Follow
+                                        </label>
+                                    </div>
+                                    <div>
+                                        <label style={labelStyle}>Open Graph Title</label>
+                                        <input
+                                            type="text"
+                                            value={pageSeo.ogTitle ?? ''}
+                                            onChange={(e) => updatePageSeoField('ogTitle', normalizeNullableString(e.target.value))}
+                                            style={inputStyle}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={labelStyle}>Open Graph Description</label>
+                                        <textarea
+                                            value={pageSeo.ogDescription ?? ''}
+                                            onChange={(e) => updatePageSeoField('ogDescription', normalizeNullableString(e.target.value))}
+                                            rows={2}
+                                            style={{ ...inputStyle, resize: 'vertical' }}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={labelStyle}>Open Graph Image URL</label>
+                                        <input
+                                            type="url"
+                                            value={pageSeo.ogImageUrl ?? ''}
+                                            onChange={(e) => updatePageSeoField('ogImageUrl', normalizeNullableString(e.target.value))}
+                                            style={inputStyle}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={labelStyle}>Open Graph Image Alt</label>
+                                        <input
+                                            type="text"
+                                            value={pageSeo.ogImageAlt ?? ''}
+                                            onChange={(e) => updatePageSeoField('ogImageAlt', normalizeNullableString(e.target.value))}
+                                            style={inputStyle}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={labelStyle}>Twitter Card</label>
+                                        <select
+                                            value={pageSeo.twitterCard ?? 'summary_large_image'}
+                                            onChange={(e) => updatePageSeoField('twitterCard', e.target.value as TwitterCardType)}
+                                            style={inputStyle}
+                                        >
+                                            <option value="summary_large_image">summary_large_image</option>
+                                            <option value="summary">summary</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label style={labelStyle}>Twitter Title</label>
+                                        <input
+                                            type="text"
+                                            value={pageSeo.twitterTitle ?? ''}
+                                            onChange={(e) => updatePageSeoField('twitterTitle', normalizeNullableString(e.target.value))}
+                                            style={inputStyle}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={labelStyle}>Twitter Description</label>
+                                        <textarea
+                                            value={pageSeo.twitterDescription ?? ''}
+                                            onChange={(e) => updatePageSeoField('twitterDescription', normalizeNullableString(e.target.value))}
+                                            rows={2}
+                                            style={{ ...inputStyle, resize: 'vertical' }}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={labelStyle}>Twitter Image URL</label>
+                                        <input
+                                            type="url"
+                                            value={pageSeo.twitterImageUrl ?? ''}
+                                            onChange={(e) => updatePageSeoField('twitterImageUrl', normalizeNullableString(e.target.value))}
+                                            style={inputStyle}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={labelStyle}>Twitter Image Alt</label>
+                                        <input
+                                            type="text"
+                                            value={pageSeo.twitterImageAlt ?? ''}
+                                            onChange={(e) => updatePageSeoField('twitterImageAlt', normalizeNullableString(e.target.value))}
+                                            style={inputStyle}
+                                        />
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                        <button
+                                            type="button"
+                                            onClick={() => void savePageSeoDraft()}
+                                            disabled={pageSeoSaving}
+                                            style={{
+                                                ...actionBtnStyle,
+                                                backgroundColor: pageSeoSaving ? '#cbd5e1' : '#e2e8f0',
+                                            }}
+                                        >
+                                            {pageSeoSaving ? 'Saving...' : 'Save Page Metadata'}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => void resetPageSeoDraft()}
+                                            disabled={pageSeoSaving}
+                                            style={{
+                                                ...actionBtnStyle,
+                                                borderColor: '#fca5a5',
+                                                color: '#b91c1c',
+                                            }}
+                                        >
+                                            Reset to Defaults
+                                        </button>
+                                    </div>
+                                    {pageSeoMessage && (
+                                        <div style={{ fontSize: '12px', color: pageSeoMessage.includes('Failed') ? '#b91c1c' : '#0f766e' }}>
+                                            {pageSeoMessage}
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <p style={{ fontSize: '12px', color: 'var(--be-form-muted, #64748b)' }}>
+                                    No pages available to configure overrides.
+                                </p>
+                            )}
+                        </div>
+                    )}
                     </div>
-                    <div style={{ marginTop: '12px' }}>
-                        <button onClick={() => updateTokens(DEFAULT_TOKENS)} style={actionBtnStyle}>
-                            Reset to Default
-                        </button>
-                    </div>
-                </div>
+                )}
             </div>
 
             <button

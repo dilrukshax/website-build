@@ -69,7 +69,7 @@ export class AuthService {
                 },
                 staffAccounts: {
                     used: staffAccountsUsed,
-                    allowed: catalog?.allowStaffAccounts ?? false,
+                    allowed: catalog?.allowStaffAccounts ?? true,
                 },
             },
         };
@@ -256,6 +256,7 @@ export class AuthService {
         });
 
         const tenants = await Promise.all(userTenants.map(async (ut) => {
+            const isOwner = ut.isOwner || ut.tenant.ownerId === user.id;
             const planSummary = await this.buildTenantPlanSummary({
                 id: ut.tenant.id,
                 plan: ut.tenant.plan as 'free' | 'starter' | 'freelance' | 'enterprise',
@@ -267,7 +268,7 @@ export class AuthService {
                 id: ut.tenant.id,
                 businessName: ut.tenant.businessName,
                 role: ut.role.name,
-                isOwner: ut.isOwner,
+                isOwner,
                 status: ut.tenant.status,
                 permissions: ut.role.permissions.map((rp) => rp.permission.key),
                 ...planSummary,
@@ -282,7 +283,7 @@ export class AuthService {
                 userId: user.id,
                 email: user.email,
                 tenantId: firstTenant.id,
-                role: firstTenant.role.toLowerCase(),
+                role: firstTenant.isOwner ? 'owner' : firstTenant.role.toLowerCase(),
                 isSuperAdmin: user.isSuperAdmin || undefined,
             };
         } else {
@@ -351,11 +352,13 @@ export class AuthService {
             throw new AppError(ERROR_CODES.NOT_FOUND, 'User not found', 404);
         }
 
+        const isOwner = userTenant.isOwner || userTenant.tenant.ownerId === userId;
+
         const payload: JWTPayload = {
             userId,
             email: user.email,
             tenantId: data.tenantId,
-            role: userTenant.role.name.toLowerCase(),
+            role: isOwner ? 'owner' : userTenant.role.name.toLowerCase(),
             isSuperAdmin: user.isSuperAdmin || undefined,
         };
 
@@ -377,7 +380,7 @@ export class AuthService {
                 id: userTenant.tenant.id,
                 businessName: userTenant.tenant.businessName,
                 role: userTenant.role.name,
-                isOwner: userTenant.isOwner,
+                isOwner,
                 permissions: userTenant.role.permissions.map((rp) => rp.permission.key),
                 ...(await this.buildTenantPlanSummary({
                     id: userTenant.tenant.id,
@@ -474,20 +477,23 @@ export class AuthService {
                 status: user.status,
                 isSuperAdmin: user.isSuperAdmin,
             },
-            tenants: await Promise.all(userTenants.map(async (ut) => ({
-                id: ut.tenant.id,
-                businessName: ut.tenant.businessName,
-                role: ut.role.name,
-                isOwner: ut.isOwner,
-                status: ut.tenant.status,
-                permissions: ut.role.permissions.map((rp) => rp.permission.key),
-                ...(await this.buildTenantPlanSummary({
+            tenants: await Promise.all(userTenants.map(async (ut) => {
+                const isOwner = ut.isOwner || ut.tenant.ownerId === user.id;
+                return {
                     id: ut.tenant.id,
-                    plan: ut.tenant.plan as 'free' | 'starter' | 'freelance' | 'enterprise',
-                    billingInterval: ut.tenant.billingInterval as 'monthly' | 'annual',
-                    addonBundles: ut.tenant.addonBundles,
-                })),
-            }))),
+                    businessName: ut.tenant.businessName,
+                    role: ut.role.name,
+                    isOwner,
+                    status: ut.tenant.status,
+                    permissions: ut.role.permissions.map((rp) => rp.permission.key),
+                    ...(await this.buildTenantPlanSummary({
+                        id: ut.tenant.id,
+                        plan: ut.tenant.plan as 'free' | 'starter' | 'freelance' | 'enterprise',
+                        billingInterval: ut.tenant.billingInterval as 'monthly' | 'annual',
+                        addonBundles: ut.tenant.addonBundles,
+                    })),
+                };
+            })),
         };
     }
 

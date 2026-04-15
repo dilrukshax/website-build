@@ -96,7 +96,7 @@ export default function LoginPage() {
         const result = await login(trimmedEmail, password);
 
         if (result.success) {
-            const redirect = searchParams.get('redirect') || '/dashboard';
+            const redirect = searchParams.get('redirect') || result.redirectTo || '/dashboard';
             router.push(redirect);
         } else {
             const hasFieldErrors = applyServerFieldErrors(result.details);

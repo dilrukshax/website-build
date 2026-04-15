@@ -17,6 +17,7 @@ export const registerSchema = z.object({
     email: emailSchema,
     password: strongPasswordSchema,
     fullName: z.string().trim().min(1, 'Full name is required').max(255, 'Full name is too long'),
+    whatsappNumber: z.string().trim().min(1, 'WhatsApp number is required').max(50, 'WhatsApp number is too long'),
 });
 
 export const loginSchema = z.object({

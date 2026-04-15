@@ -5,6 +5,28 @@ export interface RoutingIndexPointer {
     indexUrl: string | null;
 }
 
+type CachedRoutingIndexPointer = {
+    expiresAt: number;
+    pointer: RoutingIndexPointer;
+};
+
+function parsePositiveInteger(input: string | undefined, fallback: number): number {
+    const value = Number(input);
+    if (!Number.isFinite(value) || value <= 0) {
+        return fallback;
+    }
+
+    return Math.floor(value);
+}
+
+const ROUTING_INDEX_CACHE_TTL_MS = parsePositiveInteger(
+    process.env.ROUTING_INDEX_CACHE_TTL_MS || process.env.NEXT_PUBLIC_ROUTING_INDEX_CACHE_TTL_MS,
+    30_000,
+);
+const SHOULD_CACHE_POINTER = process.env.NODE_ENV !== 'test';
+
+let cachedPointer: CachedRoutingIndexPointer | null = null;
+
 function normalizeBaseUrl(input: string | null | undefined): string {
     const value = (input || '').trim();
     if (!value) {
@@ -53,6 +75,11 @@ function resolveVersionIndexUrl(pointer: RoutingIndexPointer): string {
 }
 
 export async function fetchCurrentRoutingIndexPointer(): Promise<RoutingIndexPointer | null> {
+    const now = Date.now();
+    if (SHOULD_CACHE_POINTER && cachedPointer && cachedPointer.expiresAt > now) {
+        return cachedPointer.pointer;
+    }
+
     const currentUrl = resolveCurrentIndexUrl();
     if (!currentUrl) {
         return null;
@@ -61,7 +88,6 @@ export async function fetchCurrentRoutingIndexPointer(): Promise<RoutingIndexPoi
     try {
         const response = await fetch(currentUrl, {
             method: 'GET',
-            cache: 'no-store',
         });
         if (!response.ok) {
             return null;
@@ -69,10 +95,19 @@ export async function fetchCurrentRoutingIndexPointer(): Promise<RoutingIndexPoi
 
         const pointer = await response.json() as RoutingIndexPointer;
         const resolvedVersionUrl = resolveVersionIndexUrl(pointer);
-        return {
+        const hydratedPointer = {
             ...pointer,
             indexUrl: pointer.indexUrl || resolvedVersionUrl || null,
         };
+
+        if (SHOULD_CACHE_POINTER) {
+            cachedPointer = {
+                expiresAt: now + ROUTING_INDEX_CACHE_TTL_MS,
+                pointer: hydratedPointer,
+            };
+        }
+
+        return hydratedPointer;
     } catch {
         return null;
     }

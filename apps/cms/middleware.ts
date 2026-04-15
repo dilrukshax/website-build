@@ -4,10 +4,12 @@ import type { NextRequest } from 'next/server';
 const AUTH_PATHS = ['/login', '/register', '/forgot-password', '/reset-password'];
 const PUBLIC_PATHS = ['/preview', '/web', '/routing-index', '/published', '/api'];
 const ONBOARDING_PATHS = ['/onboarding'];
-const UNKNOWN_SUBDOMAIN = '__unknown__';
 
 const ROOT_DOMAIN = process.env.NEXT_PUBLIC_SITE_DOMAIN || process.env.SITE_DOMAIN || 'buildmyonlineweb.site';
 const CMS_PLATFORM_URL = process.env.CMS_URL || process.env.NEXT_PUBLIC_CMS_URL || '';
+const API_PLATFORM_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_BASE_URL || '';
+const PLATFORM_HOST_BYPASS = process.env.PLATFORM_HOST_BYPASS || process.env.NEXT_PUBLIC_PLATFORM_HOST_BYPASS || '';
+const RESERVED_PLATFORM_SUBDOMAINS = ['staging', 'staging-api'];
 const ROUTING_INDEX_CACHE_TTL_MS = Number(process.env.NEXT_PUBLIC_ROUTING_INDEX_CACHE_TTL_MS || 30_000);
 
 function normalizeHost(host: string | null | undefined): string {
@@ -41,6 +43,71 @@ function normalizeBaseUrl(input: string | null | undefined): string {
     } catch {
         return '';
     }
+}
+
+function parseHostList(input: string | null | undefined): string[] {
+    if (!input) {
+        return [];
+    }
+
+    return input
+        .split(',')
+        .map((value) => normalizeHost(value))
+        .filter(Boolean);
+}
+
+function addHostWithVariants(hosts: Set<string>, host: string): void {
+    if (!host) {
+        return;
+    }
+
+    hosts.add(host);
+
+    if (host.startsWith('www.')) {
+        const apex = host.slice(4);
+        if (apex) {
+            hosts.add(apex);
+        }
+        return;
+    }
+
+    hosts.add(`www.${host}`);
+}
+
+function addReservedPlatformSubdomainHosts(hosts: Set<string>, rootDomain: string): void {
+    if (!rootDomain) {
+        return;
+    }
+
+    for (const subdomain of RESERVED_PLATFORM_SUBDOMAINS) {
+        addHostWithVariants(hosts, `${subdomain}.${rootDomain}`);
+    }
+}
+
+function resolvePlatformBypassHosts(): Set<string> {
+    const hosts = new Set<string>();
+    const normalizedRootDomain = normalizeHost(ROOT_DOMAIN);
+    const configuredHosts = [
+        normalizeHost(CMS_PLATFORM_URL),
+        normalizeHost(API_PLATFORM_URL),
+        ...parseHostList(PLATFORM_HOST_BYPASS),
+    ];
+
+    for (const host of configuredHosts) {
+        addHostWithVariants(hosts, host);
+    }
+
+    addReservedPlatformSubdomainHosts(hosts, normalizedRootDomain);
+
+    return hosts;
+}
+
+function isPlatformBypassHost(hostname: string): boolean {
+    if (!hostname) {
+        return false;
+    }
+
+    return resolvePlatformBypassHosts().has(hostname);
 }
 
 function isLocalDevelopmentHost(hostname: string): boolean {
@@ -202,7 +269,6 @@ export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
     const hostname = normalizeHost(request.headers.get('host'));
     const rootDomain = normalizeHost(ROOT_DOMAIN);
-    const cmsPlatformHost = normalizeHost(CMS_PLATFORM_URL);
 
     const isWebProxyPath = pathname === '/web' || pathname.startsWith('/web/');
     const isPreviewPath = pathname === '/preview' || pathname.startsWith('/preview/');
@@ -214,12 +280,17 @@ export async function middleware(request: NextRequest) {
         Boolean(hostname && rootDomain) &&
         hostname !== rootDomain &&
         hostname !== `www.${rootDomain}` &&
-        hostname !== cmsPlatformHost &&
+        !isPlatformBypassHost(hostname) &&
         !isLocalDevelopmentHost(hostname);
 
     if (isPublishedHostCandidate && !isWebProxyPath && !isPreviewPath && !isRoutingIndexPath && !isPublishedProxyPath && !isApiProxyPath) {
         const resolvedSubdomain = await resolveSubdomainFromHost(hostname);
-        return NextResponse.rewrite(buildPreviewRewriteUrl(request, resolvedSubdomain || UNKNOWN_SUBDOMAIN));
+        if (resolvedSubdomain) {
+            return NextResponse.rewrite(buildPreviewRewriteUrl(request, resolvedSubdomain));
+        }
+
+        // If no host mapping exists yet, keep normal CMS routing instead of forcing a preview 404.
+        return NextResponse.next();
     }
 
     const accessToken = request.cookies.get('accessToken')?.value;

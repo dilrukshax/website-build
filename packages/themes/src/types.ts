@@ -12,3 +12,18 @@ export interface ThemeComponentProps {
     isEditor?: boolean;
     context?: { tenantId: string; instanceId: string; pageSlug?: string };
 }
+
+export interface ThemeTemplate {
+    id: string;
+    name: string;
+    description: string;
+    tokens: {
+        primary: string;
+        secondary: string;
+        accent: string;
+        text: string;
+        background: string;
+        font: string;
+    };
+    layout: Record<string, string>; // Maps section names to component_keys (e.g., 'header': 'header/v1')
+}

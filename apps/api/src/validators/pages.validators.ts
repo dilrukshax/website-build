@@ -1,16 +1,11 @@
 import { z } from 'zod';
+import { seoDataSchema } from './seo.validators';
 
 export const createPageSchema = z.object({
     title: z.string().min(1, 'Title is required').max(255),
     slug: z.string().min(1).max(255)
         .regex(/^[a-z0-9][a-z0-9-]*[a-z0-9]$|^\/$/, 'Slug must contain only lowercase letters, numbers, and hyphens (or "/" for home)'),
-    seoJsonb: z.object({
-        metaTitle: z.string().max(255).optional(),
-        metaDescription: z.string().max(500).optional(),
-        ogTitle: z.string().max(255).optional(),
-        ogDescription: z.string().max(500).optional(),
-        ogImageUrl: z.string().url().optional(),
-    }).optional(),
+    seoJsonb: seoDataSchema.nullable().optional(),
 });
 
 export const updatePageSchema = z.object({
@@ -18,13 +13,7 @@ export const updatePageSchema = z.object({
     slug: z.string().min(1).max(255)
         .regex(/^[a-z0-9][a-z0-9-]*[a-z0-9]$|^\/$/, 'Slug must contain only lowercase letters, numbers, and hyphens')
         .optional(),
-    seoJsonb: z.object({
-        metaTitle: z.string().max(255).optional(),
-        metaDescription: z.string().max(500).optional(),
-        ogTitle: z.string().max(255).optional(),
-        ogDescription: z.string().max(500).optional(),
-        ogImageUrl: z.string().url().optional(),
-    }).optional(),
+    seoJsonb: seoDataSchema.nullable().optional(),
     isPublished: z.boolean().optional(),
 });
 

@@ -29,11 +29,11 @@ export const DEFAULT_PLAN_CATALOG: Record<CanonicalPlanTier, PlanCatalogDefaults
         maxInstances: 1,
         maxCustomDomains: 1,
         maxPagesPerInstance: 5,
-        maxAccessibleThemes: 10,
-        allowPremiumTemplates: false,
+        maxAccessibleThemes: null,
+        allowPremiumTemplates: true,
         maxBookingsPerDay: 10,
         maxActiveServices: 5,
-        allowStaffAccounts: false,
+        allowStaffAccounts: true,
         allowAddonBundle: false,
         addonMonthlyPriceCents: null,
         addonAnnualPriceCents: null,
@@ -44,7 +44,7 @@ export const DEFAULT_PLAN_CATALOG: Record<CanonicalPlanTier, PlanCatalogDefaults
         maxInstances: 1,
         maxCustomDomains: 1,
         maxPagesPerInstance: 25,
-        maxAccessibleThemes: 100,
+        maxAccessibleThemes: null,
         allowPremiumTemplates: true,
         maxBookingsPerDay: null,
         maxActiveServices: null,
@@ -59,7 +59,7 @@ export const DEFAULT_PLAN_CATALOG: Record<CanonicalPlanTier, PlanCatalogDefaults
         maxInstances: 10,
         maxCustomDomains: 10,
         maxPagesPerInstance: 25,
-        maxAccessibleThemes: 100,
+        maxAccessibleThemes: null,
         allowPremiumTemplates: true,
         maxBookingsPerDay: null,
         maxActiveServices: null,
@@ -74,7 +74,7 @@ export const DEFAULT_PLAN_CATALOG: Record<CanonicalPlanTier, PlanCatalogDefaults
         maxInstances: 100,
         maxCustomDomains: 100,
         maxPagesPerInstance: null,
-        maxAccessibleThemes: 100,
+        maxAccessibleThemes: null,
         allowPremiumTemplates: true,
         maxBookingsPerDay: null,
         maxActiveServices: null,
@@ -294,7 +294,7 @@ export class PlanPolicyService {
         if (limits.maxAccessibleThemes !== null && theme.accessRank > limits.maxAccessibleThemes) {
             throw new AppError(
                 'PLAN_LIMIT_REACHED',
-                'This section is not available on your current plan. Upgrade to unlock more themes.',
+                'This section is not available on your current plan.',
                 403,
             );
         }
@@ -316,7 +316,7 @@ export class PlanPolicyService {
         if (template.isPremium && !limits.allowPremiumTemplates) {
             throw new AppError(
                 'PLAN_LIMIT_REACHED',
-                'Premium templates are not available on your current plan.',
+                'This template is not available on your current plan.',
                 403,
             );
         }

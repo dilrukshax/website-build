@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { api } from '../../lib/api-client';
+import { uploadCmsImage } from '../../lib/media-upload';
 
 interface SchemaProperty {
     type: string;
@@ -347,13 +347,6 @@ function ArrayField({ label, itemSchema, value, onChange, pages = [] }: ArrayFie
 // Image Upload Field with preview
 // ============================================================
 
-interface PresignUploadData {
-    mediaAssetId: string;
-    uploadUrl: string;
-    publicUrl: string;
-    headers?: Record<string, string>;
-}
-
 function readErrorMessage(rawError: unknown): string {
     if (rawError instanceof Error && rawError.message) {
         return rawError.message;
@@ -375,42 +368,8 @@ function ImageUploadField({ fieldKey, label, value, onChange }: { fieldKey: stri
                 throw new Error('Only image files are allowed');
             }
 
-            const presignResponse = await api.post<PresignUploadData>('/cms/uploads/presign', {
-                fileName: file.name,
-                mimeType: file.type,
-                fileSize: file.size,
-            });
-
-            if (!presignResponse.success || !presignResponse.data) {
-                throw new Error(presignResponse.error?.message || 'Unable to prepare upload');
-            }
-
-            const presignData = presignResponse.data;
-            const uploadHeaders = new Headers(presignData.headers || {});
-            if (!uploadHeaders.has('Content-Type') && file.type) {
-                uploadHeaders.set('Content-Type', file.type);
-            }
-
-            const uploadResponse = await fetch(presignData.uploadUrl, {
-                method: 'PUT',
-                headers: uploadHeaders,
-                body: file,
-            });
-
-            if (!uploadResponse.ok) {
-                throw new Error(`Upload failed with status ${uploadResponse.status}`);
-            }
-
-            const completeResponse = await api.post('/cms/uploads/complete', {
-                mediaAssetId: presignData.mediaAssetId,
-                etag: uploadResponse.headers.get('etag') || undefined,
-            });
-
-            if (!completeResponse.success) {
-                throw new Error(completeResponse.error?.message || 'Unable to finalize upload');
-            }
-
-            onChange(presignData.publicUrl);
+            const publicUrl = await uploadCmsImage(file);
+            onChange(publicUrl);
             setPreviewError(false);
         } catch (error) {
             setUploadError(readErrorMessage(error));

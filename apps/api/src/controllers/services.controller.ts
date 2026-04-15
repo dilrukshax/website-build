@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import { db } from '@booking-engine/database';
 import { AppError } from '../middleware/error';
 import { ERROR_CODES } from '@booking-engine/core';
-import { PlanPolicyService } from '../services/plan-policy.service';
 
 export class ServicesController {
     static async listCms(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -59,13 +58,6 @@ export class ServicesController {
             const tenantId = req.tenant!.id;
             const instanceId = req.instance!.id;
 
-            await PlanPolicyService.assertCanCreateOrActivateService({
-                tenantId,
-                instanceId,
-                currentIsActive: false,
-                nextIsActive: req.body.isActive ?? true,
-            });
-
             const maxSort = await db.service.aggregate({
                 where: { tenantId, instanceId },
                 _max: { sortOrder: true },
@@ -95,13 +87,6 @@ export class ServicesController {
             if (!existing) {
                 throw new AppError(ERROR_CODES.NOT_FOUND, 'Service not found', 404);
             }
-
-            await PlanPolicyService.assertCanCreateOrActivateService({
-                tenantId,
-                instanceId,
-                currentIsActive: existing.isActive,
-                nextIsActive: req.body.isActive ?? existing.isActive,
-            });
 
             const service = await db.service.update({
                 where: { id: req.params.id },

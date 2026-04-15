@@ -17,6 +17,7 @@ export type {
     RefreshToken,
     Customer,
     Service,
+    Product,
     Booking,
     Inquiry,
     Feedback,

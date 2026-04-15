@@ -6,6 +6,8 @@ const mocks = vi.hoisted(() => ({
     instanceFindUnique: vi.fn(),
     instanceFindFirst: vi.fn(),
     instanceCreate: vi.fn(),
+    pageCreate: vi.fn(),
+    mediaAssetFindMany: vi.fn(),
     instanceUpdate: vi.fn(),
     instanceDelete: vi.fn(),
     domainRouteFindUnique: vi.fn(),
@@ -20,6 +22,8 @@ const mocks = vi.hoisted(() => ({
     assertCanAttachCustomDomain: vi.fn(),
     grantActivationRewardIfEligible: vi.fn(),
     rebuildAndPublish: vi.fn(),
+    s3IsConfigured: vi.fn(),
+    deleteInstanceArtifacts: vi.fn(),
 }));
 
 vi.mock('@booking-engine/database', () => ({
@@ -31,6 +35,12 @@ vi.mock('@booking-engine/database', () => ({
             create: mocks.instanceCreate,
             update: mocks.instanceUpdate,
             delete: mocks.instanceDelete,
+        },
+        page: {
+            create: mocks.pageCreate,
+        },
+        mediaAsset: {
+            findMany: mocks.mediaAssetFindMany,
         },
         domainRoute: {
             findUnique: mocks.domainRouteFindUnique,
@@ -66,6 +76,13 @@ vi.mock('../../services/routing-index.service', () => ({
     },
 }));
 
+vi.mock('../../services/s3.service', () => ({
+    S3Service: class S3ServiceMock {
+        isConfigured = mocks.s3IsConfigured;
+        deleteInstanceArtifacts = mocks.deleteInstanceArtifacts;
+    },
+}));
+
 function createResponse() {
     const res: {
         status: ReturnType<typeof vi.fn>;
@@ -88,7 +105,25 @@ describe('InstancesController fullDomain behavior', () => {
         mocks.assertCanCreateInstance.mockResolvedValue(undefined);
         mocks.assertCanAttachCustomDomain.mockResolvedValue(undefined);
         mocks.grantActivationRewardIfEligible.mockResolvedValue(undefined);
+        mocks.s3IsConfigured.mockReturnValue(true);
+        mocks.deleteInstanceArtifacts.mockResolvedValue({
+            deletedPublishedObjectCount: 2,
+            deletedMediaObjectCount: 1,
+            deletedTotalCount: 3,
+        });
         mocks.tenantFindUnique.mockResolvedValue({ ownerId: 'owner-1' });
+        mocks.pageCreate.mockResolvedValue({
+            id: 'page-home',
+            slug: '/',
+            title: 'Home',
+            instanceId: 'inst-1',
+            tenantId: 'tenant-1',
+            sortOrder: 0,
+            seoJsonb: null,
+            isPublished: false,
+            createdAt: new Date('2026-03-09T10:00:00.000Z'),
+            updatedAt: new Date('2026-03-09T10:00:00.000Z'),
+        });
         mocks.rebuildAndPublish.mockResolvedValue({
             pointer: {
                 version: 'v-1',
@@ -153,6 +188,15 @@ describe('InstancesController fullDomain behavior', () => {
                 name: 'My Salon',
             }),
         });
+        expect(mocks.pageCreate).toHaveBeenCalledWith({
+            data: expect.objectContaining({
+                tenantId: 'tenant-1',
+                instanceId: 'inst-1',
+                title: 'Home',
+                slug: '/',
+                sortOrder: 0,
+            }),
+        });
         expect(mocks.rebuildAndPublish).toHaveBeenCalled();
         expect(res.status).toHaveBeenCalledWith(201);
         expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
@@ -206,7 +250,7 @@ describe('InstancesController fullDomain behavior', () => {
         }));
     });
 
-    it('returns active custom domain compatibility state in list response', async () => {
+    it('returns pending custom domain compatibility state in list response by default', async () => {
         mocks.instanceFindMany.mockResolvedValue([
             {
                 id: 'inst-1',
@@ -233,9 +277,9 @@ describe('InstancesController fullDomain behavior', () => {
             success: true,
             data: [expect.objectContaining({
                 customDomain: 'www.clientsite.com',
-                customDomainHostnameStatus: 'active',
-                customDomainSslStatus: 'active',
-                customDomainIsActive: true,
+                customDomainHostnameStatus: 'pending',
+                customDomainSslStatus: 'pending',
+                customDomainIsActive: false,
             })],
         }));
     });
@@ -276,7 +320,13 @@ describe('InstancesController fullDomain behavior', () => {
         expect(mocks.domainRouteUpsert).toHaveBeenCalled();
         expect(mocks.instanceUpdate).toHaveBeenCalledWith({
             where: { id: 'inst-1' },
-            data: { customDomain: 'www.clientsite.com' },
+            data: {
+                customDomain: 'www.clientsite.com',
+                customDomainHostnameStatus: 'pending',
+                customDomainSslStatus: 'pending',
+                customDomainLastCheckedAt: null,
+                customDomainActivatedAt: null,
+            },
         });
         expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
             success: true,
@@ -313,11 +363,90 @@ describe('InstancesController fullDomain behavior', () => {
         expect(mocks.domainRouteDelete).toHaveBeenCalled();
         expect(mocks.instanceUpdate).toHaveBeenCalledWith({
             where: { id: 'inst-1' },
-            data: { customDomain: 'clientsite.com' },
+            data: {
+                customDomain: 'clientsite.com',
+                customDomainHostnameStatus: 'pending',
+                customDomainSslStatus: 'pending',
+                customDomainLastCheckedAt: null,
+                customDomainActivatedAt: null,
+            },
         });
         expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
             success: true,
             data: expect.objectContaining({ removed: true, host: 'www.clientsite.com' }),
         }));
+    });
+
+    it('deletes storage artifacts before deleting instance record', async () => {
+        mocks.instanceFindFirst.mockResolvedValue({
+            id: 'inst-1',
+            tenantId: 'tenant-1',
+            fullDomain: 'mysalon.buildmyonlineweb.site',
+            customDomain: 'www.clientsite.com',
+        });
+        mocks.mediaAssetFindMany.mockResolvedValue([
+            { objectKey: 'uploads/tenant-1/inst-1/2026/04/03/a.png' },
+            { objectKey: 'uploads/tenant-1/inst-1/2026/04/03/b.png' },
+        ]);
+        mocks.instanceDelete.mockResolvedValue({ id: 'inst-1' });
+
+        const req = {
+            tenant: { id: 'tenant-1' },
+            params: { id: 'inst-1' },
+        } as any;
+        const res = createResponse();
+        const next = vi.fn();
+
+        await InstancesController.deactivate(req, res as any, next);
+
+        expect(next).not.toHaveBeenCalled();
+        expect(mocks.deleteInstanceArtifacts).toHaveBeenCalledWith({
+            tenantId: 'tenant-1',
+            instanceId: 'inst-1',
+            mediaObjectKeys: [
+                'uploads/tenant-1/inst-1/2026/04/03/a.png',
+                'uploads/tenant-1/inst-1/2026/04/03/b.png',
+            ],
+        });
+        const cleanupCallOrder = mocks.deleteInstanceArtifacts.mock.invocationCallOrder[0];
+        const deleteCallOrder = mocks.instanceDelete.mock.invocationCallOrder[0];
+        expect(cleanupCallOrder ?? 0).toBeLessThan(deleteCallOrder ?? 0);
+        expect(res.json).toHaveBeenCalledWith({
+            success: true,
+            data: {
+                message: 'Instance deleted successfully',
+                storageCleanup: {
+                    deletedPublishedObjectCount: 2,
+                    deletedMediaObjectCount: 1,
+                    deletedTotalCount: 3,
+                },
+            },
+        });
+    });
+
+    it('fails deletion when R2 cleanup is unavailable', async () => {
+        mocks.instanceFindFirst.mockResolvedValue({
+            id: 'inst-1',
+            tenantId: 'tenant-1',
+            fullDomain: 'mysalon.buildmyonlineweb.site',
+            customDomain: null,
+        });
+        mocks.mediaAssetFindMany.mockResolvedValue([]);
+        mocks.s3IsConfigured.mockReturnValue(false);
+
+        const req = {
+            tenant: { id: 'tenant-1' },
+            params: { id: 'inst-1' },
+        } as any;
+        const res = createResponse();
+        const next = vi.fn();
+
+        await InstancesController.deactivate(req, res as any, next);
+
+        expect(next).toHaveBeenCalledTimes(1);
+        expect(mocks.instanceDelete).not.toHaveBeenCalled();
+        const error = next.mock.calls[0]?.[0] as { code?: string; statusCode?: number };
+        expect(error.code).toBe('INTERNAL_ERROR');
+        expect(error.statusCode).toBe(500);
     });
 });

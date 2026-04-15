@@ -11,10 +11,12 @@ describe('auth validators', () => {
             email: '  test@example.com  ',
             password: 'Password123',
             fullName: '  Test User  ',
+            whatsappNumber: '  +94 77 123 4567  ',
         });
 
         expect(parsed.email).toBe('test@example.com');
         expect(parsed.fullName).toBe('Test User');
+        expect(parsed.whatsappNumber).toBe('+94 77 123 4567');
     });
 
     it('rejects weak register password with rule-specific messages', () => {
@@ -22,6 +24,7 @@ describe('auth validators', () => {
             email: 'test@example.com',
             password: 'password',
             fullName: 'Test User',
+            whatsappNumber: '+94 77 123 4567',
         });
 
         expect(parsed.success).toBe(false);
@@ -29,6 +32,21 @@ describe('auth validators', () => {
             const messages = parsed.error.issues.map((issue) => issue.message);
             expect(messages).toContain('Password must contain at least one uppercase letter');
             expect(messages).toContain('Password must contain at least one number');
+        }
+    });
+
+    it('requires WhatsApp number for register payloads', () => {
+        const parsed = registerSchema.safeParse({
+            email: 'test@example.com',
+            password: 'Password123',
+            fullName: 'Test User',
+            whatsappNumber: '   ',
+        });
+
+        expect(parsed.success).toBe(false);
+        if (!parsed.success) {
+            const messages = parsed.error.issues.map((issue) => issue.message);
+            expect(messages).toContain('WhatsApp number is required');
         }
     });
 

@@ -1,161 +1,126 @@
 import React from 'react';
 import type { ThemeComponentProps } from '../../types';
 
-export default function HeroV2({ content, styles, tokens }: ThemeComponentProps) {
-    const title = (content.title as string) || 'Welcome to our platform';
-    const subtitle = content.subtitle as string | undefined;
-    const ctaTextPrimary = (content.ctaTextPrimary as string) || 'Get Started';
-    const ctaLinkPrimary = (content.ctaLinkPrimary as string) || '#';
-    const ctaTextSecondary = content.ctaTextSecondary as string | undefined;
-    const ctaLinkSecondary = (content.ctaLinkSecondary as string) || '#';
-    const imageUrl = (content.imageUrl as string) || 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&q=80&w=800&h=600';
-    const imageAlt = (content.imageAlt as string) || 'Hero image';
-
-    // Styles
-    const layout = (styles.layout as string) || 'image-right'; // 'image-right' or 'image-left'
-    const padding = (styles.padding as string) || 'large'; // 'small', 'medium', 'large'
-
-    const paddingStyles = {
-        small: '40px 24px',
-        medium: '80px 24px',
-        large: '120px 24px',
-    }[padding];
-
-    const flexDirection = layout === 'image-left' ? 'row-reverse' : 'row';
-
+export default function HeroV2({ content, tokens }: ThemeComponentProps) {
+    const headline = content.headline as string || content.title as string || 'Digital Dreams Await';
+    const subheadline = content.subheadline as string || content.subtitle as string || 'Step into the future. Discover bookings powered by next-generation technology.';
+    const ctaText = content.ctaText as string || content.ctaTextPrimary as string || 'Explore Now';
+    const ctaLinkCandidate = content.ctaLink as string || content.ctaLinkPrimary as string;
+    const ctaLink = ctaLinkCandidate && ctaLinkCandidate !== '#' ? ctaLinkCandidate : '#booking-widget';
+    const imageUrl = content.imageUrl as string || content.backgroundImage as string || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=2070';
+    
     return (
-        <section style={{
-            padding: paddingStyles,
-            backgroundColor: tokens.background,
+        <section style={{ 
             fontFamily: tokens.font,
-            color: tokens.text,
+            backgroundColor: tokens.background,
+            minHeight: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            position: 'relative',
             overflow: 'hidden',
+            color: tokens.text,
         }}>
             <div style={{
-                maxWidth: '1280px',
+                position: 'absolute',
+                top: '20%',
+                left: '-10%',
+                width: '50vw',
+                height: '50vw',
+                backgroundColor: tokens.primary,
+                borderRadius: '50%',
+                filter: 'blur(150px)',
+                opacity: 0.3,
+                zIndex: 0
+            }} />
+            <div style={{
+                position: 'absolute',
+                bottom: '10%',
+                right: '-10%',
+                width: '40vw',
+                height: '40vw',
+                backgroundColor: tokens.accent,
+                borderRadius: '50%',
+                filter: 'blur(150px)',
+                opacity: 0.2,
+                zIndex: 0
+            }} />
+
+            <div style={{
+                maxWidth: '1200px',
                 margin: '0 auto',
-                display: 'flex',
-                flexDirection: flexDirection as 'row' | 'row-reverse',
+                padding: 'clamp(84px, 12vw, 120px) 16px',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                gap: 'clamp(22px, 6vw, 64px)',
                 alignItems: 'center',
-                gap: '64px',
-                flexWrap: 'wrap',
+                zIndex: 1,
+                position: 'relative'
             }}>
-                {/* Text Content Area */}
-                <div style={{
-                    flex: '1 1 500px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '24px',
-                    padding: layout === 'image-left' ? '0 0 0 20px' : '0 20px 0 0',
-                }}>
+                <div>
                     <h1 style={{
-                        fontSize: 'clamp(40px, 5vw, 64px)',
-                        fontWeight: 800,
-                        lineHeight: 1.1,
-                        margin: 0,
-                        letterSpacing: '-1px',
-                        color: tokens.text,
+                        fontSize: 'clamp(34px, 9vw, 76px)',
+                        fontWeight: 900,
+                        color: '#fff',
+                        lineHeight: 1.08,
+                        letterSpacing: '-0.04em',
+                        marginBottom: '32px',
+                        textShadow: `0 0 30px ${tokens.primary}80`
                     }}>
-                        {title}
+                        {headline}
                     </h1>
-
-                    {subtitle && (
-                        <p style={{
-                            fontSize: 'clamp(18px, 2vw, 20px)',
-                            lineHeight: 1.6,
-                            color: '#6b7280',
-                            margin: 0,
-                            maxWidth: '560px',
-                        }}>
-                            {subtitle}
-                        </p>
-                    )}
-
-                    <div style={{
-                        display: 'flex',
-                        gap: '16px',
-                        marginTop: '16px',
-                        flexWrap: 'wrap',
+                    <p style={{
+                        fontSize: 'clamp(15px, 3.8vw, 20px)',
+                        lineHeight: 1.6,
+                        color: 'rgba(255,255,255,0.7)',
+                        marginBottom: '48px',
+                        maxWidth: '500px',
+                        fontWeight: 300
                     }}>
-                        {ctaTextPrimary && (
-                            <a href={ctaLinkPrimary} style={{
-                                padding: '16px 32px',
-                                backgroundColor: tokens.primary,
-                                color: '#fff',
-                                textDecoration: 'none',
-                                borderRadius: '8px',
-                                fontWeight: 600,
-                                fontSize: '16px',
-                                transition: 'transform 0.2s',
-                                textAlign: 'center',
-                            }}
-                               onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-                               onMouseLeave={(e) => e.currentTarget.style.transform = 'none'}
-                            >
-                                {ctaTextPrimary}
-                            </a>
-                        )}
-
-                        {ctaTextSecondary && (
-                            <a href={ctaLinkSecondary} style={{
-                                padding: '16px 32px',
-                                backgroundColor: 'transparent',
-                                color: tokens.primary,
-                                textDecoration: 'none',
-                                borderRadius: '8px',
-                                fontWeight: 600,
-                                fontSize: '16px',
-                                border: `2px solid ${tokens.primary}`,
-                                transition: 'all 0.2s',
-                                textAlign: 'center',
-                            }}
-                               onMouseEnter={(e) => {
-                                   e.currentTarget.style.transform = 'translateY(-2px)';
-                                   e.currentTarget.style.backgroundColor = `${tokens.primary}11`;
-                               }}
-                               onMouseLeave={(e) => {
-                                   e.currentTarget.style.transform = 'none';
-                                   e.currentTarget.style.backgroundColor = 'transparent';
-                               }}
-                            >
-                                {ctaTextSecondary}
-                            </a>
-                        )}
-                    </div>
+                        {subheadline}
+                    </p>
+                    <a href={ctaLink} style={{
+                        display: 'inline-block',
+                        background: `linear-gradient(135deg, ${tokens.primary}, ${tokens.accent})`,
+                        color: '#fff',
+                        padding: '12px 22px',
+                        borderRadius: '100px',
+                        fontSize: '14px',
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.1em',
+                        textDecoration: 'none',
+                        transition: 'all 0.3s ease',
+                        boxShadow: `0 10px 30px -10px ${tokens.primary}`
+                    }}
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-4px) scale(1.02)';
+                        e.currentTarget.style.boxShadow = `0 20px 40px -10px ${tokens.primary}`;
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                        e.currentTarget.style.boxShadow = `0 10px 30px -10px ${tokens.primary}`;
+                    }}>
+                        {ctaText}
+                    </a>
                 </div>
 
-                {/* Image Area */}
                 <div style={{
-                    flex: '1 1 500px',
                     position: 'relative',
                     borderRadius: '24px',
-                    overflow: 'hidden',
-                    boxShadow: '0 24px 48px rgba(0,0,0,0.1)',
+                    padding: '20px',
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    backdropFilter: 'blur(20px)',
+                    WebkitBackdropFilter: 'blur(20px)',
+                    boxShadow: '0 30px 60px rgba(0,0,0,0.4)',
+                    transform: 'perspective(1000px) rotateY(-2deg)',
                 }}>
-                    <img
-                        src={imageUrl}
-                        alt={imageAlt}
-                        style={{
-                            width: '100%',
-                            height: 'auto',
-                            maxHeight: '700px',
-                            objectFit: 'cover',
-                            display: 'block',
-                            transition: 'transform 0.5s ease',
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                    />
-                    
-                    {/* Decorative Blob pattern (optional visual flair) */}
-                    <div style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        background: `linear-gradient(45deg, ${tokens.primary}44, transparent)`,
-                        pointerEvents: 'none',
+                    <img src={imageUrl} alt="Hero" style={{
+                        width: '100%',
+                        height: 'auto',
+                        aspectRatio: '16/10',
+                        objectFit: 'cover',
+                        borderRadius: '16px',
                     }} />
                 </div>
             </div>

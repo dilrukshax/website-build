@@ -119,4 +119,12 @@ export const DEFAULT_WEBSITE_SETTINGS = {
         columns: [],
         social: [],
     },
+    seo: {
+        siteName: '',
+        defaults: {},
+        business: {
+            businessType: 'Organization',
+            sameAs: [],
+        },
+    },
 } as const;

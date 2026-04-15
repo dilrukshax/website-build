@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GET as getRootRoutingIndex } from '../routing-index/current.json/route';
 import { GET as getPreviewRoutingIndex } from '../preview/[subdomain]/routing-index/current.json/route';
+import { ROUTING_POINTER_CACHE_CONTROL } from '../../lib/cache-policy';
 
 describe('CMS routing-index proxy routes', () => {
     beforeEach(() => {
@@ -35,6 +36,7 @@ describe('CMS routing-index proxy routes', () => {
         expect(fetchMock).toHaveBeenCalledTimes(1);
         expect(fetchMock.mock.calls[0]?.[0]).toBe('https://cdn.example.com/routing-index/current.json');
         expect(response.status).toBe(200);
+        expect(response.headers.get('cache-control')).toBe(ROUTING_POINTER_CACHE_CONTROL);
         expect(payload.version).toBe('v-1');
         expect(payload.indexKey).toBe('routing-index/v-1.json');
         expect(payload.indexUrl).toBe('/published/routing-index/v-1.json');
@@ -57,6 +59,7 @@ describe('CMS routing-index proxy routes', () => {
         };
 
         expect(response.status).toBe(200);
+        expect(response.headers.get('cache-control')).toBe(ROUTING_POINTER_CACHE_CONTROL);
         expect(payload.version).toBe('v-2');
         expect(payload.indexUrl).toBe('/published/routing-index/v-2.json');
     });
@@ -76,6 +79,7 @@ describe('CMS routing-index proxy routes', () => {
 
         expect(fetchMock).not.toHaveBeenCalled();
         expect(response.status).toBe(404);
+        expect(response.headers.get('cache-control')).toBe(ROUTING_POINTER_CACHE_CONTROL);
         expect(payload.success).toBe(false);
         expect(payload.error?.code).toBe('ROUTING_INDEX_UNAVAILABLE');
     });

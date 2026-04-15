@@ -9,6 +9,7 @@ import { TenantsController } from '../../controllers/tenants.controller';
 import { InstancesController } from '../../controllers/instances.controller';
 import { CustomersController } from '../../controllers/customers.controller';
 import { ServicesController } from '../../controllers/services.controller';
+import { ProductsController } from '../../controllers/products.controller';
 import { BookingsController } from '../../controllers/bookings.controller';
 import { InquiriesController } from '../../controllers/inquiries.controller';
 import { FeedbackController } from '../../controllers/feedback.controller';
@@ -17,6 +18,7 @@ import { StaffController } from '../../controllers/staff.controller';
 import { PermissionsController } from '../../controllers/permissions.controller';
 import { createCustomerSchema, updateCustomerSchema } from '../../validators/customers.validators';
 import { createServiceSchema, reorderServicesSchema, updateServiceSchema } from '../../validators/services.validators';
+import { createProductSchema, reorderProductsSchema, updateProductSchema } from '../../validators/products.validators';
 import { createBookingSchema, cancelBookingSchema } from '../../validators/bookings.validators';
 import { updateInquiryStatusSchema } from '../../validators/inquiries.validators';
 import { createFeedbackRatingSchema, createFeedbackSuggestionSchema } from '../../validators/feedback.validators';
@@ -45,6 +47,7 @@ import { BillingController } from '../../controllers/billing.controller';
 import { SuperAdminBillingController } from '../../controllers/superadmin-billing.controller';
 import { SuperAdminReferralsController } from '../../controllers/superadmin-referrals.controller';
 import { SuperAdminController } from '../../controllers/superadmin.controller';
+import { SuperAdminLogsController } from '../../controllers/superadmin-logs.controller';
 import {
     addonPurchaseSchema,
     listChargesQuerySchema,
@@ -78,6 +81,9 @@ router.delete('/tenants/:id', TenantsController.deactivate);
 // Super Admin Routes
 router.use('/superadmin/tenants', superAdminRouter);
 router.get('/superadmin/dashboard', requireSuperAdmin, SuperAdminController.dashboardSummary);
+router.get('/superadmin/custom-domains', requireSuperAdmin, SuperAdminController.listCustomDomainRequests);
+router.post('/superadmin/custom-domains/:instanceId/mark-connected', requireSuperAdmin, SuperAdminController.markCustomDomainRequestConnected);
+router.get('/superadmin/runtime-logs', requireSuperAdmin, SuperAdminLogsController.runtimeLogs);
 router.post('/superadmin/routing-index/rebuild', requireSuperAdmin, RoutingIndexController.rebuild);
 router.get('/superadmin/feedback', requireSuperAdmin, FeedbackController.listSuperAdmin);
 router.get('/superadmin/billing/charges', requireSuperAdmin, validate(listChargesQuerySchema, 'query'), SuperAdminBillingController.listCharges);
@@ -118,6 +124,7 @@ tenantRouter.delete('/instances/:id/custom-domain/:host', InstancesController.re
 tenantRouter.post('/instances/:id/custom-domain', InstancesController.updateCustomDomainLegacy);
 tenantRouter.get('/instances/:id/custom-domain/status', InstancesController.getCustomDomainStatusLegacy);
 tenantRouter.get('/instances/:id/custom-domain/setup', InstancesController.getCustomDomainSetupLegacy);
+tenantRouter.post('/instances/:id/custom-domain/check', InstancesController.checkCustomDomainConnection);
 tenantRouter.delete('/instances/:id/custom-domain', InstancesController.removeCustomDomainLegacy);
 
 // --- Billing (tenant-scoped) ---
@@ -165,12 +172,20 @@ instanceRouter.put('/customers/:id', requirePermission('customers.update'), vali
 instanceRouter.delete('/customers/:id', requirePermission('customers.delete'), CustomersController.delete);
 
 // --- Services (instance-scoped) ---
-instanceRouter.get('/services', requirePermission('services.view'), ServicesController.listCms);
-instanceRouter.post('/services', requirePermission('services.create'), validate(createServiceSchema), ServicesController.create);
-instanceRouter.put('/services/reorder', requirePermission('services.update'), validate(reorderServicesSchema), ServicesController.reorder);
-instanceRouter.get('/services/:id', requirePermission('services.view'), ServicesController.getById);
-instanceRouter.put('/services/:id', requirePermission('services.update'), validate(updateServiceSchema), ServicesController.update);
-instanceRouter.delete('/services/:id', requirePermission('services.delete'), ServicesController.delete);
+instanceRouter.get('/services', ServicesController.listCms);
+instanceRouter.post('/services', validate(createServiceSchema), ServicesController.create);
+instanceRouter.put('/services/reorder', validate(reorderServicesSchema), ServicesController.reorder);
+instanceRouter.get('/services/:id', ServicesController.getById);
+instanceRouter.put('/services/:id', validate(updateServiceSchema), ServicesController.update);
+instanceRouter.delete('/services/:id', ServicesController.delete);
+
+// --- Products (instance-scoped) ---
+instanceRouter.get('/products', requirePermission('products.view'), ProductsController.listCms);
+instanceRouter.post('/products', requirePermission('products.create'), validate(createProductSchema), ProductsController.create);
+instanceRouter.put('/products/reorder', requirePermission('products.update'), validate(reorderProductsSchema), ProductsController.reorder);
+instanceRouter.get('/products/:id', requirePermission('products.view'), ProductsController.getById);
+instanceRouter.put('/products/:id', requirePermission('products.update'), validate(updateProductSchema), ProductsController.update);
+instanceRouter.delete('/products/:id', requirePermission('products.delete'), ProductsController.delete);
 
 // --- Bookings (instance-scoped) ---
 instanceRouter.get('/bookings', requirePermission('bookings.view'), BookingsController.list);
@@ -190,40 +205,40 @@ instanceRouter.put('/inquiries/:id/status', requirePermission('inquiries.update_
 instanceRouter.delete('/inquiries/:id', requirePermission('inquiries.delete'), InquiriesController.delete);
 
 // --- Pages (instance-scoped, website builder) ---
-instanceRouter.get('/pages', requirePermission('website.view'), PagesController.list);
-instanceRouter.post('/pages', requirePermission('website.edit'), validate(createPageSchema), PagesController.create);
-instanceRouter.put('/pages/reorder', requirePermission('website.edit'), validate(reorderPagesSchema), PagesController.reorder);
-instanceRouter.get('/pages/:id', requirePermission('website.view'), PagesController.getById);
-instanceRouter.put('/pages/:id', requirePermission('website.edit'), validate(updatePageSchema), PagesController.update);
-instanceRouter.delete('/pages/:id', requirePermission('website.edit'), PagesController.delete);
-instanceRouter.post('/pages/:id/apply-template', requirePermission('website.edit'), PagesController.applyTemplate);
+instanceRouter.get('/pages', PagesController.list);
+instanceRouter.post('/pages', validate(createPageSchema), PagesController.create);
+instanceRouter.put('/pages/reorder', validate(reorderPagesSchema), PagesController.reorder);
+instanceRouter.get('/pages/:id', PagesController.getById);
+instanceRouter.put('/pages/:id', validate(updatePageSchema), PagesController.update);
+instanceRouter.delete('/pages/:id', PagesController.delete);
+instanceRouter.post('/pages/:id/apply-template', PagesController.applyTemplate);
 
 // --- Page Sections (instance-scoped, website builder) ---
-instanceRouter.get('/pages/:pageId/sections', requirePermission('website.view'), SectionsController.listByPage);
-instanceRouter.post('/pages/:pageId/sections', requirePermission('website.edit'), validate(createSectionSchema), SectionsController.create);
-instanceRouter.put('/pages/:pageId/sections/reorder', requirePermission('website.edit'), validate(reorderSectionsSchema), SectionsController.reorder);
-instanceRouter.put('/sections/:id', requirePermission('website.edit'), validate(updateSectionSchema), SectionsController.update);
-instanceRouter.delete('/sections/:id', requirePermission('website.edit'), SectionsController.delete);
+instanceRouter.get('/pages/:pageId/sections', SectionsController.listByPage);
+instanceRouter.post('/pages/:pageId/sections', validate(createSectionSchema), SectionsController.create);
+instanceRouter.put('/pages/:pageId/sections/reorder', validate(reorderSectionsSchema), SectionsController.reorder);
+instanceRouter.put('/sections/:id', validate(updateSectionSchema), SectionsController.update);
+instanceRouter.delete('/sections/:id', SectionsController.delete);
 
 // --- Feature Toggles (instance-scoped) ---
-instanceRouter.get('/feature-toggles', requirePermission('website.settings'), FeatureTogglesController.list);
-instanceRouter.put('/feature-toggles', requirePermission('website.settings'), validate(upsertFeatureToggleSchema), FeatureTogglesController.upsert);
-instanceRouter.put('/feature-toggles/bulk', requirePermission('website.settings'), validate(bulkUpdateFeatureTogglesSchema), FeatureTogglesController.bulkUpdate);
-instanceRouter.delete('/feature-toggles/:id', requirePermission('website.settings'), FeatureTogglesController.delete);
+instanceRouter.get('/feature-toggles', FeatureTogglesController.list);
+instanceRouter.put('/feature-toggles', validate(upsertFeatureToggleSchema), FeatureTogglesController.upsert);
+instanceRouter.put('/feature-toggles/bulk', validate(bulkUpdateFeatureTogglesSchema), FeatureTogglesController.bulkUpdate);
+instanceRouter.delete('/feature-toggles/:id', FeatureTogglesController.delete);
 
 // --- Media Uploads (instance-scoped) ---
-instanceRouter.post('/uploads/presign', requirePermission('website.edit'), validate(presignUploadSchema), MediaController.presign);
-instanceRouter.post('/uploads/complete', requirePermission('website.edit'), validate(completeUploadSchema), MediaController.complete);
+instanceRouter.post('/uploads/presign', validate(presignUploadSchema), MediaController.presign);
+instanceRouter.post('/uploads/complete', validate(completeUploadSchema), MediaController.complete);
 
 // --- Builder (instance-scoped, website builder) ---
-instanceRouter.get('/builder/pages/:pageId', requirePermission('website.view'), BuilderController.getPageManifest);
-instanceRouter.get('/builder/settings', requirePermission('website.settings'), BuilderController.getSettings);
-instanceRouter.put('/builder/settings', requirePermission('website.settings'), validate(updateWebsiteSettingsSchema), BuilderController.updateSettings);
-instanceRouter.get('/builder/publish-readiness', requirePermission('website.view'), BuilderController.publishReadiness);
-instanceRouter.post('/builder/publish', requirePermission('website.publish'), BuilderController.publish);
-instanceRouter.post('/builder/purge-cache', requirePermission('website.publish'), BuilderController.purgeCache);
-instanceRouter.get('/builder/publish/history', requirePermission('website.view'), BuilderController.publishHistory);
-instanceRouter.post('/builder/rollback', requirePermission('website.publish'), BuilderController.rollback);
+instanceRouter.get('/builder/pages/:pageId', BuilderController.getPageManifest);
+instanceRouter.get('/builder/settings', BuilderController.getSettings);
+instanceRouter.put('/builder/settings', validate(updateWebsiteSettingsSchema), BuilderController.updateSettings);
+instanceRouter.get('/builder/publish-readiness', BuilderController.publishReadiness);
+instanceRouter.post('/builder/publish', BuilderController.publish);
+instanceRouter.post('/builder/purge-cache', BuilderController.purgeCache);
+instanceRouter.get('/builder/publish/history', BuilderController.publishHistory);
+instanceRouter.post('/builder/rollback', BuilderController.rollback);
 
 // Mount instance-scoped routes under tenant router
 tenantRouter.use('/', instanceRouter);

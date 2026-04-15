@@ -2,12 +2,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
     findFirst: vi.fn(),
+    update: vi.fn(),
+    checkCustomDomainNameservers: vi.fn(),
 }));
 
 vi.mock('@booking-engine/database', () => ({
     db: {
         instance: {
             findFirst: mocks.findFirst,
+            update: mocks.update,
         },
     },
 }));
@@ -29,6 +32,10 @@ vi.mock('@booking-engine/core', () => ({
         NOT_FOUND: 'NOT_FOUND',
     },
     sanitizeSubdomain: (value: string) => value,
+}));
+
+vi.mock('../../utils/domain-nameservers', () => ({
+    checkCustomDomainNameservers: mocks.checkCustomDomainNameservers,
 }));
 
 import { InstancesController } from '../../controllers/instances.controller';
@@ -84,6 +91,10 @@ describe('InstancesController legacy custom-domain compatibility', () => {
             subdomain: 'mysalon',
             fullDomain: 'mysalon.buildmyonlineweb.site',
             customDomain: 'www.clientsite.com',
+            customDomainHostnameStatus: 'active',
+            customDomainSslStatus: 'active',
+            customDomainLastCheckedAt: '2026-03-16T00:00:00.000Z',
+            customDomainActivatedAt: '2026-03-16T00:00:00.000Z',
             updatedAt: '2026-03-16T00:00:00.000Z',
         });
 
@@ -108,6 +119,10 @@ describe('InstancesController legacy custom-domain compatibility', () => {
             subdomain: 'mysalon',
             fullDomain: 'mysalon.buildmyonlineweb.site',
             customDomain: 'www.clientsite.com',
+            customDomainHostnameStatus: 'active',
+            customDomainSslStatus: 'active',
+            customDomainLastCheckedAt: '2026-03-16T00:00:00.000Z',
+            customDomainActivatedAt: '2026-03-16T00:00:00.000Z',
             updatedAt: '2026-03-16T00:00:00.000Z',
         });
 
@@ -122,5 +137,51 @@ describe('InstancesController legacy custom-domain compatibility', () => {
         expect(payload.success).toBe(true);
         expect(payload.data.customDomain).toBe('www.clientsite.com');
         expect(payload.data.verification).toEqual([]);
+    });
+
+    it('checks custom-domain nameservers using live DNS endpoint', async () => {
+        mocks.findFirst.mockResolvedValue({
+            id: 'inst-1',
+            subdomain: 'mysalon',
+            fullDomain: 'mysalon.buildmyonlineweb.site',
+            customDomain: 'www.clientsite.com',
+            updatedAt: '2026-03-16T00:00:00.000Z',
+        });
+        mocks.checkCustomDomainNameservers.mockResolvedValue({
+            hostname: 'www.clientsite.com',
+            lookupHost: 'clientsite.com',
+            requiredNameservers: ['luciana.ns.cloudflare.com', 'miles.ns.cloudflare.com'],
+            actualNameservers: ['luciana.ns.cloudflare.com', 'miles.ns.cloudflare.com'],
+            missingNameservers: [],
+            matchesRequired: true,
+            code: null,
+        });
+        mocks.update.mockResolvedValue({ id: 'inst-1' });
+
+        const req = createReq();
+        const res = createRes();
+        const next = vi.fn();
+
+        await InstancesController.checkCustomDomainConnection(req, res, next);
+
+        expect(next).not.toHaveBeenCalled();
+        expect(mocks.checkCustomDomainNameservers).toHaveBeenCalledWith('www.clientsite.com');
+        expect(mocks.update).toHaveBeenCalledWith({
+            where: { id: 'inst-1' },
+            data: expect.objectContaining({
+                customDomainHostnameStatus: 'active',
+                customDomainSslStatus: 'active',
+                customDomainLastCheckedAt: expect.any(Date),
+                customDomainActivatedAt: expect.any(Date),
+            }),
+        });
+
+        const payload = res.json.mock.calls[0]?.[0];
+        expect(payload.success).toBe(true);
+        expect(payload.data.hostname).toBe('www.clientsite.com');
+        expect(payload.data.lookupHost).toBe('clientsite.com');
+        expect(payload.data.isActive).toBe(true);
+        expect(payload.data.missingNameservers).toEqual([]);
+        expect(payload.data.verificationSource).toBe('live-dns');
     });
 });

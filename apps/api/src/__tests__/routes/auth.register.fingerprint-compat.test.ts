@@ -53,6 +53,7 @@ describe('/auth/register compatibility with optional fingerprint payload', () =>
                 email: 'test@example.com',
                 password: 'Password123!',
                 fullName: 'Test User',
+                whatsappNumber: '+94 77 123 4567',
             });
 
         expect(response.status).toBe(201);
@@ -61,6 +62,7 @@ describe('/auth/register compatibility with optional fingerprint payload', () =>
             email: 'test@example.com',
             password: 'Password123!',
             fullName: 'Test User',
+            whatsappNumber: '+94 77 123 4567',
         });
     });
 
@@ -71,6 +73,7 @@ describe('/auth/register compatibility with optional fingerprint payload', () =>
                 email: 'test2@example.com',
                 password: 'Password123!',
                 fullName: 'Test User',
+                whatsappNumber: '+94 77 123 4568',
                 _deviceFingerprint: {
                     fingerprintHash: 'abc123',
                 },
@@ -83,6 +86,7 @@ describe('/auth/register compatibility with optional fingerprint payload', () =>
             email: 'test2@example.com',
             password: 'Password123!',
             fullName: 'Test User',
+            whatsappNumber: '+94 77 123 4568',
         });
     });
 });

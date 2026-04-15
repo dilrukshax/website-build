@@ -25,6 +25,7 @@ const RESPONSE_HOP_BY_HOP_HEADERS = new Set([
     'transfer-encoding',
     'upgrade',
     'content-length',
+    'content-encoding',
 ]);
 
 function normalizeHost(host: string | null | undefined): string {

@@ -76,6 +76,7 @@ We will tell Sevalla to build the API from the `apps/api/Dockerfile`.
    PUBLISHED_SITES_BASE_URL=https://pub-<your-bucket-hash>.r2.dev
    ROUTING_INDEX_CURRENT_URL=https://pub-<your-bucket-hash>.r2.dev/routing-index/current.json
    ROUTING_INDEX_CACHE_TTL_MS=30000
+   PUBLISHED_SITES_PRUNE_OLD_VERSIONS=true
    WEB_PROXY_SHARED_SECRET=<same-random-secret-used-in-cms>
    ```
 

@@ -4,6 +4,26 @@ import { ERROR_CODES } from '@booking-engine/core';
 import { AppError } from '../middleware/error';
 
 export class SuperAdminController {
+    private static computeCustomDomainStatus(input: {
+        customDomain: string | null;
+        customDomainHostnameStatus: string | null;
+        customDomainSslStatus: string | null;
+        customDomainActivatedAt: Date | null;
+    }): 'pending' | 'connected' | null {
+        if (!input.customDomain) {
+            return null;
+        }
+
+        const hostnameStatus = (input.customDomainHostnameStatus || '').toLowerCase();
+        const sslStatus = (input.customDomainSslStatus || '').toLowerCase();
+        const isConnected = Boolean(
+            input.customDomainActivatedAt
+            || (hostnameStatus === 'active' && sslStatus === 'active'),
+        );
+
+        return isConnected ? 'connected' : 'pending';
+    }
+
     /**
      * Super admin dashboard summary with platform totals and instance usage.
      */
@@ -99,11 +119,21 @@ export class SuperAdminController {
             );
 
             const formattedInstances = instances.map((instance) => ({
+                customDomainStatus: SuperAdminController.computeCustomDomainStatus({
+                    customDomain: instance.customDomain,
+                    customDomainHostnameStatus: instance.customDomainHostnameStatus,
+                    customDomainSslStatus: instance.customDomainSslStatus,
+                    customDomainActivatedAt: instance.customDomainActivatedAt,
+                }),
                 id: instance.id,
                 name: instance.name,
                 subdomain: instance.subdomain,
                 fullDomain: instance.fullDomain,
                 customDomain: instance.customDomain,
+                customDomainHostnameStatus: instance.customDomainHostnameStatus,
+                customDomainSslStatus: instance.customDomainSslStatus,
+                customDomainLastCheckedAt: instance.customDomainLastCheckedAt,
+                customDomainActivatedAt: instance.customDomainActivatedAt,
                 timezone: instance.timezone,
                 status: instance.status,
                 createdAt: instance.createdAt,
@@ -132,6 +162,7 @@ export class SuperAdminController {
                         pendingCharges,
                         pendingReferralClaims,
                         activeSuperAdmins,
+                        pendingCustomDomains: formattedInstances.filter((instance) => instance.customDomainStatus === 'pending').length,
                     },
                     instances: formattedInstances,
                     generatedAt: new Date().toISOString(),
@@ -319,6 +350,150 @@ export class SuperAdminController {
                     id: tenant.id,
                     status: tenant.status
                 }
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    static async listCustomDomainRequests(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const requestedStatus = typeof req.query.status === 'string'
+                ? req.query.status.trim().toLowerCase()
+                : '';
+            const statusFilter = requestedStatus === 'connected'
+                ? 'connected'
+                : requestedStatus === 'pending'
+                    ? 'pending'
+                    : 'all';
+
+            const rows = await db.instance.findMany({
+                where: {
+                    customDomain: { not: null },
+                },
+                orderBy: { createdAt: 'desc' },
+                select: {
+                    id: true,
+                    name: true,
+                    subdomain: true,
+                    fullDomain: true,
+                    customDomain: true,
+                    customDomainHostnameStatus: true,
+                    customDomainSslStatus: true,
+                    customDomainLastCheckedAt: true,
+                    customDomainActivatedAt: true,
+                    createdAt: true,
+                    updatedAt: true,
+                    tenant: {
+                        select: {
+                            id: true,
+                            businessName: true,
+                            plan: true,
+                            status: true,
+                        },
+                    },
+                },
+            });
+
+            const allRows = rows.map((row) => ({
+                id: row.id,
+                name: row.name,
+                subdomain: row.subdomain,
+                fullDomain: row.fullDomain,
+                customDomain: row.customDomain,
+                customDomainHostnameStatus: row.customDomainHostnameStatus,
+                customDomainSslStatus: row.customDomainSslStatus,
+                customDomainLastCheckedAt: row.customDomainLastCheckedAt,
+                customDomainActivatedAt: row.customDomainActivatedAt,
+                status: SuperAdminController.computeCustomDomainStatus({
+                    customDomain: row.customDomain,
+                    customDomainHostnameStatus: row.customDomainHostnameStatus,
+                    customDomainSslStatus: row.customDomainSslStatus,
+                    customDomainActivatedAt: row.customDomainActivatedAt,
+                }) || 'pending',
+                createdAt: row.createdAt,
+                updatedAt: row.updatedAt,
+                tenant: row.tenant,
+            }));
+
+            const filteredRows = statusFilter === 'all'
+                ? allRows
+                : allRows.filter((row) => row.status === statusFilter);
+
+            res.json({
+                success: true,
+                data: {
+                    rows: filteredRows,
+                    totals: {
+                        all: allRows.length,
+                        pending: allRows.filter((row) => row.status === 'pending').length,
+                        connected: allRows.filter((row) => row.status === 'connected').length,
+                    },
+                },
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    static async markCustomDomainRequestConnected(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const instanceId = req.params.instanceId;
+            if (!instanceId) {
+                throw new AppError(ERROR_CODES.VALIDATION_ERROR, 'instanceId is required', 400, 'instanceId');
+            }
+
+            const instance = await db.instance.findUnique({
+                where: { id: instanceId },
+                select: {
+                    id: true,
+                    customDomain: true,
+                    customDomainHostnameStatus: true,
+                    customDomainSslStatus: true,
+                    customDomainLastCheckedAt: true,
+                    customDomainActivatedAt: true,
+                },
+            });
+
+            if (!instance) {
+                throw new AppError(ERROR_CODES.NOT_FOUND, 'Instance not found', 404);
+            }
+
+            if (!instance.customDomain) {
+                throw new AppError(ERROR_CODES.VALIDATION_ERROR, 'Custom domain is not configured for this instance', 400);
+            }
+
+            const now = new Date();
+            const updated = await db.instance.update({
+                where: { id: instance.id },
+                data: {
+                    customDomainHostnameStatus: 'active',
+                    customDomainSslStatus: 'active',
+                    customDomainLastCheckedAt: now,
+                    customDomainActivatedAt: now,
+                },
+                select: {
+                    id: true,
+                    customDomain: true,
+                    customDomainHostnameStatus: true,
+                    customDomainSslStatus: true,
+                    customDomainLastCheckedAt: true,
+                    customDomainActivatedAt: true,
+                },
+            });
+
+            res.json({
+                success: true,
+                data: {
+                    id: updated.id,
+                    customDomain: updated.customDomain,
+                    status: 'connected',
+                    customDomainHostnameStatus: updated.customDomainHostnameStatus,
+                    customDomainSslStatus: updated.customDomainSslStatus,
+                    customDomainLastCheckedAt: updated.customDomainLastCheckedAt,
+                    customDomainActivatedAt: updated.customDomainActivatedAt,
+                },
+                message: 'Custom domain marked as connected.',
             });
         } catch (error) {
             next(error);

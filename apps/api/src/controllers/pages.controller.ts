@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import { db } from '@booking-engine/database';
-import { ERROR_CODES } from '@booking-engine/core';
+import { ERROR_CODES, DEFAULT_WEBSITE_SETTINGS } from '@booking-engine/core';
+import type { WebsiteSettings } from '@booking-engine/core';
 import { AppError } from '../middleware/error';
-import { PlanPolicyService } from '../services/plan-policy.service';
 
-const SHARED_LAYOUT_COMPONENT_KEYS = new Set(['header/v1', 'footer/v1']);
+const SHARED_LAYOUT_FEATURE_SLUGS = new Set(['header', 'footer']);
 const HOME_PAGE_SLUG = '/';
 
 interface TemplateSectionConfig {
@@ -20,6 +20,61 @@ interface SectionCreateInput {
     contentJsonb: Record<string, unknown>;
     stylesJsonb: Record<string, unknown>;
     conditionsJsonb?: unknown;
+}
+
+function getFeatureSlugFromComponentKey(componentKey: string): string {
+    return componentKey.split('/')[0] || '';
+}
+
+function getSharedLayoutFeatureFromComponentKey(componentKey: string): 'header' | 'footer' | null {
+    const featureSlug = getFeatureSlugFromComponentKey(componentKey);
+    if (!SHARED_LAYOUT_FEATURE_SLUGS.has(featureSlug)) {
+        return null;
+    }
+
+    return featureSlug as 'header' | 'footer';
+}
+
+function isSharedLayoutComponentKey(componentKey: string): boolean {
+    return Boolean(getSharedLayoutFeatureFromComponentKey(componentKey));
+}
+
+const WEBSITE_TOKEN_KEYS: Array<keyof WebsiteSettings['tokens']> = [
+    'primary',
+    'secondary',
+    'accent',
+    'text',
+    'background',
+    'font',
+];
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function extractTemplateTokenOverrides(sections: TemplateSectionConfig[]): Partial<WebsiteSettings['tokens']> {
+    const headerSection = sections.find((section) =>
+        getSharedLayoutFeatureFromComponentKey(section.themeComponentKey) === 'header'
+    );
+
+    if (!headerSection || !isRecord(headerSection.defaultStyles)) {
+        return {};
+    }
+
+    const themeTokens = headerSection.defaultStyles.themeTokens;
+    if (!isRecord(themeTokens)) {
+        return {};
+    }
+
+    const overrides: Partial<WebsiteSettings['tokens']> = {};
+    for (const tokenKey of WEBSITE_TOKEN_KEYS) {
+        const value = themeTokens[tokenKey];
+        if (typeof value === 'string' && value.trim().length > 0) {
+            overrides[tokenKey] = value.trim();
+        }
+    }
+
+    return overrides;
 }
 
 export class PagesController {
@@ -59,8 +114,6 @@ export class PagesController {
             const tenantId = req.tenant!.id;
             const { title, slug, seoJsonb } = req.body;
             const normalizedSlug = slug === HOME_PAGE_SLUG ? HOME_PAGE_SLUG : String(slug || '').trim();
-
-            await PlanPolicyService.assertCanCreatePage(tenantId, instanceId);
 
             const totalPages = await db.page.count({ where: { instanceId } });
             if (totalPages === 0 && normalizedSlug !== HOME_PAGE_SLUG) {
@@ -292,13 +345,74 @@ export class PagesController {
 
             // Parse the sections JSON from the template
             const sections = template.sectionsJsonb as unknown as TemplateSectionConfig[];
+            if (!Array.isArray(sections) || sections.length === 0) {
+                throw new AppError(ERROR_CODES.INVALID_INPUT, 'Template has no sections to apply', 400);
+            }
+            const templateTokenOverrides = extractTemplateTokenOverrides(sections);
 
             // Fetch the corresponding Theme IDs based on component keys
-            const componentKeys = sections.map(s => s.themeComponentKey);
+            const componentKeys = Array.from(new Set(sections.map((s) => s.themeComponentKey).filter(Boolean)));
             const themes = await db.theme.findMany({
                 where: { componentKey: { in: componentKeys }, isActive: true }
             });
             const themeMap = new Map(themes.map(t => [t.componentKey, t]));
+
+            const missingComponentKeys = componentKeys.filter((key) => !themeMap.has(key));
+            if (missingComponentKeys.length > 0) {
+                const missingFeatureSlugs = Array.from(
+                    new Set(missingComponentKeys.map((key) => getFeatureSlugFromComponentKey(key)).filter(Boolean))
+                );
+
+                if (missingFeatureSlugs.length > 0) {
+                    const fallbackThemes = await db.theme.findMany({
+                        where: {
+                            isActive: true,
+                            OR: missingFeatureSlugs.map((featureSlug) => ({
+                                componentKey: { startsWith: `${featureSlug}/` },
+                            })),
+                        },
+                        orderBy: { version: 'desc' },
+                    });
+
+                    const fallbackByFeature = new Map<string, (typeof fallbackThemes)[number]>();
+                    for (const fallbackTheme of fallbackThemes) {
+                        const fallbackFeatureSlug = getFeatureSlugFromComponentKey(fallbackTheme.componentKey);
+                        if (fallbackFeatureSlug && !fallbackByFeature.has(fallbackFeatureSlug)) {
+                            fallbackByFeature.set(fallbackFeatureSlug, fallbackTheme);
+                        }
+                    }
+
+                    for (const missingComponentKey of missingComponentKeys) {
+                        const featureSlug = getFeatureSlugFromComponentKey(missingComponentKey);
+                        const fallbackTheme = fallbackByFeature.get(featureSlug);
+                        if (fallbackTheme) {
+                            themeMap.set(missingComponentKey, fallbackTheme);
+                        }
+                    }
+                }
+            }
+
+            const unresolvedComponentKeys = componentKeys.filter((key) => !themeMap.has(key));
+            if (unresolvedComponentKeys.length > 0) {
+                if (unresolvedComponentKeys.length === componentKeys.length) {
+                    throw new AppError(
+                        ERROR_CODES.INVALID_INPUT,
+                        'Template cannot be applied because no active themes are available. Ask an admin to seed the theme catalog first.',
+                        400,
+                    );
+                }
+
+                const previewKeys = unresolvedComponentKeys.slice(0, 8).join(', ');
+                const extraSuffix = unresolvedComponentKeys.length > 8
+                    ? ` (+${unresolvedComponentKeys.length - 8} more)`
+                    : '';
+
+                throw new AppError(
+                    ERROR_CODES.INVALID_INPUT,
+                    `Template cannot be applied because required section themes are missing: ${previewKeys}${extraSuffix}`,
+                    400,
+                );
+            }
 
             // Keep existing header/footer if already present on this page.
             const existingSharedSections = await db.pageSection.findMany({
@@ -306,7 +420,6 @@ export class PagesController {
                     pageId: id,
                     instanceId,
                     enabled: true,
-                    theme: { componentKey: { in: ['header/v1', 'footer/v1'] } },
                 },
                 include: {
                     theme: {
@@ -318,11 +431,19 @@ export class PagesController {
                 orderBy: { position: 'asc' },
             });
 
-            const existingHeader = existingSharedSections.find((sec) => sec.theme.componentKey === 'header/v1');
-            const existingFooter = existingSharedSections.find((sec) => sec.theme.componentKey === 'footer/v1');
-            const templateHeader = sections.find((sec) => sec.themeComponentKey === 'header/v1');
-            const templateFooter = sections.find((sec) => sec.themeComponentKey === 'footer/v1');
-            const templateBodySections = sections.filter((sec) => !SHARED_LAYOUT_COMPONENT_KEYS.has(sec.themeComponentKey));
+            const existingHeader = existingSharedSections.find((sec) =>
+                getSharedLayoutFeatureFromComponentKey(sec.theme.componentKey) === 'header'
+            );
+            const existingFooter = existingSharedSections.find((sec) =>
+                getSharedLayoutFeatureFromComponentKey(sec.theme.componentKey) === 'footer'
+            );
+            const templateHeader = sections.find((sec) =>
+                getSharedLayoutFeatureFromComponentKey(sec.themeComponentKey) === 'header'
+            );
+            const templateFooter = sections.find((sec) =>
+                getSharedLayoutFeatureFromComponentKey(sec.themeComponentKey) === 'footer'
+            );
+            const templateBodySections = sections.filter((sec) => !isSharedLayoutComponentKey(sec.themeComponentKey));
 
             const sectionsToCreate: SectionCreateInput[] = [];
             const pushTemplateSection = (sectionConfig: TemplateSectionConfig | undefined) => {
@@ -339,59 +460,122 @@ export class PagesController {
                 });
             };
 
-            if (existingHeader) {
-                sectionsToCreate.push({
-                    themeId: existingHeader.themeId,
-                    themeVersionUsed: existingHeader.themeVersionUsed,
-                    enabled: existingHeader.enabled,
-                    contentJsonb: existingHeader.contentJsonb as Record<string, unknown>,
-                    stylesJsonb: existingHeader.stylesJsonb as Record<string, unknown>,
-                    conditionsJsonb: existingHeader.conditionsJsonb,
-                });
-            } else {
-                pushTemplateSection(templateHeader);
+            const buildSharedLayoutSection = (
+                existingSection: typeof existingSharedSections[number] | undefined,
+                templateSection: TemplateSectionConfig | undefined,
+            ): SectionCreateInput | null => {
+                const templateTheme = templateSection
+                    ? themeMap.get(templateSection.themeComponentKey)
+                    : undefined;
+
+                if (existingSection && templateTheme) {
+                    return {
+                        themeId: templateTheme.id,
+                        themeVersionUsed: templateTheme.version,
+                        enabled: existingSection.enabled,
+                        contentJsonb: existingSection.contentJsonb as Record<string, unknown>,
+                        stylesJsonb: existingSection.stylesJsonb as Record<string, unknown>,
+                        conditionsJsonb: existingSection.conditionsJsonb,
+                    };
+                }
+
+                if (existingSection) {
+                    return {
+                        themeId: existingSection.themeId,
+                        themeVersionUsed: existingSection.themeVersionUsed,
+                        enabled: existingSection.enabled,
+                        contentJsonb: existingSection.contentJsonb as Record<string, unknown>,
+                        stylesJsonb: existingSection.stylesJsonb as Record<string, unknown>,
+                        conditionsJsonb: existingSection.conditionsJsonb,
+                    };
+                }
+
+                if (templateSection && templateTheme) {
+                    return {
+                        themeId: templateTheme.id,
+                        themeVersionUsed: templateTheme.version,
+                        enabled: true,
+                        contentJsonb: templateSection.defaultContent || {},
+                        stylesJsonb: templateSection.defaultStyles || {},
+                    };
+                }
+
+                return null;
+            };
+
+            const resolvedHeader = buildSharedLayoutSection(existingHeader, templateHeader);
+            if (resolvedHeader) {
+                sectionsToCreate.push(resolvedHeader);
             }
 
             templateBodySections.forEach((sectionConfig) => {
                 pushTemplateSection(sectionConfig);
             });
 
-            if (existingFooter) {
-                sectionsToCreate.push({
-                    themeId: existingFooter.themeId,
-                    themeVersionUsed: existingFooter.themeVersionUsed,
-                    enabled: existingFooter.enabled,
-                    contentJsonb: existingFooter.contentJsonb as Record<string, unknown>,
-                    stylesJsonb: existingFooter.stylesJsonb as Record<string, unknown>,
-                    conditionsJsonb: existingFooter.conditionsJsonb,
-                });
-            } else {
-                pushTemplateSection(templateFooter);
+            const resolvedFooter = buildSharedLayoutSection(existingFooter, templateFooter);
+            if (resolvedFooter) {
+                sectionsToCreate.push(resolvedFooter);
             }
 
-            // Delete any existing sections for this page before applying the template
-            await db.pageSection.deleteMany({ where: { pageId: id } });
+            if (sectionsToCreate.length === 0) {
+                throw new AppError(
+                    ERROR_CODES.INVALID_INPUT,
+                    'Template resolved to zero sections. Please verify active themes in the catalog.',
+                    400,
+                );
+            }
 
-            // Create final sections (header/body/footer), preserving shared layout when present.
-            const createdSections = [];
-            for (let i = 0; i < sectionsToCreate.length; i++) {
-                const sectionData = sectionsToCreate[i]!;
-                const newSection = await db.pageSection.create({
-                    data: {
-                        tenantId,
-                        instanceId,
-                        pageId: id,
-                        themeId: sectionData.themeId,
-                        themeVersionUsed: sectionData.themeVersionUsed,
-                        position: i,
-                        enabled: sectionData.enabled,
-                        contentJsonb: sectionData.contentJsonb as any,
-                        stylesJsonb: sectionData.stylesJsonb as any,
-                        ...(sectionData.conditionsJsonb !== undefined && { conditionsJsonb: sectionData.conditionsJsonb as any }),
+            const createdSections = await db.$transaction(async (tx) => {
+                // Delete any existing sections for this page before applying the template.
+                await tx.pageSection.deleteMany({ where: { pageId: id } });
+
+                // Create final sections (header/body/footer), preserving shared layout when present.
+                const created = [];
+                for (let i = 0; i < sectionsToCreate.length; i++) {
+                    const sectionData = sectionsToCreate[i]!;
+                    const newSection = await tx.pageSection.create({
+                        data: {
+                            tenantId,
+                            instanceId,
+                            pageId: id,
+                            themeId: sectionData.themeId,
+                            themeVersionUsed: sectionData.themeVersionUsed,
+                            position: i,
+                            enabled: sectionData.enabled,
+                            contentJsonb: sectionData.contentJsonb as any,
+                            stylesJsonb: sectionData.stylesJsonb as any,
+                            ...(sectionData.conditionsJsonb !== undefined && { conditionsJsonb: sectionData.conditionsJsonb as any }),
+                        },
+                    });
+                    created.push(newSection);
+                }
+
+                if (Object.keys(templateTokenOverrides).length > 0) {
+                    const instance = await tx.instance.findUnique({
+                        where: { id: instanceId },
+                        select: { settingsJsonb: true },
+                    });
+
+                    if (instance) {
+                        const currentSettings = (instance.settingsJsonb as WebsiteSettings | null)
+                            || (DEFAULT_WEBSITE_SETTINGS as unknown as WebsiteSettings);
+                        const mergedSettings: WebsiteSettings = {
+                            ...currentSettings,
+                            tokens: {
+                                ...(currentSettings.tokens || (DEFAULT_WEBSITE_SETTINGS.tokens as WebsiteSettings['tokens'])),
+                                ...templateTokenOverrides,
+                            },
+                        };
+
+                        await tx.instance.update({
+                            where: { id: instanceId },
+                            data: { settingsJsonb: JSON.parse(JSON.stringify(mergedSettings)) },
+                        });
                     }
-                });
-                createdSections.push(newSection);
-            }
+                }
+
+                return created;
+            });
 
             res.json({ success: true, data: { message: 'Template applied successfully', sections: createdSections } });
         } catch (error) {
@@ -417,7 +601,6 @@ async function cloneSharedLayoutSectionsToNewPage(params: {
             sections: {
                 where: {
                     enabled: true,
-                    theme: { componentKey: { in: ['header/v1', 'footer/v1'] } },
                 },
                 orderBy: { position: 'asc' },
                 include: {
@@ -438,10 +621,15 @@ async function cloneSharedLayoutSectionsToNewPage(params: {
 
     for (const page of candidatePages) {
         for (const section of page.sections) {
-            if (!headerSection && section.theme.componentKey === 'header/v1') {
+            const layoutFeature = getSharedLayoutFeatureFromComponentKey(section.theme.componentKey);
+            if (!layoutFeature) {
+                continue;
+            }
+
+            if (!headerSection && layoutFeature === 'header') {
                 headerSection = section;
             }
-            if (!footerSection && section.theme.componentKey === 'footer/v1') {
+            if (!footerSection && layoutFeature === 'footer') {
                 footerSection = section;
             }
             if (headerSection && footerSection) {
@@ -455,7 +643,7 @@ async function cloneSharedLayoutSectionsToNewPage(params: {
     }
 
     const sharedSections = [headerSection, footerSection].filter((section) =>
-        Boolean(section && SHARED_LAYOUT_COMPONENT_KEYS.has(section.theme.componentKey))
+        Boolean(section && isSharedLayoutComponentKey(section.theme.componentKey))
     ) as Array<NonNullable<typeof headerSection>>;
 
     if (sharedSections.length === 0) return;

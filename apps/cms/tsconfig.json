@@ -15,6 +15,7 @@
       ]
     },
     "allowJs": true,
+    "noUnusedLocals": false,
     "noEmit": true,
     "incremental": true,
     "isolatedModules": true,

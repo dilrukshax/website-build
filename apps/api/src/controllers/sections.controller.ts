@@ -2,8 +2,22 @@ import { Request, Response, NextFunction } from 'express';
 import { db } from '@booking-engine/database';
 import { ERROR_CODES } from '@booking-engine/core';
 import { AppError } from '../middleware/error';
+import { PlanPolicyService } from '../services/plan-policy.service';
 
-const GLOBAL_LAYOUT_COMPONENT_KEYS = new Set(['header/v1', 'footer/v1']);
+const GLOBAL_LAYOUT_FEATURE_SLUGS = new Set(['header', 'footer']);
+
+function getFeatureSlugFromComponentKey(componentKey: string): string {
+    return componentKey.split('/')[0] || '';
+}
+
+function getSharedLayoutFeatureFromComponentKey(componentKey: string): 'header' | 'footer' | null {
+    const featureSlug = getFeatureSlugFromComponentKey(componentKey);
+    if (!GLOBAL_LAYOUT_FEATURE_SLUGS.has(featureSlug)) {
+        return null;
+    }
+
+    return featureSlug as 'header' | 'footer';
+}
 
 export class SectionsController {
     static async listByPage(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -61,14 +75,25 @@ export class SectionsController {
                 throw new AppError(ERROR_CODES.THEME_NOT_FOUND, 'Theme not found or inactive', 404, 'themeId');
             }
 
-            if (GLOBAL_LAYOUT_COMPONENT_KEYS.has(theme.componentKey)) {
-                const existingShared = await db.pageSection.findFirst({
+            const sharedLayoutFeature = getSharedLayoutFeatureFromComponentKey(theme.componentKey);
+            if (sharedLayoutFeature) {
+                const existingSectionsOnPage = await db.pageSection.findMany({
                     where: {
                         instanceId,
                         pageId,
-                        theme: { componentKey: theme.componentKey },
+                    },
+                    include: {
+                        theme: {
+                            select: {
+                                componentKey: true,
+                            },
+                        },
                     },
                 });
+
+                const existingShared = existingSectionsOnPage.find((sectionOnPage) =>
+                    getSharedLayoutFeatureFromComponentKey(sectionOnPage.theme.componentKey) === sharedLayoutFeature
+                );
 
                 if (existingShared) {
                     throw new AppError(ERROR_CODES.INVALID_INPUT, `${theme.name} already exists on this page`, 409, 'themeId');
@@ -112,11 +137,12 @@ export class SectionsController {
                 },
             });
 
-            if (GLOBAL_LAYOUT_COMPONENT_KEYS.has(section.theme.componentKey)) {
+            const createdSectionSharedLayoutFeature = getSharedLayoutFeatureFromComponentKey(section.theme.componentKey);
+            if (createdSectionSharedLayoutFeature) {
                 await syncGlobalLayoutSectionAcrossPages({
                     tenantId,
                     instanceId,
-                    componentKey: section.theme.componentKey,
+                    sharedLayoutFeature: createdSectionSharedLayoutFeature,
                     sourceSection: {
                         id: section.id,
                         themeId: section.theme.id,
@@ -138,15 +164,18 @@ export class SectionsController {
     static async update(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const instanceId = req.instance!.id;
+            const tenantId = req.tenant!.id;
             const id = req.params.id!;
-            const { contentJsonb, stylesJsonb, enabled, conditionsJsonb } = req.body;
+            const { themeId, contentJsonb, stylesJsonb, enabled, conditionsJsonb } = req.body;
 
             const section = await db.pageSection.findFirst({
                 where: { id, instanceId },
                 include: {
                     theme: {
                         select: {
+                            id: true,
                             componentKey: true,
+                            featureId: true,
                         },
                     },
                 },
@@ -162,6 +191,64 @@ export class SectionsController {
                 ...(conditionsJsonb !== undefined && { conditionsJsonb }),
             };
 
+            if (themeId !== undefined && themeId !== section.theme.id) {
+                await PlanPolicyService.assertCanUseTheme(tenantId, themeId);
+
+                const nextTheme = await db.theme.findUnique({
+                    where: { id: themeId },
+                    select: {
+                        id: true,
+                        name: true,
+                        featureId: true,
+                        componentKey: true,
+                        version: true,
+                        isActive: true,
+                    },
+                });
+
+                if (!nextTheme || !nextTheme.isActive) {
+                    throw new AppError(ERROR_CODES.THEME_NOT_FOUND, 'Theme not found or inactive', 404, 'themeId');
+                }
+
+                if (nextTheme.featureId !== section.theme.featureId) {
+                    throw new AppError(
+                        ERROR_CODES.INVALID_INPUT,
+                        'Selected theme must match the same section type.',
+                        400,
+                        'themeId',
+                    );
+                }
+
+                const nextThemeSharedLayoutFeature = getSharedLayoutFeatureFromComponentKey(nextTheme.componentKey);
+                if (nextThemeSharedLayoutFeature) {
+                    const existingSectionsOnPage = await db.pageSection.findMany({
+                        where: {
+                            pageId: section.pageId,
+                            instanceId,
+                            id: { not: section.id },
+                        },
+                        include: {
+                            theme: {
+                                select: {
+                                    componentKey: true,
+                                },
+                            },
+                        },
+                    });
+
+                    const existingShared = existingSectionsOnPage.find((sectionOnPage) =>
+                        getSharedLayoutFeatureFromComponentKey(sectionOnPage.theme.componentKey) === nextThemeSharedLayoutFeature
+                    );
+
+                    if (existingShared) {
+                        throw new AppError(ERROR_CODES.INVALID_INPUT, `${nextTheme.name} already exists on this page`, 409, 'themeId');
+                    }
+                }
+
+                updateData.themeId = nextTheme.id;
+                updateData.themeVersionUsed = nextTheme.version;
+            }
+
             const updated = await db.pageSection.update({
                 where: { id },
                 data: updateData,
@@ -175,16 +262,27 @@ export class SectionsController {
                             schemaJsonb: true,
                             defaultStylesJsonb: true,
                             version: true,
+                            feature: { select: { id: true, name: true, slug: true } },
                         },
                     },
                 },
             });
 
-            if (GLOBAL_LAYOUT_COMPONENT_KEYS.has(section.theme.componentKey)) {
+            const syncSharedLayoutFeatures = new Set<'header' | 'footer'>();
+            const previousSharedLayoutFeature = getSharedLayoutFeatureFromComponentKey(section.theme.componentKey);
+            if (previousSharedLayoutFeature) {
+                syncSharedLayoutFeatures.add(previousSharedLayoutFeature);
+            }
+            const nextSharedLayoutFeature = getSharedLayoutFeatureFromComponentKey(updated.theme.componentKey);
+            if (nextSharedLayoutFeature) {
+                syncSharedLayoutFeatures.add(nextSharedLayoutFeature);
+            }
+
+            for (const sharedLayoutFeature of syncSharedLayoutFeatures) {
                 await syncGlobalLayoutSectionAcrossPages({
-                    tenantId: req.tenant!.id,
+                    tenantId,
                     instanceId,
-                    componentKey: section.theme.componentKey,
+                    sharedLayoutFeature,
                     sourceSection: {
                         id: updated.id,
                         themeId: updated.theme.id,
@@ -209,6 +307,7 @@ export class SectionsController {
                             schemaJsonb: true,
                             defaultStylesJsonb: true,
                             version: true,
+                            feature: { select: { id: true, name: true, slug: true } },
                         },
                     },
                 },
@@ -270,7 +369,7 @@ export class SectionsController {
 async function syncGlobalLayoutSectionAcrossPages(params: {
     tenantId: string;
     instanceId: string;
-    componentKey: string;
+    sharedLayoutFeature: 'header' | 'footer';
     sourceSection: {
         id: string;
         themeId: string;
@@ -281,7 +380,7 @@ async function syncGlobalLayoutSectionAcrossPages(params: {
         conditionsJsonb: unknown;
     };
 }): Promise<void> {
-    const { tenantId, instanceId, componentKey, sourceSection } = params;
+    const { tenantId, instanceId, sharedLayoutFeature, sourceSection } = params;
 
     await db.$transaction(async (tx) => {
         const pages = await tx.page.findMany({
@@ -293,12 +392,16 @@ async function syncGlobalLayoutSectionAcrossPages(params: {
         const existingSections = await tx.pageSection.findMany({
             where: {
                 instanceId,
-                theme: { componentKey },
             },
             select: {
                 id: true,
                 pageId: true,
                 position: true,
+                theme: {
+                    select: {
+                        componentKey: true,
+                    },
+                },
             },
             orderBy: [
                 { pageId: 'asc' },
@@ -306,8 +409,12 @@ async function syncGlobalLayoutSectionAcrossPages(params: {
             ],
         });
 
+        const relevantExistingSections = existingSections.filter((section) =>
+            getSharedLayoutFeatureFromComponentKey(section.theme.componentKey) === sharedLayoutFeature
+        );
+
         const byPage = new Map<string, Array<{ id: string; pageId: string; position: number }>>();
-        for (const sec of existingSections) {
+        for (const sec of relevantExistingSections) {
             const list = byPage.get(sec.pageId) || [];
             list.push(sec);
             byPage.set(sec.pageId, list);
@@ -334,6 +441,7 @@ async function syncGlobalLayoutSectionAcrossPages(params: {
             await tx.pageSection.updateMany({
                 where: { id: { in: canonicalIds } },
                 data: {
+                    themeId: sourceSection.themeId,
                     themeVersionUsed: sourceSection.themeVersionUsed,
                     enabled: sourceSection.enabled,
                     contentJsonb: sourceSection.contentJsonb as any,
@@ -350,7 +458,7 @@ async function syncGlobalLayoutSectionAcrossPages(params: {
         }
 
         for (const pageId of missingPageIds) {
-            if (componentKey === 'header/v1') {
+            if (sharedLayoutFeature === 'header') {
                 await tx.pageSection.updateMany({
                     where: { pageId },
                     data: { position: { increment: 1 } },

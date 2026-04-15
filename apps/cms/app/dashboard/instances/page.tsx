@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Pencil, Trash2, X } from 'lucide-react';
+import { DomainSupportContact } from '../../../components/domain-support-contact';
 import { api } from '../../../lib/api-client';
 import { getInstanceDisplayDomain } from '../../../lib/domain';
 import { useAuth } from '../../../contexts/auth-context';
@@ -124,8 +125,8 @@ export default function InstancesPage() {
         if (!cleanedName) {
             nextErrors.name = 'Website name is required';
         }
-        if (!cleanedBusinessType) {
-            nextErrors.businessType = 'Industry is required';
+        if (cleanedBusinessType.length > 255) {
+            nextErrors.businessType = 'Industry must be 255 characters or fewer';
         }
         if (!cleanedTimezone) {
             nextErrors.timezone = 'Timezone is required';
@@ -408,7 +409,7 @@ export default function InstancesPage() {
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div>
                                     <label htmlFor="instanceBusinessType" className="mb-1 block text-sm font-medium text-slate-700">
-                                        Industry
+                                        Industry (optional)
                                     </label>
                                     <input
                                         id="instanceBusinessType"
@@ -511,6 +512,10 @@ export default function InstancesPage() {
                                     />
                                     <p className="mt-1 text-xs text-slate-500">Enter hostname only (no protocol, no path).</p>
                                     <p className="mt-1 text-xs text-slate-500">Domain DNS/TLS is managed manually outside platform.</p>
+                                    <DomainSupportContact
+                                        domain={editForm.customDomain}
+                                        className="mt-2"
+                                    />
                                     {editErrors.customDomain && <p className="mt-1 text-xs text-red-600">{editErrors.customDomain}</p>}
                                 </div>
                             )}

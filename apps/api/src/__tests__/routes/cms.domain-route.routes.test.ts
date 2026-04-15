@@ -15,6 +15,7 @@ describe('cms domain-route routing', () => {
         expect(source).toContain("tenantRouter.delete('/instances/:id/custom-domain/:host', InstancesController.removeDomainRoute);");
         expect(source).toContain("tenantRouter.get('/instances/:id/custom-domain/status', InstancesController.getCustomDomainStatusLegacy);");
         expect(source).toContain("tenantRouter.get('/instances/:id/custom-domain/setup', InstancesController.getCustomDomainSetupLegacy);");
+        expect(source).toContain("tenantRouter.post('/instances/:id/custom-domain/check', InstancesController.checkCustomDomainConnection);");
         expect(source).toContain("tenantRouter.delete('/instances/:id/custom-domain', InstancesController.removeCustomDomainLegacy);");
     });
 });

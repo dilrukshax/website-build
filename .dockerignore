@@ -45,7 +45,6 @@ Thumbs.db
 Dockerfile*
 docker-compose*
 .dockerignore
-!entrypoint.sh
 
 # Misc
 *.log

@@ -25,7 +25,7 @@ export async function requireTenant(
 
         const tenant = await db.tenant.findUnique({
             where: { id: tenantId },
-            select: { id: true, businessName: true, status: true },
+            select: { id: true, businessName: true, status: true, ownerId: true },
         });
 
         if (!tenant) {
@@ -42,6 +42,44 @@ export async function requireTenant(
                 error: { code: 'TENANT_INACTIVE', message: 'Tenant is not active' },
             });
             return;
+        }
+
+        // Hydrate tenant-scoped auth context from header-selected tenant.
+        // This avoids permission mismatch when session tokens are not tenant-scoped.
+        if (req.auth?.userId) {
+            const userTenant = await db.userTenant.findUnique({
+                where: {
+                    userId_tenantId: {
+                        userId: req.auth.userId,
+                        tenantId,
+                    },
+                },
+                include: {
+                    role: {
+                        include: {
+                            permissions: {
+                                include: { permission: true },
+                            },
+                        },
+                    },
+                },
+            });
+
+            if (!userTenant || userTenant.status !== 'active') {
+                res.status(403).json({
+                    success: false,
+                    error: { code: 'FORBIDDEN', message: 'You do not have access to this tenant' },
+                });
+                return;
+            }
+
+            const isTenantOwner = userTenant.isOwner || tenant.ownerId === req.auth.userId;
+            req.auth = {
+                ...req.auth,
+                tenantId,
+                role: isTenantOwner ? 'owner' : userTenant.role.name.toLowerCase(),
+                permissions: userTenant.role.permissions.map((rp) => rp.permission.key),
+            };
         }
 
         req.tenant = {

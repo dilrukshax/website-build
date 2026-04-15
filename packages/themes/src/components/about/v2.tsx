@@ -1,153 +1,29 @@
 import React from 'react';
 import type { ThemeComponentProps } from '../../types';
 
-interface StatisticItem {
-    value: string;
-    label: string;
-}
-
-export default function AboutV2({ content, styles, tokens }: ThemeComponentProps) {
-    const title = (content.title as string) || 'About Our Company';
-    const body = (content.body as string) || 'We have been providing exceptional service for over a decade. Our passion for excellence and dedication to our clients has made us a trusted leader in the industry.';
-    const statsTitle = content.statsTitle as string | undefined;
-    const statistics = (content.statistics as StatisticItem[]) || [
-        { value: '10+', label: 'Years Experience' },
-        { value: '5K+', label: 'Happy Clients' },
-        { value: '99%', label: 'Satisfaction' },
-        { value: '24/7', label: 'Support' },
-    ];
-    const ctaText = content.ctaText as string | undefined;
-    const ctaLink = (content.ctaLink as string) || '#';
-
-    // Styles
-    const backgroundColor = (styles.backgroundColor as string) || tokens.background;
+export default function AboutV2({ content, tokens }: ThemeComponentProps) {
+    const title = content.title as string || 'The Matrix of Innovation';
+    const body = content.body as string || 'Forged in the future. We combine advanced data models with deep aesthetic considerations to build tools that feel like magic.';
+    const imageUrl = content.imageUrl as string || 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=2070';
     
-    // Check if background is dark to adjust text colors
-    const isDarkBg = backgroundColor !== '#ffffff' && backgroundColor !== '#fff' && backgroundColor !== '#f9fafb';
-    const textColor = isDarkBg ? '#fff' : tokens.text;
-    const subtextColor = isDarkBg ? 'rgba(255,255,255,0.8)' : '#6b7280';
-
     return (
-        <section style={{
-            padding: '100px 24px',
-            backgroundColor: backgroundColor,
-            fontFamily: tokens.font,
-            color: textColor,
-        }}>
-            <div style={{
-                maxWidth: '1200px',
-                margin: '0 auto',
-                display: 'flex',
-                gap: '80px',
-                flexWrap: 'wrap',
-                alignItems: 'center',
-            }}>
-                {/* Left: Text Content */}
-                <div style={{ flex: '1 1 500px' }}>
-                    <div style={{
-                        display: 'inline-block',
-                        padding: '4px 12px',
-                        backgroundColor: `${tokens.primary}15`,
-                        color: isDarkBg ? '#fff' : tokens.primary,
-                        borderRadius: '100px',
-                        fontSize: '14px',
-                        fontWeight: 600,
-                        marginBottom: '20px',
-                        letterSpacing: '0.5px',
-                        textTransform: 'uppercase',
-                    }}>
-                        Our Story
+        <section style={{ backgroundColor: '#0f172a', padding: 'clamp(72px, 11vw, 120px) 16px', fontFamily: tokens.font, position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: '-10%', right: '-10%', width: '400px', height: '400px', background: tokens.primary, filter: 'blur(150px)', opacity: 0.2, zIndex: 0 }} />
+            <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', gap: 'clamp(22px, 6vw, 56px)', flexWrap: 'wrap', alignItems: 'center', position: 'relative', zIndex: 1 }}>
+                <div style={{ flex: '1 1 320px', order: 2 }}>
+                    <div style={{ display: 'inline-block', padding: '8px 16px', background: `rgba(255,255,255,0.05)`, border: `1px solid ${tokens.primary}40`, borderRadius: '100px', color: tokens.primary, fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '24px' }}>
+                        Information
                     </div>
-                    
-                    <h2 style={{
-                        fontSize: 'clamp(32px, 4vw, 48px)',
-                        fontWeight: 800,
-                        margin: '0 0 24px 0',
-                        lineHeight: 1.2,
-                        letterSpacing: '-1px',
-                    }}>
+                    <h2 style={{ fontSize: 'clamp(30px, 8vw, 48px)', fontWeight: 800, color: '#fff', marginBottom: '26px', textShadow: `0 0 20px ${tokens.primary}80` }}>
                         {title}
                     </h2>
-                    
-                    <p style={{
-                        fontSize: '18px',
-                        lineHeight: 1.7,
-                        color: subtextColor,
-                        margin: '0 0 32px 0',
-                        whiteSpace: 'pre-wrap',
-                    }}>
+                    <p style={{ fontSize: 'clamp(15px, 3.8vw, 18px)', lineHeight: 1.7, color: 'rgba(255,255,255,0.7)', fontWeight: 300 }}>
                         {body}
                     </p>
-
-                    {ctaText && (
-                        <a href={ctaLink} style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            color: isDarkBg ? '#fff' : tokens.primary,
-                            fontWeight: 600,
-                            fontSize: '16px',
-                            textDecoration: 'none',
-                            transition: 'opacity 0.2s',
-                        }}
-                           onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
-                           onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-                        >
-                            {ctaText}
-                            <span style={{ fontSize: '20px' }}>→</span>
-                        </a>
-                    )}
                 </div>
-
-                {/* Right: Statistics Grid */}
-                <div style={{ flex: '1 1 400px' }}>
-                    <div style={{
-                        backgroundColor: isDarkBg ? 'rgba(255,255,255,0.05)' : '#fff',
-                        borderRadius: '24px',
-                        padding: '48px',
-                        boxShadow: isDarkBg ? 'none' : '0 20px 40px rgba(0,0,0,0.06)',
-                        border: isDarkBg ? '1px solid rgba(255,255,255,0.1)' : '1px solid #f3f4f6',
-                    }}>
-                        {statsTitle && (
-                            <h3 style={{
-                                fontSize: '24px',
-                                fontWeight: 700,
-                                margin: '0 0 32px 0',
-                                textAlign: 'center',
-                            }}>
-                                {statsTitle}
-                            </h3>
-                        )}
-                        
-                        <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(2, 1fr)',
-                            gap: '40px',
-                        }}>
-                            {statistics.map((stat, idx) => (
-                                <div key={idx} style={{ textAlign: 'center' }}>
-                                    <div style={{
-                                        fontSize: 'clamp(36px, 4vw, 48px)',
-                                        fontWeight: 800,
-                                        color: isDarkBg ? '#fff' : tokens.primary,
-                                        lineHeight: 1,
-                                        margin: '0 0 8px 0',
-                                        letterSpacing: '-1px',
-                                    }}>
-                                        {stat.value}
-                                    </div>
-                                    <div style={{
-                                        fontSize: '15px',
-                                        fontWeight: 500,
-                                        color: subtextColor,
-                                        textTransform: 'uppercase',
-                                        letterSpacing: '0.5px',
-                                    }}>
-                                        {stat.label}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                <div style={{ flex: '1 1 320px', order: 1 }}>
+                    <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '24px', transform: 'rotate(2deg)' }}>
+                        <img src={imageUrl} alt="About Us" style={{ width: '100%', borderRadius: '16px', transform: 'rotate(-2deg)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }} />
                     </div>
                 </div>
             </div>

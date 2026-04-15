@@ -6,6 +6,12 @@ import { buildPrimaryFullDomain, normalizeDomainHost } from '../utils/domain';
 import { PlanPolicyService } from '../services/plan-policy.service';
 import { ReferralRewardsService } from '../services/referral-rewards.service';
 import { RoutingIndexService } from '../services/routing-index.service';
+import { DiscordWebhookService } from '../services/discord-webhook.service';
+import { S3Service } from '../services/s3.service';
+import { checkCustomDomainNameservers } from '../utils/domain-nameservers';
+
+const HOME_PAGE_SLUG = '/';
+const DEFAULT_HOME_PAGE_TITLE = 'Home';
 
 type InstanceRecord = Awaited<ReturnType<typeof db.instance.findFirst>>;
 
@@ -16,6 +22,17 @@ type DomainRouteUpdateResult = {
 
 function buildInstanceResponse(instance: NonNullable<InstanceRecord>) {
     const hasCustomDomain = Boolean(instance.customDomain);
+    const hostnameStatus = hasCustomDomain
+        ? (instance.customDomainHostnameStatus || 'pending')
+        : null;
+    const sslStatus = hasCustomDomain
+        ? (instance.customDomainSslStatus || 'pending')
+        : null;
+    const domainIsActive = Boolean(
+        hasCustomDomain
+        && (instance.customDomainActivatedAt
+            || (hostnameStatus === 'active' && sslStatus === 'active')),
+    );
 
     return {
         id: instance.id,
@@ -24,11 +41,11 @@ function buildInstanceResponse(instance: NonNullable<InstanceRecord>) {
         customDomain: instance.customDomain,
         cloudflareAccountId: null,
         cloudflareAccountName: null,
-        customDomainHostnameStatus: hasCustomDomain ? 'active' : null,
-        customDomainSslStatus: hasCustomDomain ? 'active' : null,
-        customDomainIsActive: hasCustomDomain,
-        customDomainLastCheckedAt: null,
-        customDomainActivatedAt: hasCustomDomain ? instance.updatedAt : null,
+        customDomainHostnameStatus: hostnameStatus,
+        customDomainSslStatus: sslStatus,
+        customDomainIsActive: domainIsActive,
+        customDomainLastCheckedAt: instance.customDomainLastCheckedAt,
+        customDomainActivatedAt: instance.customDomainActivatedAt,
         timezone: instance.timezone,
         name: instance.name,
         businessType: instance.businessType,
@@ -107,6 +124,10 @@ export class InstancesController {
                 fullDomain: true,
                 customDomain: true,
                 subdomain: true,
+                customDomainHostnameStatus: true,
+                customDomainSslStatus: true,
+                customDomainLastCheckedAt: true,
+                customDomainActivatedAt: true,
                 updatedAt: true,
             },
         });
@@ -166,6 +187,18 @@ export class InstancesController {
                 },
             });
 
+            // Bootstrap each new website with a default Home page so builder users
+            // can start editing immediately without a manual first-page step.
+            await db.page.create({
+                data: {
+                    tenantId,
+                    instanceId: instance.id,
+                    title: DEFAULT_HOME_PAGE_TITLE,
+                    slug: HOME_PAGE_SLUG,
+                    sortOrder: 0,
+                },
+            });
+
             const tenant = await db.tenant.findUnique({
                 where: { id: tenantId },
                 select: { ownerId: true },
@@ -175,6 +208,17 @@ export class InstancesController {
             }
 
             InstancesController.refreshRoutingIndexFailOpen([instance.fullDomain || '', instance.customDomain || '']);
+
+            await DiscordWebhookService.notifyWebsiteConfigured({
+                userId: req.auth?.userId || req.user?.userId || null,
+                tenantId,
+                instanceId: instance.id,
+                websiteName: instance.name,
+                subdomain: instance.subdomain,
+                fullDomain: instance.fullDomain,
+                businessType: instance.businessType,
+                timezone: instance.timezone,
+            });
 
             res.status(201).json({
                 success: true,
@@ -267,6 +311,8 @@ export class InstancesController {
                 where: { id, tenantId },
                 select: {
                     id: true,
+                    name: true,
+                    subdomain: true,
                     fullDomain: true,
                     customDomain: true,
                 },
@@ -315,12 +361,24 @@ export class InstancesController {
                     if (active) {
                         await tx.instance.update({
                             where: { id: instance.id },
-                            data: { customDomain: normalizedHost },
+                            data: {
+                                customDomain: normalizedHost,
+                                customDomainHostnameStatus: 'pending',
+                                customDomainSslStatus: 'pending',
+                                customDomainLastCheckedAt: null,
+                                customDomainActivatedAt: null,
+                            },
                         });
                     } else if ((instance.customDomain || '').toLowerCase() === normalizedHost) {
                         await tx.instance.update({
                             where: { id: instance.id },
-                            data: { customDomain: null },
+                            data: {
+                                customDomain: null,
+                                customDomainHostnameStatus: null,
+                                customDomainSslStatus: null,
+                                customDomainLastCheckedAt: null,
+                                customDomainActivatedAt: null,
+                            },
                         });
                     }
                 }
@@ -329,6 +387,20 @@ export class InstancesController {
             });
 
             InstancesController.refreshRoutingIndexFailOpen([normalizedHost, instance.fullDomain || '', instance.customDomain || '']);
+
+            if (upserted.active) {
+                await DiscordWebhookService.notifyCustomDomainConfigured({
+                    userId: req.auth?.userId || req.user?.userId || null,
+                    tenantId,
+                    instanceId: instance.id,
+                    websiteName: instance.name,
+                    subdomain: instance.subdomain,
+                    fullDomain: instance.fullDomain,
+                    customDomain: upserted.host,
+                    active: upserted.active,
+                    isPrimary: upserted.isPrimary,
+                });
+            }
 
             res.json({
                 success: true,
@@ -426,6 +498,10 @@ export class InstancesController {
                         where: { id: instance.id },
                         data: {
                             customDomain: fallbackHost,
+                            customDomainHostnameStatus: fallbackHost ? 'pending' : null,
+                            customDomainSslStatus: fallbackHost ? 'pending' : null,
+                            customDomainLastCheckedAt: null,
+                            customDomainActivatedAt: null,
                         },
                     });
                 }
@@ -499,15 +575,21 @@ export class InstancesController {
                 data: {
                     hostname: instance.customDomain,
                     customDomain: instance.customDomain,
-                    status: 'active',
-                    hostnameStatus: 'active',
-                    sslStatus: 'active',
-                    isActive: true,
+                    status: instance.customDomainActivatedAt
+                        || (instance.customDomainHostnameStatus === 'active' && instance.customDomainSslStatus === 'active')
+                        ? 'active'
+                        : 'pending',
+                    hostnameStatus: instance.customDomainHostnameStatus || 'pending',
+                    sslStatus: instance.customDomainSslStatus || 'pending',
+                    isActive: Boolean(
+                        instance.customDomainActivatedAt
+                        || (instance.customDomainHostnameStatus === 'active' && instance.customDomainSslStatus === 'active'),
+                    ),
                     verification: [],
                     verificationErrors: [],
                     cnameTarget: instance.fullDomain || buildPrimaryFullDomain(instance.subdomain),
-                    lastCheckedAt: instance.updatedAt,
-                    activatedAt: instance.updatedAt,
+                    lastCheckedAt: instance.customDomainLastCheckedAt || instance.updatedAt,
+                    activatedAt: instance.customDomainActivatedAt,
                     setupLastUpdatedAt: instance.updatedAt,
                     verificationSource: 'snapshot',
                 },
@@ -535,18 +617,76 @@ export class InstancesController {
                 data: {
                     hostname: instance.customDomain,
                     customDomain: instance.customDomain,
-                    status: 'active',
-                    hostnameStatus: 'active',
-                    sslStatus: 'active',
-                    isActive: true,
+                    status: instance.customDomainActivatedAt
+                        || (instance.customDomainHostnameStatus === 'active' && instance.customDomainSslStatus === 'active')
+                        ? 'active'
+                        : 'pending',
+                    hostnameStatus: instance.customDomainHostnameStatus || 'pending',
+                    sslStatus: instance.customDomainSslStatus || 'pending',
+                    isActive: Boolean(
+                        instance.customDomainActivatedAt
+                        || (instance.customDomainHostnameStatus === 'active' && instance.customDomainSslStatus === 'active'),
+                    ),
                     verification: [],
                     verificationErrors: [],
                     cnameTarget: instance.fullDomain || buildPrimaryFullDomain(instance.subdomain),
-                    lastCheckedAt: instance.updatedAt,
-                    activatedAt: instance.updatedAt,
+                    lastCheckedAt: instance.customDomainLastCheckedAt || instance.updatedAt,
+                    activatedAt: instance.customDomainActivatedAt,
                     setupLastUpdatedAt: instance.updatedAt,
                     verificationSource: 'snapshot',
                 },
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /**
+     * Live DNS check for currently configured custom domain nameservers.
+     */
+    static async checkCustomDomainConnection(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const tenantId = req.tenant!.id;
+            const id = req.params.id!;
+            const instance = await InstancesController.getInstanceForTenant(tenantId, id);
+
+            if (!instance || !instance.customDomain) {
+                throw new AppError(ERROR_CODES.NOT_FOUND, 'Custom domain not configured for this instance', 404);
+            }
+
+            const checkResult = await checkCustomDomainNameservers(instance.customDomain);
+            const now = new Date();
+            const status = checkResult.matchesRequired ? 'active' : 'pending';
+
+            await db.instance.update({
+                where: { id: instance.id },
+                data: {
+                    customDomainHostnameStatus: status,
+                    customDomainSslStatus: status,
+                    customDomainLastCheckedAt: now,
+                    ...(checkResult.matchesRequired ? { customDomainActivatedAt: now } : {}),
+                },
+            });
+
+            res.json({
+                success: true,
+                data: {
+                    hostname: checkResult.hostname,
+                    lookupHost: checkResult.lookupHost,
+                    status,
+                    hostnameStatus: status,
+                    sslStatus: status,
+                    isActive: checkResult.matchesRequired,
+                    requiredNameservers: checkResult.requiredNameservers,
+                    actualNameservers: checkResult.actualNameservers,
+                    missingNameservers: checkResult.missingNameservers,
+                    code: checkResult.code,
+                    checkedAt: now.toISOString(),
+                    verificationSource: 'live-dns',
+                },
+                message: checkResult.matchesRequired
+                    ? 'Domain nameservers are connected.'
+                    : 'Domain nameservers are not fully connected yet.',
             });
         } catch (error) {
             next(error);
@@ -563,10 +703,52 @@ export class InstancesController {
 
             const instance = await db.instance.findFirst({
                 where: { id, tenantId },
+                select: {
+                    id: true,
+                    tenantId: true,
+                    fullDomain: true,
+                    customDomain: true,
+                },
             });
 
             if (!instance) {
                 throw new AppError(ERROR_CODES.INSTANCE_NOT_FOUND, 'Instance not found', 404);
+            }
+
+            const mediaAssets = await db.mediaAsset.findMany({
+                where: { tenantId, instanceId: instance.id },
+                select: { objectKey: true },
+            });
+
+            const s3Service = new S3Service();
+            if (!s3Service.isConfigured()) {
+                throw new AppError(
+                    ERROR_CODES.INTERNAL_ERROR,
+                    'R2 storage is not configured. Instance deletion requires artifact cleanup.',
+                    500,
+                );
+            }
+
+            let storageCleanupResult: {
+                deletedPublishedObjectCount: number;
+                deletedMediaObjectCount: number;
+                deletedTotalCount: number;
+            };
+
+            try {
+                storageCleanupResult = await s3Service.deleteInstanceArtifacts({
+                    tenantId: instance.tenantId,
+                    instanceId: instance.id,
+                    mediaObjectKeys: mediaAssets.map((asset) => asset.objectKey),
+                });
+            } catch (cleanupError) {
+                throw new AppError(
+                    ERROR_CODES.PUBLISH_FAILED,
+                    cleanupError instanceof Error
+                        ? `Failed to delete instance artifacts from storage: ${cleanupError.message}`
+                        : 'Failed to delete instance artifacts from storage',
+                    502,
+                );
             }
 
             await db.instance.delete({
@@ -579,6 +761,7 @@ export class InstancesController {
                 success: true,
                 data: {
                     message: 'Instance deleted successfully',
+                    storageCleanup: storageCleanupResult,
                 },
             });
         } catch (error) {

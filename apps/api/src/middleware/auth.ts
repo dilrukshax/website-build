@@ -35,6 +35,9 @@ export async function requireAuth(
                     },
                 },
                 include: {
+                    tenant: {
+                        select: { ownerId: true },
+                    },
                     role: {
                         include: {
                             permissions: {
@@ -53,10 +56,12 @@ export async function requireAuth(
                 return;
             }
 
+            const isTenantOwner = userTenant.isOwner || userTenant.tenant.ownerId === payload.userId;
+
             req.auth = {
                 userId: payload.userId,
                 tenantId: payload.tenantId,
-                role: userTenant.isOwner ? 'owner' : userTenant.role.name.toLowerCase(),
+                role: isTenantOwner ? 'owner' : userTenant.role.name.toLowerCase(),
                 permissions: userTenant.role.permissions.map((rp) => rp.permission.key),
             };
         } else {

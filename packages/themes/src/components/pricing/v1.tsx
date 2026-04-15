@@ -1,203 +1,84 @@
 import React from 'react';
 import type { ThemeComponentProps } from '../../types';
 
-interface PricingTier {
-    name: string;
-    price: string;
-    period?: string;
-    description?: string;
-    features: string[];
-    ctaText?: string;
-    ctaLink?: string;
-    highlighted?: boolean;
-}
-
 export default function PricingV1({ content, tokens }: ThemeComponentProps) {
-    const title = (content.title as string) || 'Our Pricing';
-    const subtitle = (content.subtitle as string) || '';
-    const tiers = (content.tiers as PricingTier[]) || [
-        {
-            name: 'Basic',
-            price: '$29',
-            period: '/month',
-            description: 'Perfect for getting started',
-            features: ['1 Service', 'Online Booking', 'Email Support'],
-            ctaText: 'Get Started',
-            highlighted: false,
-        },
-        {
-            name: 'Pro',
-            price: '$79',
-            period: '/month',
-            description: 'For growing businesses',
-            features: ['Unlimited Services', 'Online Booking', 'Priority Support', 'Analytics'],
-            ctaText: 'Get Started',
-            highlighted: true,
-        },
-        {
-            name: 'Enterprise',
-            price: '$199',
-            period: '/month',
-            description: 'For large teams',
-            features: ['Everything in Pro', 'Custom Integrations', 'Dedicated Account Manager', 'SLA'],
-            ctaText: 'Contact Us',
-            highlighted: false,
-        },
+    const title = content.title as string || 'Simple, Transparent Pricing';
+    const subtitle = content.subtitle as string || 'No hidden fees. No surprises.';
+    const plans = (content.plans as { name: string, price: string, features: string[], cta: string }[]) || [
+        { name: 'Basic', price: '$29', features: ['1 User', '10GB Storage', 'Basic Support'], cta: 'Get Started' },
+        { name: 'Pro', price: '$99', features: ['5 Users', '100GB Storage', 'Priority Support', 'Advanced Analytics'], cta: 'Start Free Trial' },
+        { name: 'Enterprise', price: 'Custom', features: ['Unlimited Users', 'Unlimited Storage', '24/7 Dedicated Support', 'Custom Integrations'], cta: 'Contact Sales' },
     ];
 
     return (
-        <section style={{
-            padding: '80px 24px',
-            backgroundColor: tokens.background,
-            fontFamily: tokens.font,
-        }}>
-            <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-                {/* Heading */}
-                <div style={{ textAlign: 'center', marginBottom: '56px' }}>
-                    <h2 style={{
-                        fontSize: '36px',
-                        fontWeight: 700,
-                        color: tokens.text,
-                        margin: '0 0 12px 0',
-                        letterSpacing: '-0.5px',
-                    }}>
-                        {title}
-                    </h2>
-                    {subtitle && (
-                        <p style={{ fontSize: '18px', color: '#6b7280', margin: 0, maxWidth: '560px', marginLeft: 'auto', marginRight: 'auto' }}>
-                            {subtitle}
-                        </p>
-                    )}
+        <section style={{ backgroundColor: tokens.background, padding: '120px 24px', fontFamily: tokens.font }}>
+            <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+                <div style={{ textAlign: 'center', marginBottom: '80px' }}>
+                    <h2 style={{ fontSize: '36px', fontWeight: 800, color: tokens.text, marginBottom: '16px' }}>{title}</h2>
+                    <p style={{ fontSize: '18px', color: '#6b7280' }}>{subtitle}</p>
                 </div>
-
-                {/* Tier Cards */}
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: `repeat(${Math.min(tiers.length, 3)}, 1fr)`,
-                    gap: '24px',
-                    alignItems: 'start',
-                }}>
-                    {tiers.map((tier, idx) => (
-                        <div
-                            key={idx}
-                            style={{
-                                borderRadius: '16px',
-                                padding: '36px 28px',
-                                border: tier.highlighted ? `2px solid ${tokens.primary}` : '1px solid #e5e7eb',
-                                backgroundColor: tier.highlighted ? tokens.primary : '#fff',
-                                color: tier.highlighted ? '#fff' : tokens.text,
-                                boxShadow: tier.highlighted
-                                    ? `0 20px 40px -10px ${tokens.primary}55`
-                                    : '0 4px 12px rgba(0,0,0,0.06)',
-                                transform: tier.highlighted ? 'scale(1.04)' : 'none',
-                                position: 'relative',
+                
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '32px', alignItems: 'center' }}>
+                    {plans.map((plan, i) => {
+                        const isFeatured = i === 1;
+                        return (
+                            <div key={i} style={{ 
+                                backgroundColor: isFeatured ? tokens.primary : tokens.background, 
+                                padding: isFeatured ? '64px 40px' : '48px 40px', 
+                                borderRadius: '16px', 
+                                border: isFeatured ? 'none' : '1px solid #e5e7eb',
+                                boxShadow: isFeatured ? '0 20px 25px -5px rgba(0,0,0,0.1)' : '0 4px 6px -1px rgba(0,0,0,0.05)',
+                                color: isFeatured ? tokens.background : tokens.text,
+                                textAlign: 'center',
+                                scale: isFeatured ? '1.05' : '1',
+                                transition: 'transform 0.2s'
                             }}
-                        >
-                            {tier.highlighted && (
-                                <div style={{
-                                    position: 'absolute',
-                                    top: '-13px',
-                                    left: '50%',
-                                    transform: 'translateX(-50%)',
-                                    backgroundColor: tokens.accent,
-                                    color: '#fff',
-                                    fontSize: '12px',
-                                    fontWeight: 700,
-                                    padding: '4px 16px',
-                                    borderRadius: '999px',
-                                    whiteSpace: 'nowrap',
-                                    letterSpacing: '0.5px',
-                                }}>
-                                    MOST POPULAR
-                                </div>
-                            )}
-
-                            <h3 style={{
-                                fontSize: '20px',
-                                fontWeight: 700,
-                                margin: '0 0 8px 0',
-                                color: tier.highlighted ? '#fff' : tokens.text,
+                            onMouseEnter={(e) => {
+                                if(!isFeatured) e.currentTarget.style.transform = 'translateY(-8px)';
+                            }}
+                            onMouseLeave={(e) => {
+                                if(!isFeatured) e.currentTarget.style.transform = 'translateY(0)';
                             }}>
-                                {tier.name}
-                            </h3>
-
-                            {tier.description && (
-                                <p style={{
-                                    fontSize: '14px',
-                                    margin: '0 0 20px 0',
-                                    color: tier.highlighted ? 'rgba(255,255,255,0.8)' : '#6b7280',
+                                <h3 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '24px', color: isFeatured ? tokens.background : tokens.text }}>{plan.name}</h3>
+                                <div style={{ fontSize: '48px', fontWeight: 800, marginBottom: '32px' }}>{plan.price}<span style={{ fontSize: '16px', fontWeight: 500, color: isFeatured ? 'rgba(255,255,255,0.7)' : '#6b7280' }}>{plan.price !== 'Custom' && '/mo'}</span></div>
+                                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 40px 0', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                    {plan.features.map((feature, idx) => (
+                                        <li key={idx} style={{ fontSize: '16px', color: isFeatured ? 'rgba(255,255,255,0.9)' : '#4b5563' }}>{feature}</li>
+                                    ))}
+                                </ul>
+                                <button style={{ 
+                                    width: '100%',
+                                    padding: '16px',
+                                    borderRadius: '8px',
+                                    border: isFeatured ? 'none' : `1px solid ${tokens.primary}`,
+                                    backgroundColor: isFeatured ? tokens.background : 'transparent',
+                                    color: isFeatured ? tokens.primary : tokens.primary,
+                                    fontSize: '16px',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                                onMouseEnter={(e) => {
+                                    if(!isFeatured) {
+                                        e.currentTarget.style.backgroundColor = tokens.primary;
+                                        e.currentTarget.style.color = tokens.background;
+                                    } else {
+                                        e.currentTarget.style.transform = 'scale(1.05)';
+                                    }
+                                }}
+                                onMouseLeave={(e) => {
+                                    if(!isFeatured) {
+                                        e.currentTarget.style.backgroundColor = 'transparent';
+                                        e.currentTarget.style.color = tokens.primary;
+                                    } else {
+                                        e.currentTarget.style.transform = 'scale(1)';
+                                    }
                                 }}>
-                                    {tier.description}
-                                </p>
-                            )}
-
-                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '28px' }}>
-                                <span style={{
-                                    fontSize: '44px',
-                                    fontWeight: 800,
-                                    color: tier.highlighted ? '#fff' : tokens.primary,
-                                    lineHeight: 1,
-                                }}>
-                                    {tier.price}
-                                </span>
-                                {tier.period && (
-                                    <span style={{
-                                        fontSize: '15px',
-                                        color: tier.highlighted ? 'rgba(255,255,255,0.7)' : '#9ca3af',
-                                    }}>
-                                        {tier.period}
-                                    </span>
-                                )}
+                                    {plan.cta}
+                                </button>
                             </div>
-
-                            <ul style={{ listStyle: 'none', margin: '0 0 32px 0', padding: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                {(tier.features || []).map((feat, fIdx) => (
-                                    <li key={fIdx} style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '10px',
-                                        fontSize: '14px',
-                                        color: tier.highlighted ? 'rgba(255,255,255,0.9)' : '#374151',
-                                    }}>
-                                        <span style={{
-                                            width: '18px',
-                                            height: '18px',
-                                            borderRadius: '50%',
-                                            backgroundColor: tier.highlighted ? 'rgba(255,255,255,0.25)' : `${tokens.secondary}22`,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            fontSize: '10px',
-                                            flexShrink: 0,
-                                            color: tier.highlighted ? '#fff' : tokens.secondary,
-                                            fontWeight: 700,
-                                        }}>✓</span>
-                                        {feat}
-                                    </li>
-                                ))}
-                            </ul>
-
-                            {tier.ctaText && (
-                                <a
-                                    href={tier.ctaLink || '#'}
-                                    style={{
-                                        display: 'block',
-                                        textAlign: 'center',
-                                        padding: '12px 24px',
-                                        borderRadius: '8px',
-                                        fontWeight: 600,
-                                        fontSize: '15px',
-                                        textDecoration: 'none',
-                                        backgroundColor: tier.highlighted ? '#fff' : tokens.primary,
-                                        color: tier.highlighted ? tokens.primary : '#fff',
-                                        transition: 'opacity 0.2s',
-                                    }}
-                                >
-                                    {tier.ctaText}
-                                </a>
-                            )}
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
         </section>

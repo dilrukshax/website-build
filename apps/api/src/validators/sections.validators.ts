@@ -1,13 +1,15 @@
 import { z } from 'zod';
 
 export const createSectionSchema = z.object({
-    themeId: z.string().uuid('Theme ID must be a valid UUID'),
+    // Theme IDs are string primary keys and may be UUID or named IDs (e.g. seed IDs).
+    themeId: z.string().min(1, 'Theme ID is required'),
     position: z.number().int().min(0).optional(),
     contentJsonb: z.record(z.unknown()).optional(),
     stylesJsonb: z.record(z.unknown()).optional(),
 });
 
 export const updateSectionSchema = z.object({
+    themeId: z.string().min(1, 'Theme ID is required').optional(),
     contentJsonb: z.record(z.unknown()).optional(),
     stylesJsonb: z.record(z.unknown()).optional(),
     enabled: z.boolean().optional(),

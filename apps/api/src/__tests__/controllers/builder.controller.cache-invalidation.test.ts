@@ -99,7 +99,7 @@ describe('BuilderController cache invalidation integration', () => {
         mocks.pageSectionFindMany.mockResolvedValue([]);
         mocks.getEffectiveLimits.mockResolvedValue({
             plan: 'free',
-            maxAccessibleThemes: 10,
+            maxAccessibleThemes: null,
         });
     });
 
@@ -156,6 +156,23 @@ describe('BuilderController cache invalidation integration', () => {
             manifest: expect.any(Object),
             version: 2,
         });
+        expect(mocks.publishCreate).toHaveBeenCalledWith(
+            expect.objectContaining({
+                data: expect.objectContaining({
+                    manifestJsonb: expect.objectContaining({
+                        primaryDomain: 'www.mysalon.com',
+                        seoDefaults: expect.anything(),
+                        pages: expect.arrayContaining([
+                            expect.objectContaining({
+                                page: expect.objectContaining({
+                                    seo: null,
+                                }),
+                            }),
+                        ]),
+                    }),
+                }),
+            }),
+        );
 
         const uploadCallOrder = mocks.uploadPublishedWebsite.mock.invocationCallOrder[0];
         const invalidateCallOrder = mocks.invalidatePublishedSiteCache.mock.invocationCallOrder[0];
@@ -165,7 +182,9 @@ describe('BuilderController cache invalidation integration', () => {
         expect(res.status).toHaveBeenCalledWith(201);
     });
 
-    it('blocks publish when premium themes are present on a restricted plan', async () => {
+    it('allows publish when high-rank themes are present with unrestricted theme access', async () => {
+        const now = new Date('2026-03-09T08:40:00.000Z');
+
         mocks.instanceFindUnique.mockResolvedValue({
             id: 'inst-1',
             tenantId: 'tenant-1',
@@ -183,6 +202,26 @@ describe('BuilderController cache invalidation integration', () => {
                 },
             },
         ]);
+        mocks.pageFindMany.mockResolvedValue([
+            {
+                id: 'page-1',
+                slug: '/',
+                title: 'Home',
+                sections: [],
+            },
+        ]);
+        mocks.publishFindFirst.mockResolvedValue({ version: 0 });
+        mocks.publishCreate.mockResolvedValue({
+            id: 'pub-1',
+            version: 1,
+            status: 'published',
+            publishedAt: now,
+            manifestJsonb: {
+                subdomain: 'mysalon',
+                pages: [{ page: { slug: '/' }, sections: [] }],
+            },
+        });
+        mocks.pageUpdateMany.mockResolvedValue({ count: 1 });
 
         const req = {
             instance: { id: 'inst-1' },
@@ -194,13 +233,9 @@ describe('BuilderController cache invalidation integration', () => {
 
         await BuilderController.publish(req, res as any, next);
 
-        expect(next).toHaveBeenCalledTimes(1);
-        const error = next.mock.calls[0]?.[0] as { code?: string; statusCode?: number; message?: string };
-        expect(error.code).toBe('PLAN_LIMIT_REACHED');
-        expect(error.statusCode).toBe(403);
-        expect(error.message).toContain('premium themes');
-        expect(mocks.pageFindMany).not.toHaveBeenCalled();
-        expect(mocks.uploadPublishedWebsite).not.toHaveBeenCalled();
+        expect(next).not.toHaveBeenCalled();
+        expect(mocks.pageFindMany).toHaveBeenCalledTimes(1);
+        expect(mocks.uploadPublishedWebsite).toHaveBeenCalledTimes(1);
     });
 
     it('triggers invalidation after successful rollback upload', async () => {

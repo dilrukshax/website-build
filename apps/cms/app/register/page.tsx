@@ -24,6 +24,7 @@ const inter = Inter({
 
 const FINGERPRINT_ENABLED = process.env.NEXT_PUBLIC_FINGERPRINT_ENABLED === 'true';
 const REFERRAL_STORAGE_KEY = 'pendingReferralCode';
+const PRODUCT_BASED_REGISTER_URL = 'https://easyonlineweb.com/user/admin/auth/view/register.php';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_RULES = [
     { key: 'length', label: 'At least 8 characters', test: (value: string) => value.length >= 8 },
@@ -32,7 +33,8 @@ const PASSWORD_RULES = [
     { key: 'number', label: 'At least one number', test: (value: string) => /[0-9]/.test(value) },
 ] as const;
 
-type RegisterField = 'email' | 'password' | 'confirmPassword' | 'fullName';
+type RegisterField = 'email' | 'password' | 'confirmPassword' | 'fullName' | 'whatsappNumber';
+type RegistrationMode = 'service';
 
 export default function RegisterPage() {
     const router = useRouter();
@@ -45,11 +47,13 @@ export default function RegisterPage() {
         password: '',
         confirmPassword: '',
         fullName: '',
+        whatsappNumber: '',
     });
     const [referralCode, setReferralCode] = useState<string | null>(null);
     const [error, setError] = useState('');
     const [fieldErrors, setFieldErrors] = useState<Partial<Record<RegisterField, string>>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [registrationMode, setRegistrationMode] = useState<RegistrationMode | null>(null);
     const passwordRuleStatus = PASSWORD_RULES.map((rule) => ({ ...rule, passed: rule.test(formData.password) }));
 
     useEffect(() => {
@@ -79,7 +83,11 @@ export default function RegisterPage() {
     }
 
     function isRegisterField(field: string): field is RegisterField {
-        return field === 'email' || field === 'password' || field === 'confirmPassword' || field === 'fullName';
+        return field === 'email'
+            || field === 'password'
+            || field === 'confirmPassword'
+            || field === 'fullName'
+            || field === 'whatsappNumber';
     }
 
     function mapServerFieldToRegisterField(rawField: string): RegisterField | null {
@@ -88,6 +96,7 @@ export default function RegisterPage() {
         if (!normalized) return null;
         if (normalized.endsWith('confirm_password') || normalized.endsWith('confirmpassword')) return 'confirmPassword';
         if (normalized.endsWith('full_name') || normalized.endsWith('fullname')) return 'fullName';
+        if (normalized.endsWith('whatsapp_number') || normalized.endsWith('whatsappnumber') || normalized.endsWith('whatsapp')) return 'whatsappNumber';
         if (normalized.endsWith('email')) return 'email';
         if (normalized.endsWith('password')) return 'password';
 
@@ -97,10 +106,15 @@ export default function RegisterPage() {
     function validateForm() {
         const trimmedEmail = formData.email.trim();
         const trimmedFullName = formData.fullName.trim();
+        const trimmedWhatsappNumber = formData.whatsappNumber.trim();
         const errors: Partial<Record<RegisterField, string>> = {};
 
         if (!trimmedFullName) {
             errors.fullName = 'Full name is required';
+        }
+
+        if (!trimmedWhatsappNumber) {
+            errors.whatsappNumber = 'WhatsApp number is required';
         }
 
         if (!trimmedEmail) {
@@ -121,7 +135,7 @@ export default function RegisterPage() {
             errors.confirmPassword = 'Passwords do not match';
         }
 
-        return { trimmedEmail, trimmedFullName, errors };
+        return { trimmedEmail, trimmedFullName, trimmedWhatsappNumber, errors };
     }
 
     function applyServerFieldErrors(details?: Array<{ field: string; message: string }>) {
@@ -174,7 +188,7 @@ export default function RegisterPage() {
         setError('');
         setFieldErrors({});
 
-        const { trimmedEmail, trimmedFullName, errors } = validateForm();
+        const { trimmedEmail, trimmedFullName, trimmedWhatsappNumber, errors } = validateForm();
         if (Object.keys(errors).length > 0) {
             setFieldErrors(errors);
             return;
@@ -187,6 +201,7 @@ export default function RegisterPage() {
                 email: trimmedEmail,
                 password: formData.password,
                 fullName: trimmedFullName,
+                whatsappNumber: trimmedWhatsappNumber,
                 _deviceFingerprint: fingerprintData ?? null,
                 referralCode,
             });
@@ -231,6 +246,12 @@ export default function RegisterPage() {
             }
         } finally {
             setIsSubmitting(false);
+        }
+    }
+
+    function handleProductBasedRedirect() {
+        if (typeof window !== 'undefined') {
+            window.location.assign(PRODUCT_BASED_REGISTER_URL);
         }
     }
 
@@ -283,128 +304,198 @@ export default function RegisterPage() {
                                 <Sparkles className="h-5 w-5" />
                                 <span className="text-base font-semibold">buildmyonlineweb</span>
                             </Link>
-                            <h2 className="mt-4 text-3xl font-black text-slate-900 dark:text-white">Create account</h2>
+                            <h2 className="mt-4 text-3xl font-black text-slate-900 dark:text-white">
+                                {registrationMode === 'service' ? 'Create account' : 'Choose your business type'}
+                            </h2>
                             <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                                Set up your workspace and start building your live website.
+                                {registrationMode === 'service'
+                                    ? 'Set up your workspace and start building your live website.'
+                                    : 'Are you service-based or product-based?'}
                             </p>
                         </div>
 
-                        {error && (
-                            <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">
-                                {error}
-                            </div>
-                        )}
+                        {registrationMode === null ? (
+                            <div className="space-y-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setRegistrationMode('service')}
+                                    className="inline-flex w-full items-center justify-between rounded-xl border border-[#5048e5]/35 bg-[#5048e5]/10 px-4 py-3 text-left text-sm font-semibold text-[#5048e5] transition hover:bg-[#5048e5]/15"
+                                >
+                                    Service-based business
+                                    <ArrowRight className="h-4 w-4" />
+                                </button>
 
-                        {referralCode && (
-                            <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
-                                Referral code applied: <span className="font-semibold">{referralCode}</span>
-                            </div>
-                        )}
+                                <button
+                                    type="button"
+                                    onClick={handleProductBasedRedirect}
+                                    className="inline-flex w-full items-center justify-between rounded-xl border border-slate-300 bg-white px-4 py-3 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-800"
+                                >
+                                    Product-based business
+                                    <ArrowRight className="h-4 w-4" />
+                                </button>
 
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div>
-                                <label htmlFor="fullName" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                                    Full name
-                                </label>
-                                <input
-                                    id="fullName"
-                                    type="text"
-                                    required
-                                    value={formData.fullName}
-                                    onChange={(e) => updateField('fullName', e.target.value)}
-                                    className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#5048e5] focus:ring-2 focus:ring-[#5048e5]/20 dark:bg-slate-950 dark:text-slate-100 ${fieldErrors.fullName ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
-                                    placeholder="John Doe"
-                                />
-                                {fieldErrors.fullName && (
-                                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.fullName}</p>
+                                <p className="pt-1 text-xs text-slate-500 dark:text-slate-400">
+                                    Product-based registration will continue on easyonlineweb.
+                                </p>
+
+                                <p className="pt-2 text-center text-sm text-slate-600 dark:text-slate-400">
+                                    Already have an account?{' '}
+                                    <Link href="/login" className="font-semibold text-[#5048e5] hover:text-[#3e38b6]">
+                                        Sign in
+                                    </Link>
+                                </p>
+                            </div>
+                        ) : (
+                            <>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setRegistrationMode(null);
+                                        setError('');
+                                        setFieldErrors({});
+                                    }}
+                                    className="mb-4 inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-800"
+                                >
+                                    Change business type
+                                </button>
+
+                                {error && (
+                                    <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">
+                                        {error}
+                                    </div>
                                 )}
-                            </div>
 
-                            <div>
-                                <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                                    Email address
-                                </label>
-                                <input
-                                    id="email"
-                                    type="email"
-                                    required
-                                    autoComplete="email"
-                                    value={formData.email}
-                                    onChange={(e) => updateField('email', e.target.value)}
-                                    className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#5048e5] focus:ring-2 focus:ring-[#5048e5]/20 dark:bg-slate-950 dark:text-slate-100 ${fieldErrors.email ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
-                                    placeholder="you@example.com"
-                                />
-                                {fieldErrors.email && (
-                                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.email}</p>
+                                {referralCode && (
+                                    <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
+                                        Referral code applied: <span className="font-semibold">{referralCode}</span>
+                                    </div>
                                 )}
-                            </div>
 
-                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                <div>
-                                    <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                                        Password
-                                    </label>
-                                    <input
-                                        id="password"
-                                        type="password"
-                                        required
-                                        autoComplete="new-password"
-                                        value={formData.password}
-                                        onChange={(e) => updateField('password', e.target.value)}
-                                        className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#5048e5] focus:ring-2 focus:ring-[#5048e5]/20 dark:bg-slate-950 dark:text-slate-100 ${fieldErrors.password ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
-                                        placeholder="Min 8 characters"
-                                    />
-                                    {fieldErrors.password && (
-                                        <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.password}</p>
-                                    )}
-                                    <ul className="mt-2 space-y-1 text-xs">
-                                        {passwordRuleStatus.map((rule) => (
-                                            <li
-                                                key={rule.key}
-                                                className={`inline-flex items-center gap-1.5 ${rule.passed ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`}
-                                            >
-                                                {rule.passed ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Circle className="h-3.5 w-3.5" />}
-                                                {rule.label}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                                <div>
-                                    <label htmlFor="confirmPassword" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                                        Confirm password
-                                    </label>
-                                    <input
-                                        id="confirmPassword"
-                                        type="password"
-                                        required
-                                        autoComplete="new-password"
-                                        value={formData.confirmPassword}
-                                        onChange={(e) => updateField('confirmPassword', e.target.value)}
-                                        className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#5048e5] focus:ring-2 focus:ring-[#5048e5]/20 dark:bg-slate-950 dark:text-slate-100 ${fieldErrors.confirmPassword ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
-                                        placeholder="Re-enter password"
-                                    />
-                                    {fieldErrors.confirmPassword && (
-                                        <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.confirmPassword}</p>
-                                    )}
-                                </div>
-                            </div>
+                                <form onSubmit={handleSubmit} className="space-y-4">
+                                    <div>
+                                        <label htmlFor="fullName" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                            Full name
+                                        </label>
+                                        <input
+                                            id="fullName"
+                                            type="text"
+                                            required
+                                            value={formData.fullName}
+                                            onChange={(e) => updateField('fullName', e.target.value)}
+                                            className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#5048e5] focus:ring-2 focus:ring-[#5048e5]/20 dark:bg-slate-950 dark:text-slate-100 ${fieldErrors.fullName ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
+                                            placeholder="John Doe"
+                                        />
+                                        {fieldErrors.fullName && (
+                                            <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.fullName}</p>
+                                        )}
+                                    </div>
 
-                            <button
-                                type="submit"
-                                disabled={isSubmitting}
-                                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#5048e5] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#5048e5]/25 transition hover:bg-[#433bcf] disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                                {isSubmitting ? 'Creating account...' : 'Create account'}
-                                {!isSubmitting && <ArrowRight className="h-4 w-4" />}
-                            </button>
-                        </form>
+                                    <div>
+                                        <label htmlFor="whatsappNumber" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                            WhatsApp number
+                                        </label>
+                                        <input
+                                            id="whatsappNumber"
+                                            type="tel"
+                                            required
+                                            autoComplete="tel"
+                                            value={formData.whatsappNumber}
+                                            onChange={(e) => updateField('whatsappNumber', e.target.value)}
+                                            className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#5048e5] focus:ring-2 focus:ring-[#5048e5]/20 dark:bg-slate-950 dark:text-slate-100 ${fieldErrors.whatsappNumber ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
+                                            placeholder="+94 77 123 4567"
+                                        />
+                                        {fieldErrors.whatsappNumber && (
+                                            <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.whatsappNumber}</p>
+                                        )}
+                                    </div>
 
-                        <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
-                            Already have an account?{' '}
-                            <Link href="/login" className="font-semibold text-[#5048e5] hover:text-[#3e38b6]">
-                                Sign in
-                            </Link>
-                        </p>
+                                    <div>
+                                        <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                            Email address
+                                        </label>
+                                        <input
+                                            id="email"
+                                            type="email"
+                                            required
+                                            autoComplete="email"
+                                            value={formData.email}
+                                            onChange={(e) => updateField('email', e.target.value)}
+                                            className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#5048e5] focus:ring-2 focus:ring-[#5048e5]/20 dark:bg-slate-950 dark:text-slate-100 ${fieldErrors.email ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
+                                            placeholder="you@example.com"
+                                        />
+                                        {fieldErrors.email && (
+                                            <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.email}</p>
+                                        )}
+                                    </div>
+
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                        <div>
+                                            <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                                Password
+                                            </label>
+                                            <input
+                                                id="password"
+                                                type="password"
+                                                required
+                                                autoComplete="new-password"
+                                                value={formData.password}
+                                                onChange={(e) => updateField('password', e.target.value)}
+                                                className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#5048e5] focus:ring-2 focus:ring-[#5048e5]/20 dark:bg-slate-950 dark:text-slate-100 ${fieldErrors.password ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
+                                                placeholder="Min 8 characters"
+                                            />
+                                            {fieldErrors.password && (
+                                                <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.password}</p>
+                                            )}
+                                            <ul className="mt-2 space-y-1 text-xs">
+                                                {passwordRuleStatus.map((rule) => (
+                                                    <li
+                                                        key={rule.key}
+                                                        className={`inline-flex items-center gap-1.5 ${rule.passed ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`}
+                                                    >
+                                                        {rule.passed ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Circle className="h-3.5 w-3.5" />}
+                                                        {rule.label}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                        <div>
+                                            <label htmlFor="confirmPassword" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                                Confirm password
+                                            </label>
+                                            <input
+                                                id="confirmPassword"
+                                                type="password"
+                                                required
+                                                autoComplete="new-password"
+                                                value={formData.confirmPassword}
+                                                onChange={(e) => updateField('confirmPassword', e.target.value)}
+                                                className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#5048e5] focus:ring-2 focus:ring-[#5048e5]/20 dark:bg-slate-950 dark:text-slate-100 ${fieldErrors.confirmPassword ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
+                                                placeholder="Re-enter password"
+                                            />
+                                            {fieldErrors.confirmPassword && (
+                                                <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.confirmPassword}</p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        type="submit"
+                                        disabled={isSubmitting}
+                                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#5048e5] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#5048e5]/25 transition hover:bg-[#433bcf] disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                        {isSubmitting ? 'Creating account...' : 'Create account'}
+                                        {!isSubmitting && <ArrowRight className="h-4 w-4" />}
+                                    </button>
+                                </form>
+
+                                <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
+                                    Already have an account?{' '}
+                                    <Link href="/login" className="font-semibold text-[#5048e5] hover:text-[#3e38b6]">
+                                        Sign in
+                                    </Link>
+                                </p>
+                            </>
+                        )}
                     </div>
                 </section>
             </div>

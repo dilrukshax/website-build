@@ -1,60 +1,36 @@
 import React from 'react';
 import type { ThemeComponentProps } from '../../types';
 
-interface Testimonial {
-    name: string;
-    role?: string;
-    text: string;
-    avatarUrl?: string;
-    rating?: number;
-}
-
-export default function TestimonialsV1({ content, styles, tokens }: ThemeComponentProps) {
-    const title = content.title as string || 'What Our Clients Say';
-    const testimonials = (content.testimonials as Testimonial[]) || [];
-    const showRating = styles.showRating !== false;
+export default function TestimonialsV1({ content, tokens }: ThemeComponentProps) {
+    const title = content.title as string || 'What People Say';
+    const subtitle = content.subtitle as string || 'Don\'t just take our word for it';
+    const testimonials = (content.testimonials as { quote: string, author: string, role: string }[]) || [
+        { quote: "The best experience I've ever had. Truly exceptional from start to finish.", author: "Jane Doe", role: "Design Director" },
+        { quote: "Minimal, clean, and blazingly fast. It changed the way we work entirely.", author: "John Smith", role: "Software Engineer" },
+        { quote: "Unparalleled attention to detail and a seamless straightforward user journey.", author: "Emily Rose", role: "Product Manager" },
+    ];
 
     return (
-        <section style={{ padding: '80px 24px', backgroundColor: '#f9fafb', fontFamily: tokens.font }}>
+        <section style={{ backgroundColor: '#f9fafb', padding: '120px 24px', fontFamily: tokens.font }}>
             <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-                <h2 style={{ fontSize: '36px', fontWeight: 700, color: tokens.text, textAlign: 'center', marginBottom: '48px' }}>
-                    {title}
-                </h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
-                    {testimonials.length > 0 ? testimonials.map((t, i) => (
-                        <div key={i} style={{ backgroundColor: tokens.background, borderRadius: '12px', padding: '32px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                            {showRating && t.rating ? (
-                                (() => {
-                                    const ratingNum = Math.max(0, Math.min(5, Number(t.rating) || 0));
-                                    return (
-                                        <div style={{ marginBottom: '12px', color: '#f59e0b', fontSize: '18px' }}>
-                                            {'★'.repeat(ratingNum)}{'☆'.repeat(5 - ratingNum)}
-                                        </div>
-                                    );
-                                })()
-                            ) : null}
-                            <p style={{ fontSize: '16px', color: '#4b5563', lineHeight: 1.7, marginBottom: '20px', fontStyle: 'italic' }}>
-                                &ldquo;{t.text}&rdquo;
+                <div style={{ textAlign: 'center', marginBottom: '64px' }}>
+                    <h2 style={{ fontSize: '36px', fontWeight: 800, color: tokens.text, marginBottom: '16px' }}>{title}</h2>
+                    <p style={{ fontSize: '18px', color: '#6b7280' }}>{subtitle}</p>
+                </div>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '40px' }}>
+                    {testimonials.map((testimonial, i) => (
+                        <div key={i} style={{ backgroundColor: tokens.background, padding: '40px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+                            <div style={{ color: tokens.primary, fontSize: '48px', lineHeight: 1, height: '32px', marginBottom: '16px' }}>"</div>
+                            <p style={{ fontSize: '18px', color: tokens.text, lineHeight: 1.6, marginBottom: '32px', fontStyle: 'italic' }}>
+                                {testimonial.quote}
                             </p>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                {t.avatarUrl ? (
-                                    <img src={t.avatarUrl} alt={t.name} style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
-                                ) : (
-                                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: tokens.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 600, fontSize: '16px' }}>
-                                        {t.name.charAt(0)}
-                                    </div>
-                                )}
-                                <div>
-                                    <div style={{ fontWeight: 600, color: tokens.text, fontSize: '14px' }}>{t.name}</div>
-                                    {t.role && <div style={{ fontSize: '13px', color: '#9ca3af' }}>{t.role}</div>}
-                                </div>
+                            <div>
+                                <h4 style={{ fontSize: '16px', fontWeight: 700, color: tokens.text, marginBottom: '4px' }}>{testimonial.author}</h4>
+                                <p style={{ fontSize: '14px', color: '#6b7280' }}>{testimonial.role}</p>
                             </div>
                         </div>
-                    )) : (
-                        <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '48px', color: '#9ca3af' }}>
-                            Add testimonials to display them here
-                        </div>
-                    )}
+                    ))}
                 </div>
             </div>
         </section>

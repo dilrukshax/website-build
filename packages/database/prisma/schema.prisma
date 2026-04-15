@@ -154,10 +154,10 @@ model PlanCatalog {
   maxCustomDomains       Int?     @map("max_custom_domains")
   maxPagesPerInstance    Int?     @map("max_pages_per_instance")
   maxAccessibleThemes    Int?     @map("max_accessible_themes")
-  allowPremiumTemplates  Boolean  @default(false) @map("allow_premium_templates")
+  allowPremiumTemplates  Boolean  @default(true) @map("allow_premium_templates")
   maxBookingsPerDay      Int?     @map("max_bookings_per_day")
   maxActiveServices      Int?     @map("max_active_services")
-  allowStaffAccounts     Boolean  @default(false) @map("allow_staff_accounts")
+  allowStaffAccounts     Boolean  @default(true) @map("allow_staff_accounts")
   allowAddonBundle       Boolean  @default(false) @map("allow_addon_bundle")
   addonMonthlyPriceCents Int?     @map("addon_monthly_price_cents")
   addonAnnualPriceCents  Int?     @map("addon_annual_price_cents")
@@ -298,6 +298,7 @@ model Instance {
   industry       Industry?       @relation(fields: [industryId], references: [id])
   customers      Customer[]
   services       Service[]
+  products       Product[]
   bookings       Booking[]
   inquiries      Inquiry[]
   toggles        FeatureToggle[]
@@ -805,6 +806,33 @@ model Service {
   @@index([instanceId, isActive])
   @@index([instanceId, sortOrder])
   @@map("services")
+}
+
+// ============================================================
+// PRODUCTS (Instance-scoped)
+// ============================================================
+
+model Product {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  instanceId  String   @map("instance_id")
+  name        String
+  description String?
+  imageUrl    String?  @map("image_url")
+  price       Decimal  @db.Decimal(10, 2)
+  currency    String   @default("USD")
+  isActive    Boolean  @default(true) @map("is_active")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  instance Instance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([instanceId])
+  @@index([instanceId, isActive])
+  @@index([instanceId, sortOrder])
+  @@map("products")
 }
 
 // ============================================================

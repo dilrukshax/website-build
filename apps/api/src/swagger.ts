@@ -121,6 +121,66 @@ const schemas = {
         },
     },
 
+    // --- Product ---
+    Product: {
+        type: 'object',
+        properties: {
+            id:          { type: 'string', format: 'uuid' },
+            tenantId:    { type: 'string', format: 'uuid' },
+            instanceId:  { type: 'string', format: 'uuid' },
+            name:        { type: 'string', example: 'Premium Bundle' },
+            description: { type: 'string', nullable: true },
+            imageUrl:    { type: 'string', nullable: true, example: 'https://cdn.example.com/uploads/item.jpg' },
+            price:       { type: 'number', example: 49.99 },
+            currency:    { type: 'string', example: 'USD' },
+            isActive:    { type: 'boolean', example: true },
+            sortOrder:   { type: 'integer', example: 0 },
+            createdAt:   { type: 'string', format: 'date-time' },
+            updatedAt:   { type: 'string', format: 'date-time' },
+        },
+    },
+    CreateProductBody: {
+        type: 'object',
+        required: ['name', 'price'],
+        properties: {
+            name:        { type: 'string', minLength: 1, maxLength: 255, example: 'Premium Bundle' },
+            description: { type: 'string', example: 'High-value curated product package.' },
+            imageUrl:    { type: 'string', format: 'uri', nullable: true, example: 'https://cdn.example.com/uploads/item.jpg' },
+            price:       { type: 'number', exclusiveMinimum: 0, example: 49.99 },
+            currency:    { type: 'string', minLength: 3, maxLength: 3, default: 'USD', example: 'USD' },
+            isActive:    { type: 'boolean', example: true },
+        },
+    },
+    UpdateProductBody: {
+        type: 'object',
+        properties: {
+            name:        { type: 'string', minLength: 1, maxLength: 255 },
+            description: { type: 'string', nullable: true },
+            imageUrl:    { type: 'string', format: 'uri', nullable: true },
+            price:       { type: 'number', exclusiveMinimum: 0 },
+            currency:    { type: 'string', minLength: 3, maxLength: 3 },
+            isActive:    { type: 'boolean' },
+        },
+    },
+    ReorderProductsBody: {
+        type: 'object',
+        required: ['products'],
+        properties: {
+            products: {
+                type: 'array',
+                minItems: 1,
+                items: {
+                    type: 'object',
+                    required: ['id', 'sortOrder'],
+                    properties: {
+                        id: { type: 'string', format: 'uuid' },
+                        sortOrder: { type: 'integer', minimum: 0 },
+                    },
+                },
+            },
+        },
+    },
+
     // --- Booking ---
     Booking: {
         type: 'object',
@@ -322,11 +382,11 @@ const schemas = {
     },
     CreateInstanceBody: {
         type: 'object',
-        required: ['name', 'subdomain', 'businessType'],
+        required: ['name', 'subdomain'],
         properties: {
             name: { type: 'string', minLength: 1, maxLength: 255, example: 'My Salon' },
             subdomain: { type: 'string', minLength: 3, maxLength: 63, example: 'mysalon' },
-            businessType: { type: 'string', minLength: 1, maxLength: 255, example: 'Salon & Spa' },
+            businessType: { type: 'string', maxLength: 255, example: 'Salon & Spa' },
             timezone: { type: 'string', maxLength: 100, example: 'Asia/Colombo' },
         },
     },
@@ -418,6 +478,7 @@ const errors = {
     403: errorResponse('FORBIDDEN', 'Insufficient permissions'),
     404: errorResponse('NOT_FOUND', 'Resource not found'),
     409: errorResponse('CONFLICT', 'Resource already exists'),
+    502: errorResponse('PUBLISH_FAILED', 'Upstream storage operation failed'),
     500: errorResponse('INTERNAL_ERROR', 'Internal server error'),
 };
 
@@ -537,6 +598,7 @@ const paths = {
         delete: {
             tags: ['CMS / Instances'],
             summary: 'Delete instance',
+            description: 'Hard-deletes the instance, cascades all instance-scoped DB rows, and removes instance artifacts from R2 before DB deletion.',
             security: [{ bearerAuth: [] }],
             parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
             responses: {
@@ -552,6 +614,14 @@ const paths = {
                                         type: 'object',
                                         properties: {
                                             message: { type: 'string', example: 'Instance deleted successfully' },
+                                            storageCleanup: {
+                                                type: 'object',
+                                                properties: {
+                                                    deletedPublishedObjectCount: { type: 'number', example: 2 },
+                                                    deletedMediaObjectCount: { type: 'number', example: 5 },
+                                                    deletedTotalCount: { type: 'number', example: 7 },
+                                                },
+                                            },
                                         },
                                     },
                                 },
@@ -561,6 +631,7 @@ const paths = {
                 },
                 401: errors[401],
                 404: errors[404],
+                502: errors[502],
                 500: errors[500],
             },
         },
@@ -841,6 +912,151 @@ const paths = {
                                     data: {
                                         type: 'object',
                                         properties: { message: { type: 'string', example: 'Service deactivated' } },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                401: errors[401],
+                403: errors[403],
+                404: errors[404],
+                500: errors[500],
+            },
+        },
+    },
+
+    // ── CMS — Products ──────────────────────────────────────
+    '/cms/products': {
+        get: {
+            tags: ['CMS / Products'],
+            summary: 'List products',
+            description: 'Returns products for the resolved tenant instance, ordered by sort order.',
+            security: [{ bearerAuth: [] }],
+            responses: {
+                200: {
+                    description: 'Product list',
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    success: { type: 'boolean', example: true },
+                                    data: { type: 'array', items: { $ref: '#/components/schemas/Product' } },
+                                },
+                            },
+                        },
+                    },
+                },
+                401: errors[401],
+                500: errors[500],
+            },
+        },
+        post: {
+            tags: ['CMS / Products'],
+            summary: 'Create a product',
+            description: 'Requires `products.create` permission.',
+            security: [{ bearerAuth: [] }],
+            requestBody: {
+                required: true,
+                content: { 'application/json': { schema: { $ref: '#/components/schemas/CreateProductBody' } } },
+            },
+            responses: {
+                201: singleResponse('Product', 'Product created', 201),
+                400: errors[400],
+                401: errors[401],
+                403: errors[403],
+                500: errors[500],
+            },
+        },
+    },
+    '/cms/products/reorder': {
+        put: {
+            tags: ['CMS / Products'],
+            summary: 'Reorder products',
+            description: 'Requires `products.update` permission. Payload must include all instance products.',
+            security: [{ bearerAuth: [] }],
+            requestBody: {
+                required: true,
+                content: { 'application/json': { schema: { $ref: '#/components/schemas/ReorderProductsBody' } } },
+            },
+            responses: {
+                200: {
+                    description: 'Products reordered',
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    success: { type: 'boolean', example: true },
+                                    data: {
+                                        type: 'object',
+                                        properties: {
+                                            message: { type: 'string', example: 'Products reordered' },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                400: errors[400],
+                401: errors[401],
+                403: errors[403],
+                500: errors[500],
+            },
+        },
+    },
+    '/cms/products/{id}': {
+        get: {
+            tags: ['CMS / Products'],
+            summary: 'Get a product',
+            security: [{ bearerAuth: [] }],
+            parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+            responses: {
+                200: singleResponse('Product'),
+                401: errors[401],
+                404: errors[404],
+                500: errors[500],
+            },
+        },
+        put: {
+            tags: ['CMS / Products'],
+            summary: 'Update a product',
+            description: 'Requires `products.update` permission.',
+            security: [{ bearerAuth: [] }],
+            parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+            requestBody: {
+                required: true,
+                content: { 'application/json': { schema: { $ref: '#/components/schemas/UpdateProductBody' } } },
+            },
+            responses: {
+                200: singleResponse('Product'),
+                400: errors[400],
+                401: errors[401],
+                403: errors[403],
+                404: errors[404],
+                500: errors[500],
+            },
+        },
+        delete: {
+            tags: ['CMS / Products'],
+            summary: 'Deactivate a product',
+            description: 'Soft-deletes (sets isActive = false). Requires `products.delete` permission.',
+            security: [{ bearerAuth: [] }],
+            parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+            responses: {
+                200: {
+                    description: 'Product deactivated',
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    success: { type: 'boolean', example: true },
+                                    data: {
+                                        type: 'object',
+                                        properties: { message: { type: 'string', example: 'Product deactivated' } },
                                     },
                                 },
                             },
@@ -1257,6 +1473,45 @@ const paths = {
             parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
             responses: {
                 200: singleResponse('Service'),
+                404: errors[404],
+                500: errors[500],
+            },
+        },
+    },
+
+    // ── Web — Products (public) ──────────────────────────────
+    '/web/products': {
+        get: {
+            tags: ['Web / Products'],
+            summary: 'List products (public)',
+            description: 'Returns active products. No authentication required. Tenant/instance resolved from trusted `X-Routed-Host` (via CMS proxy) with `X-Tenant-ID` + `X-Instance-ID` fallback for legacy clients.',
+            responses: {
+                200: {
+                    description: 'Product list',
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    success: { type: 'boolean', example: true },
+                                    data: { type: 'array', items: { $ref: '#/components/schemas/Product' } },
+                                },
+                            },
+                        },
+                    },
+                },
+                404: errors[404],
+                500: errors[500],
+            },
+        },
+    },
+    '/web/products/{id}': {
+        get: {
+            tags: ['Web / Products'],
+            summary: 'Get a product (public)',
+            parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+            responses: {
+                200: singleResponse('Product'),
                 404: errors[404],
                 500: errors[500],
             },

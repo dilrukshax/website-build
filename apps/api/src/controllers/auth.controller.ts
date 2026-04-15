@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '@booking-engine/auth';
+import { DiscordWebhookService } from '../services/discord-webhook.service';
 
 const REFRESH_COOKIE_OPTIONS = {
     httpOnly: true,
@@ -7,12 +8,28 @@ const REFRESH_COOKIE_OPTIONS = {
     sameSite: 'lax' as const,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     path: '/',
+    ...(process.env.COOKIE_DOMAIN ? { domain: process.env.COOKIE_DOMAIN } : {}),
 };
 
 export class AuthController {
     static async register(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
+            const registerPayload = req.body as {
+                email?: string;
+                fullName?: string;
+                whatsappNumber?: string;
+            };
             const result = await AuthService.register(req.body);
+
+            await DiscordWebhookService.notifyUserRegistered({
+                userId: result.user.id,
+                email: result.user.email || registerPayload.email || '',
+                fullName: result.user.fullName || registerPayload.fullName || '',
+                whatsappNumber: registerPayload.whatsappNumber || null,
+                ipAddress: req.ip || null,
+                userAgent: typeof req.headers['user-agent'] === 'string' ? req.headers['user-agent'] : null,
+            });
+
             res.cookie('refreshToken', result.tokens.refreshToken, REFRESH_COOKIE_OPTIONS);
             res.status(201).json({
                 success: true,

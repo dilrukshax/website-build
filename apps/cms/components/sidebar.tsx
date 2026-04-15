@@ -6,6 +6,7 @@ import {
     LayoutDashboard,
     Calendar,
     Briefcase,
+    Package,
     Users,
     Mail,
     Building2,
@@ -19,6 +20,8 @@ import {
     MessageSquare,
     Gift,
     CreditCard,
+    TerminalSquare,
+    Globe2,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '../contexts/auth-context';
@@ -55,6 +58,12 @@ const NAV_ITEMS: NavItem[] = [
         href: '/dashboard/services',
         icon: Briefcase,
         permission: 'services.view',
+    },
+    {
+        label: 'Products',
+        href: '/dashboard/products',
+        icon: Package,
+        permission: 'products.view',
     },
     {
         label: 'Customers',
@@ -133,9 +142,19 @@ const SUPER_ADMIN_NAV_ITEMS: NavItem[] = [
         icon: CreditCard,
     },
     {
+        label: 'Custom Domains',
+        href: '/dashboard/superadmin/custom-domains',
+        icon: Globe2,
+    },
+    {
         label: 'Referral Reviews',
         href: '/dashboard/superadmin/referrals',
         icon: Gift,
+    },
+    {
+        label: 'Runtime Logs',
+        href: '/dashboard/superadmin/runtime-logs',
+        icon: TerminalSquare,
     },
 ];
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../lib/api-client';
 import { getStorageItem, removeStorageItem, setStorageItem } from '../lib/browser-storage';
 import type { FingerprintResult } from '../lib/fingerprint/types';
@@ -67,6 +67,7 @@ interface AuthActionResult {
     error?: string;
     field?: string;
     details?: AuthErrorDetail[];
+    redirectTo?: string;
 }
 
 interface RegisterResult extends AuthActionResult {
@@ -92,11 +93,37 @@ interface RegisterData {
     email: string;
     password: string;
     fullName: string;
+    whatsappNumber: string;
     _deviceFingerprint?: FingerprintResult | null;
     referralCode?: string | null;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+
+const USER_ACTIVITY_EVENTS: Array<keyof WindowEventMap> = [
+    'click',
+    'mousedown',
+    'mousemove',
+    'pointerdown',
+    'pointermove',
+    'keydown',
+    'touchstart',
+    'scroll',
+    'focus',
+];
+const SESSION_REFRESH_CHECK_INTERVAL_MS = 60 * 1000;
+const SESSION_REFRESH_BUFFER_MS = 2 * 60 * 1000;
+const SESSION_IDLE_COUNTDOWN_TICK_MS = 1000;
+const DEFAULT_IDLE_TIMEOUT_MINUTES = 30;
+const DEFAULT_IDLE_WARNING_COUNTDOWN_SECONDS = 60;
+const SESSION_IDLE_TIMEOUT_MS = (() => {
+    const configuredMinutes = Number(process.env.NEXT_PUBLIC_AUTH_IDLE_TIMEOUT_MINUTES);
+    if (Number.isFinite(configuredMinutes) && configuredMinutes > 0) {
+        return configuredMinutes * 60 * 1000;
+    }
+    return DEFAULT_IDLE_TIMEOUT_MINUTES * 60 * 1000;
+})();
+const SESSION_IDLE_WARNING_COUNTDOWN_MS = DEFAULT_IDLE_WARNING_COUNTDOWN_SECONDS * 1000;
 
 function buildAuthFailure(input: {
     error?: { code?: string; message?: string; field?: string; details?: Array<{ field: string; message: string }> };
@@ -129,7 +156,7 @@ function normalizeTenantInfo(tenant: Partial<TenantInfo> & Pick<TenantInfo, 'id'
         usageSummary: tenant.usageSummary || {
             instances: { used: 0, limit: 1 },
             customDomains: { used: 0, limit: 1 },
-            staffAccounts: { used: 0, allowed: plan !== 'free' },
+            staffAccounts: { used: 0, allowed: true },
         },
     };
 }
@@ -144,6 +171,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading: true,
         isAuthenticated: false,
     });
+    const [idleCountdownSecondsLeft, setIdleCountdownSecondsLeft] = useState<number | null>(null);
+    const lastActivityAtRef = useRef<number>(Date.now());
+    const keepAliveInFlightRef = useRef(false);
+    const idleCountdownDeadlineRef = useRef<number | null>(null);
+    const idleLogoutTriggeredRef = useRef(false);
+
+    const clearLocalSession = useCallback((redirectToLogin: boolean) => {
+        api.clearTokens();
+        keepAliveInFlightRef.current = false;
+        idleCountdownDeadlineRef.current = null;
+        setIdleCountdownSecondsLeft(null);
+        removeStorageItem('currentTenantId');
+        removeStorageItem('currentInstanceId');
+        setState({ user: null, tenants: [], currentTenant: null, instances: [], currentInstance: null, isLoading: false, isAuthenticated: false });
+        if (redirectToLogin && typeof window !== 'undefined' && window.location.pathname !== '/login') {
+            window.location.href = '/login';
+        }
+    }, []);
+
+    const clearIdleCountdown = useCallback(() => {
+        idleCountdownDeadlineRef.current = null;
+        setIdleCountdownSecondsLeft(null);
+    }, []);
+
+    const beginIdleCountdown = useCallback(() => {
+        if (idleCountdownDeadlineRef.current !== null) {
+            return;
+        }
+
+        idleCountdownDeadlineRef.current = Date.now() + SESSION_IDLE_WARNING_COUNTDOWN_MS;
+        setIdleCountdownSecondsLeft(Math.ceil(SESSION_IDLE_WARNING_COUNTDOWN_MS / 1000));
+    }, []);
+
+    const resumeSessionFromIdleWarning = useCallback(async () => {
+        const hadIdleWarning = idleCountdownDeadlineRef.current !== null;
+        clearIdleCountdown();
+        if (!hadIdleWarning) {
+            return;
+        }
+
+        const refreshed = await api.refreshSessionIfExpiringSoon(SESSION_REFRESH_BUFFER_MS);
+        if (!refreshed) {
+            clearLocalSession(true);
+        }
+    }, [clearIdleCountdown, clearLocalSession]);
+
+    const handleStaySignedIn = useCallback(() => {
+        lastActivityAtRef.current = Date.now();
+        void resumeSessionFromIdleWarning();
+    }, [resumeSessionFromIdleWarning]);
 
     // Load user on mount
     useEffect(() => {
@@ -154,7 +231,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setState((s) => ({ ...s, isLoading: false }));
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [clearLocalSession]);
 
     async function loadUser() {
         const res = await api.get<{ user: User; tenants: TenantInfo[] }>('/auth/me');
@@ -182,8 +259,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 await loadInstancesForTenant(currentTenant.id);
             }
         } else {
-            api.clearTokens();
-            setState({ user: null, tenants: [], currentTenant: null, instances: [], currentInstance: null, isLoading: false, isAuthenticated: false });
+            clearLocalSession(false);
         }
     }
 
@@ -234,11 +310,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         api.setAccessToken(res.data.accessToken);
+        lastActivityAtRef.current = Date.now();
 
         const tenants = res.data.tenants.map((tenant) => normalizeTenantInfo(tenant));
         const firstTenant = tenants[0] || null;
+        const isSuperAdmin = res.data.user.isSuperAdmin === true;
+        let redirectTo = isSuperAdmin ? '/dashboard/superadmin' : '/dashboard';
         if (firstTenant) {
             setStorageItem('currentTenantId', firstTenant.id);
+        } else if (!isSuperAdmin) {
+            redirectTo = '/onboarding/create-organization?domainMode=customDomain';
         }
 
         setState({
@@ -251,13 +332,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             isAuthenticated: true,
         });
 
-        // Load instances for the first tenant
-        if (firstTenant) {
+        // Load instances for the first tenant (not required for super admins).
+        if (firstTenant && !isSuperAdmin) {
             // Need to ensure tenant header is set before loading instances
             const instanceRes = await api.get<InstanceInfo[]>('/cms/instances', { omitInstanceHeader: true });
             if (instanceRes.success && instanceRes.data) {
                 const storedInstanceId = getStorageItem('currentInstanceId');
                 const currentInstance = instanceRes.data.find((i) => i.id === storedInstanceId) || instanceRes.data[0] || null;
+                if (instanceRes.data.length === 0) {
+                    redirectTo = '/onboarding/create-organization?domainMode=customDomain';
+                }
                 if (currentInstance) {
                     setStorageItem('currentInstanceId', currentInstance.id);
                 }
@@ -269,7 +353,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
         }
 
-        return { success: true };
+        return { success: true, redirectTo };
     }, []);
 
     const register = useCallback(async (data: RegisterData) => {
@@ -283,6 +367,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         api.setAccessToken(res.data.accessToken);
+        lastActivityAtRef.current = Date.now();
 
         setState({
             user: res.data.user,
@@ -309,6 +394,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const normalizedTenant = normalizeTenantInfo(res.data.tenant);
         api.setAccessToken(res.data.accessToken);
+        lastActivityAtRef.current = Date.now();
         setStorageItem('currentTenantId', normalizedTenant.id);
 
         setState((s) => ({
@@ -324,14 +410,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const logout = useCallback(async () => {
         await api.post('/auth/logout');
-        api.clearTokens();
-        removeStorageItem('currentTenantId');
-        removeStorageItem('currentInstanceId');
-        setState({ user: null, tenants: [], currentTenant: null, instances: [], currentInstance: null, isLoading: false, isAuthenticated: false });
-        if (typeof window !== 'undefined') {
-            window.location.href = '/login';
-        }
-    }, []);
+        clearLocalSession(true);
+    }, [clearLocalSession]);
 
     const switchTenant = useCallback(async (tenantId: string) => {
         const res = await api.post<{
@@ -345,6 +425,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const normalizedTenant = normalizeTenantInfo(res.data.tenant);
         api.setAccessToken(res.data.accessToken);
+        lastActivityAtRef.current = Date.now();
         setStorageItem('currentTenantId', tenantId);
         removeStorageItem('currentInstanceId');
 
@@ -395,6 +476,142 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return state.currentTenant.permissions.includes(key);
     }, [state.currentTenant]);
 
+    useEffect(() => {
+        if (state.isAuthenticated) {
+            return;
+        }
+
+        idleCountdownDeadlineRef.current = null;
+        idleLogoutTriggeredRef.current = false;
+        setIdleCountdownSecondsLeft(null);
+    }, [state.isAuthenticated]);
+
+    useEffect(() => {
+        if (!state.isAuthenticated || typeof window === 'undefined') {
+            return;
+        }
+
+        lastActivityAtRef.current = Date.now();
+        idleLogoutTriggeredRef.current = false;
+
+        const updateIdleCountdown = () => {
+            const deadline = idleCountdownDeadlineRef.current;
+            if (deadline === null) {
+                return;
+            }
+
+            const remainingMs = deadline - Date.now();
+            if (remainingMs <= 0) {
+                if (idleLogoutTriggeredRef.current) {
+                    return;
+                }
+
+                idleLogoutTriggeredRef.current = true;
+                clearLocalSession(true);
+                return;
+            }
+
+            const remainingSeconds = Math.ceil(remainingMs / 1000);
+            setIdleCountdownSecondsLeft((current) => (current === remainingSeconds ? current : remainingSeconds));
+        };
+
+        const startIdleCountdownIfNeeded = () => {
+            if (idleCountdownDeadlineRef.current !== null) {
+                updateIdleCountdown();
+                return true;
+            }
+
+            const idleDurationMs = Date.now() - lastActivityAtRef.current;
+            if (idleDurationMs <= SESSION_IDLE_TIMEOUT_MS) {
+                return false;
+            }
+
+            beginIdleCountdown();
+            updateIdleCountdown();
+            return true;
+        };
+
+        const markActivity = () => {
+            lastActivityAtRef.current = Date.now();
+            if (idleCountdownDeadlineRef.current !== null) {
+                void resumeSessionFromIdleWarning();
+            }
+        };
+        const markVisibleAsActivity = () => {
+            if (document.visibilityState === 'visible') {
+                markActivity();
+            }
+        };
+
+        const keepSessionAlive = async () => {
+            const token = api.getAccessToken();
+            if (!token) {
+                clearLocalSession(true);
+                return;
+            }
+
+            if (startIdleCountdownIfNeeded()) {
+                return;
+            }
+
+            if (keepAliveInFlightRef.current) {
+                return;
+            }
+
+            keepAliveInFlightRef.current = true;
+            try {
+                const refreshed = await api.refreshSessionIfExpiringSoon(SESSION_REFRESH_BUFFER_MS);
+                if (!refreshed) {
+                    clearLocalSession(true);
+                }
+            } finally {
+                keepAliveInFlightRef.current = false;
+            }
+        };
+
+        const monitorIdleState = () => {
+            const isIdle = startIdleCountdownIfNeeded();
+            if (!isIdle) {
+                if (idleCountdownDeadlineRef.current !== null) {
+                    clearIdleCountdown();
+                }
+                return;
+            }
+
+            updateIdleCountdown();
+        };
+
+        for (const eventName of USER_ACTIVITY_EVENTS) {
+            window.addEventListener(eventName, markActivity, { passive: true });
+        }
+        document.addEventListener('visibilitychange', markVisibleAsActivity);
+
+        const keepAliveIntervalId = window.setInterval(() => {
+            void keepSessionAlive();
+        }, SESSION_REFRESH_CHECK_INTERVAL_MS);
+        const idleMonitorIntervalId = window.setInterval(() => {
+            monitorIdleState();
+        }, SESSION_IDLE_COUNTDOWN_TICK_MS);
+
+        void keepSessionAlive();
+        monitorIdleState();
+
+        return () => {
+            window.clearInterval(keepAliveIntervalId);
+            window.clearInterval(idleMonitorIntervalId);
+            for (const eventName of USER_ACTIVITY_EVENTS) {
+                window.removeEventListener(eventName, markActivity);
+            }
+            document.removeEventListener('visibilitychange', markVisibleAsActivity);
+        };
+    }, [
+        state.isAuthenticated,
+        beginIdleCountdown,
+        clearIdleCountdown,
+        clearLocalSession,
+        resumeSessionFromIdleWarning,
+    ]);
+
     return (
         <AuthContext.Provider
             value={{
@@ -410,6 +627,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }}
         >
             {children}
+            {state.isAuthenticated && idleCountdownSecondsLeft !== null && (
+                <div className="fixed inset-x-4 bottom-4 z-[120] sm:inset-x-auto sm:right-4 sm:w-full sm:max-w-sm">
+                    <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 shadow-lg dark:border-amber-900/50 dark:bg-amber-950/80">
+                        <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">Session will expire soon</p>
+                        <p className="mt-1 text-xs text-amber-800 dark:text-amber-300">
+                            No activity detected. You will be signed out in {idleCountdownSecondsLeft}
+                            {' '}
+                            second{idleCountdownSecondsLeft === 1 ? '' : 's'}.
+                        </p>
+                        <div className="mt-3 flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={handleStaySignedIn}
+                                className="inline-flex items-center justify-center rounded-lg bg-amber-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-amber-600"
+                            >
+                                Stay signed in
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => void logout()}
+                                className="inline-flex items-center justify-center rounded-lg border border-amber-400 bg-white px-3 py-2 text-xs font-semibold text-amber-800 transition hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-200 dark:hover:bg-amber-900/50"
+                            >
+                                Sign out
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </AuthContext.Provider>
     );
 }

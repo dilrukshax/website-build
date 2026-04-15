@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { ROUTING_POINTER_CACHE_CONTROL } from '../../../lib/cache-policy';
 import { fetchCurrentRoutingIndexPointer } from '../../../lib/routing-index';
 
 export const runtime = 'nodejs';
@@ -16,7 +17,7 @@ export async function GET() {
         }, {
             status: 404,
             headers: {
-                'cache-control': 'no-store',
+                'cache-control': ROUTING_POINTER_CACHE_CONTROL,
             },
         });
     }
@@ -30,7 +31,7 @@ export async function GET() {
     }, {
         status: 200,
         headers: {
-            'cache-control': 'no-store',
+            'cache-control': ROUTING_POINTER_CACHE_CONTROL,
         },
     });
 }

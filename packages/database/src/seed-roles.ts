@@ -4,6 +4,7 @@ import { PrismaClient } from '@prisma/client';
 const ALL_PERMISSION_KEYS = [
     'bookings.view', 'bookings.create', 'bookings.update', 'bookings.delete', 'bookings.confirm', 'bookings.complete',
     'services.view', 'services.create', 'services.update', 'services.delete',
+    'products.view', 'products.create', 'products.update', 'products.delete',
     'customers.view', 'customers.create', 'customers.update', 'customers.delete', 'customers.search',
     'inquiries.view', 'inquiries.update', 'inquiries.delete', 'inquiries.update_status',
     'settings.view', 'settings.update',
@@ -17,6 +18,7 @@ const ADMIN_EXCLUDED = ['staff.delete', 'roles.delete'];
 const STAFF_PERMISSIONS = [
     'bookings.view', 'bookings.create', 'bookings.update', 'bookings.delete', 'bookings.confirm', 'bookings.complete',
     'services.view',
+    'products.view',
     'customers.view', 'customers.create', 'customers.update', 'customers.search',
     'inquiries.view', 'inquiries.update', 'inquiries.update_status',
     'settings.view',
@@ -26,6 +28,7 @@ const STAFF_PERMISSIONS = [
 const READONLY_PERMISSIONS = [
     'bookings.view',
     'services.view',
+    'products.view',
     'customers.view',
     'inquiries.view',
     'settings.view',

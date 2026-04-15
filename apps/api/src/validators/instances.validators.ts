@@ -33,7 +33,7 @@ export const createInstanceSchema = z.object({
     name: z.string().trim().min(1, 'Website name is required').max(255, 'Website name must be 255 characters or fewer'),
     subdomain: z.string().trim().min(3, 'Subdomain must be at least 3 characters').max(63, 'Subdomain must be 63 characters or fewer')
         .regex(/^[a-z0-9][a-z0-9-]*[a-z0-9]$/, 'Subdomain must contain only lowercase letters, numbers, and hyphens'),
-    businessType: z.string().trim().min(1, 'Industry is required').max(255, 'Industry must be 255 characters or fewer'),
+    businessType: z.string().trim().max(255, 'Industry must be 255 characters or fewer').optional(),
     timezone: timezoneSchema.optional(),
 });
 

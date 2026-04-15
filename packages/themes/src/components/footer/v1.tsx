@@ -1,123 +1,159 @@
 import React from 'react';
 import type { ThemeComponentProps } from '../../types';
 
+interface FooterLink {
+    label: string;
+    href: string;
+}
+
 interface FooterColumn {
     title: string;
-    links: Array<{ label: string; href: string }>;
+    links: FooterLink[];
 }
 
-interface SocialLink {
-    platform: string;
-    url: string;
+function toAnchorFromLabel(label: string): string {
+    const normalized = label
+        .toLowerCase()
+        .replace(/[^a-z0-9 ]/g, '')
+        .trim()
+        .replace(/\s+/g, '-');
+    return normalized ? `#${normalized}` : '#footer';
 }
 
-function normalizeFooterColumns(raw: unknown): FooterColumn[] {
-    if (!Array.isArray(raw)) {
-        return [];
-    }
+function normalizeFooterColumns(content: Record<string, unknown>, fallback: FooterColumn[]): FooterColumn[] {
+    const fromContent = Array.isArray(content.columns)
+        ? content.columns
+            .map((column): FooterColumn | null => {
+                const record = column as Record<string, unknown>;
+                const title = typeof record.title === 'string' ? record.title.trim() : '';
+                if (!title) {
+                    return null;
+                }
 
-    return raw.map((item) => {
-        const record = (item && typeof item === 'object') ? item as Record<string, unknown> : {};
-        const linksRaw = record.links;
-        const links = Array.isArray(linksRaw)
-            ? linksRaw.map((link) => {
-                const linkRecord = (link && typeof link === 'object') ? link as Record<string, unknown> : {};
-                return {
-                    label: typeof linkRecord.label === 'string' ? linkRecord.label : '',
-                    href: typeof linkRecord.href === 'string' ? linkRecord.href : '',
-                };
+                const links = Array.isArray(record.links)
+                    ? record.links
+                        .map((item): FooterLink | null => {
+                            if (typeof item === 'string') {
+                                const label = item.trim();
+                                if (!label) return null;
+                                return { label, href: toAnchorFromLabel(label) };
+                            }
+
+                            const linkRecord = item as Record<string, unknown>;
+                            const label = typeof linkRecord.label === 'string' ? linkRecord.label.trim() : '';
+                            const href = typeof linkRecord.href === 'string' ? linkRecord.href.trim() : '';
+
+                            if (!label) {
+                                return null;
+                            }
+
+                            return {
+                                label,
+                                href: href || toAnchorFromLabel(label),
+                            };
+                        })
+                        .filter((item): item is FooterLink => Boolean(item))
+                    : [];
+
+                if (links.length === 0) {
+                    return null;
+                }
+
+                return { title, links };
             })
-            : [];
+            .filter((column): column is FooterColumn => Boolean(column))
+        : [];
 
-        return {
-            title: typeof record.title === 'string' ? record.title : '',
-            links,
-        };
-    });
+    return fromContent.length > 0 ? fromContent : fallback;
 }
 
-function normalizeSocialLinks(raw: unknown): SocialLink[] {
-    if (!Array.isArray(raw)) {
-        return [];
-    }
+export default function FooterV1({ content, tokens }: ThemeComponentProps) {
+    const businessName = (content.businessName as string) || (content.projectName as string) || 'Business Name';
+    const text = content.text as string || 'Making the world a better place through building elegant hierarchies.';
+    const copyright = (content.copyrightText as string)
+        || (content.copyright as string)
+        || `© ${new Date().getFullYear()} ${businessName}. All rights reserved.`;
 
-    return raw.map((item) => {
-        const record = (item && typeof item === 'object') ? item as Record<string, unknown> : {};
-        return {
-            platform: typeof record.platform === 'string' ? record.platform : '',
-            url: typeof record.url === 'string' ? record.url : '',
-        };
-    });
-}
-
-export default function FooterV1({ content, styles, tokens }: ThemeComponentProps) {
-    const copyrightText = content.copyrightText as string || `© ${new Date().getFullYear()} All rights reserved.`;
-    const columns = normalizeFooterColumns(content.columns);
-    const social = normalizeSocialLinks(content.social);
-    const showSocial = styles.showSocial !== false;
-    const poweredByText = 'Powered by My Online Web';
-    const poweredByUrl = 'https://buildmyonlineweb.site';
+    const columns = normalizeFooterColumns(content, [
+        {
+            title: 'Product',
+            links: [
+                { label: 'Features', href: '#services' },
+                { label: 'Integrations', href: '#about' },
+                { label: 'Pricing', href: '#pricing' },
+                { label: 'FAQ', href: '#faq' },
+            ],
+        },
+        {
+            title: 'Company',
+            links: [
+                { label: 'About Us', href: '#about' },
+                { label: 'Careers', href: '#team' },
+                { label: 'Blog', href: '#testimonials' },
+                { label: 'Contact', href: '#contact' },
+            ],
+        },
+        {
+            title: 'Legal',
+            links: [
+                { label: 'Privacy Policy', href: '#footer' },
+                { label: 'Terms of Service', href: '#footer' },
+            ],
+        },
+    ]);
 
     return (
-        <footer style={{ padding: '80px 24px 32px', backgroundColor: '#111827', color: '#d1d5db', fontFamily: tokens.font }}>
-            <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-                {columns.length > 0 && (
-                    <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(200px, 1fr))`, gap: '48px', marginBottom: '64px' }}>
-                        {columns.map((col, i) => (
-                            <div key={i}>
-                                <h4 style={{ color: '#ffffff', fontSize: '15px', fontWeight: 700, marginBottom: '24px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{col.title}</h4>
-                                <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                    {col.links.map((link, j) => (
-                                        <li key={j}>
-                                            <a 
-                                                href={link.href} 
-                                                style={{ color: '#9ca3af', textDecoration: 'none', fontSize: '15px', transition: 'color 0.2s' }}
-                                                onMouseEnter={(e) => e.currentTarget.style.color = '#fff'}
-                                                onMouseLeave={(e) => e.currentTarget.style.color = '#9ca3af'}
-                                            >
-                                                {link.label}
-                                            </a>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        ))}
-                    </div>
-                )}
-                <div style={{ borderTop: '1px solid #374151', paddingTop: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '24px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <p style={{ fontSize: '15px', color: '#9ca3af', margin: 0 }}>{copyrightText}</p>
-                        {poweredByText && poweredByUrl && (
-                            <a
-                                href={poweredByUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{ fontSize: '14px', color: '#9ca3af', margin: 0, textDecoration: 'none' }}
-                                onMouseEnter={(e) => e.currentTarget.style.color = '#fff'}
-                                onMouseLeave={(e) => e.currentTarget.style.color = '#9ca3af'}
-                            >
-                                {poweredByText}
-                            </a>
-                        )}
-                    </div>
-                    {showSocial && social.length > 0 && (
-                        <div style={{ display: 'flex', gap: '24px' }}>
-                            {social.map((s, i) => (
-                                <a 
-                                    key={i} 
-                                    href={s.url} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer" 
-                                    style={{ color: '#9ca3af', textDecoration: 'none', fontSize: '15px', transition: 'color 0.2s' }}
-                                    onMouseEnter={(e) => e.currentTarget.style.color = '#fff'}
-                                    onMouseLeave={(e) => e.currentTarget.style.color = '#9ca3af'}
-                                >
-                                    {s.platform}
-                                </a>
-                            ))}
-                        </div>
-                    )}
+        <footer style={{
+            backgroundColor: tokens.background,
+            borderTop: `1px solid ${tokens.secondary || '#f3f4f6'}`,
+            padding: 'clamp(40px, 8vw, 64px) 16px 24px',
+            fontFamily: tokens.font,
+            color: tokens.text,
+        }}>
+            <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', flexWrap: 'wrap', gap: 'clamp(24px, 6vw, 48px)' }}>
+                <div style={{ flex: '1 1 280px', minWidth: 0 }}>
+                    <h3 style={{ fontSize: '20px', fontWeight: 700, color: tokens.primary, marginBottom: '16px' }}>
+                        {businessName}
+                    </h3>
+                    <p style={{ fontSize: '15px', color: '#6b7280', lineHeight: 1.6, maxWidth: '280px' }}>
+                        {text}
+                    </p>
                 </div>
+                
+                <div
+                    style={{
+                        flex: '2 1 360px',
+                        minWidth: 0,
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                        gap: 'clamp(16px, 4vw, 32px)',
+                    }}
+                >
+                    {columns.map((section, idx) => (
+                        <div key={idx}>
+                            <h4 style={{ fontSize: '14px', fontWeight: 600, color: tokens.text, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '24px' }}>
+                                {section.title}
+                            </h4>
+                            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                {section.links.map((item, i) => (
+                                    <li key={i}>
+                                        <a href={item.href} style={{ textDecoration: 'none', color: '#6b7280', fontSize: '15px', transition: 'color 0.2s' }}
+                                        onMouseEnter={(e) => e.currentTarget.style.color = tokens.primary}
+                                        onMouseLeave={(e) => e.currentTarget.style.color = '#6b7280'}>
+                                            {item.label}
+                                        </a>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    ))}
+                </div>
+            </div>
+            
+            <div style={{ maxWidth: '1200px', margin: 'clamp(28px, 6vw, 56px) auto 0', paddingTop: '24px', borderTop: `1px solid ${tokens.secondary || '#f3f4f6'}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                <p style={{ fontSize: '14px', color: '#9ca3af', margin: 0 }}>
+                    {copyright}
+                </p>
             </div>
         </footer>
     );

@@ -5,21 +5,17 @@ import {
 } from '../../validators/instances.validators';
 
 describe('instance validators', () => {
-    it('rejects create-instance payloads without industry (businessType)', () => {
+    it('accepts create-instance payloads without industry (businessType)', () => {
         const parsed = createInstanceSchema.safeParse({
             name: 'My Website',
             subdomain: 'my-website',
             timezone: 'Asia/Colombo',
         });
 
-        expect(parsed.success).toBe(false);
-        if (!parsed.success) {
-            const fieldNames = parsed.error.issues.map((issue) => issue.path.join('.'));
-            expect(fieldNames).toContain('businessType');
-        }
+        expect(parsed.success).toBe(true);
     });
 
-    it('accepts valid create-instance payloads with required industry', () => {
+    it('accepts valid create-instance payloads with optional industry', () => {
         const parsed = createInstanceSchema.parse({
             name: 'My Website',
             subdomain: 'my-website',

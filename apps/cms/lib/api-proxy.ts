@@ -23,6 +23,7 @@ const RESPONSE_HOP_BY_HOP_HEADERS = new Set([
     'transfer-encoding',
     'upgrade',
     'content-length',
+    'content-encoding', // Node fetch() auto-decompresses; forwarding this causes double-decompression in browser
 ]);
 
 function normalizeApiBaseUrl(rawBaseUrl: string): string {
