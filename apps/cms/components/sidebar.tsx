@@ -1,12 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import {
     LayoutDashboard,
     Calendar,
     Briefcase,
     Package,
+    BookText,
     Users,
     Mail,
     Building2,
@@ -22,6 +23,7 @@ import {
     CreditCard,
     TerminalSquare,
     Globe2,
+    Settings2,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '../contexts/auth-context';
@@ -48,6 +50,12 @@ const NAV_ITEMS: NavItem[] = [
         permission: 'website.view',
     },
     {
+        label: 'Website Settings',
+        href: '/dashboard/website-settings',
+        icon: Settings2,
+        permission: 'website.view',
+    },
+    {
         label: 'Bookings',
         href: '/dashboard/bookings',
         icon: Calendar,
@@ -64,6 +72,12 @@ const NAV_ITEMS: NavItem[] = [
         href: '/dashboard/products',
         icon: Package,
         permission: 'products.view',
+    },
+    {
+        label: 'Blogs',
+        href: '/dashboard/blogs',
+        icon: BookText,
+        permission: 'blogs.view',
     },
     {
         label: 'Customers',
@@ -160,10 +174,18 @@ const SUPER_ADMIN_NAV_ITEMS: NavItem[] = [
 
 export function Sidebar() {
     const pathname = usePathname();
+    const searchParams = useSearchParams();
     const { user, hasPermission, logout } = useAuth();
     const isSuperAdmin = user?.isSuperAdmin === true;
 
-    function isActive(href: string) {
+    function isActive(item: NavItem) {
+        const activePanel = searchParams.get('panel');
+
+        if (item.href === '/dashboard/builder') {
+            return pathname === '/dashboard/builder' && activePanel !== 'website-settings';
+        }
+
+        const href = item.href;
         if (href === '/dashboard') return pathname === '/dashboard';
         if (href === '/dashboard/superadmin') return pathname === '/dashboard/superadmin';
         return pathname.startsWith(href);
@@ -198,7 +220,7 @@ export function Sidebar() {
                             </p>
                             {SUPER_ADMIN_NAV_ITEMS.map((item) => {
                                 const Icon = item.icon;
-                                const active = isActive(item.href);
+                                const active = isActive(item);
                                 return (
                                     <Link
                                         key={item.href}
@@ -220,7 +242,7 @@ export function Sidebar() {
                             <div className="space-y-1">
                                 {filterByPermission(NAV_ITEMS).map((item) => {
                                     const Icon = item.icon;
-                                    const active = isActive(item.href);
+                                    const active = isActive(item);
                                     return (
                                         <Link
                                             key={item.href}
@@ -245,7 +267,7 @@ export function Sidebar() {
                                     </p>
                                     {filterByPermission(ADMIN_NAV_ITEMS).map((item) => {
                                         const Icon = item.icon;
-                                        const active = isActive(item.href);
+                                        const active = isActive(item);
                                         return (
                                             <Link
                                                 key={item.href}

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
     ChevronsLeft,
     ChevronsRight,
@@ -99,6 +99,12 @@ interface SectionData {
     };
 }
 
+interface WebsiteCustomCodeSettings {
+    head?: string | null;
+    bodyTop?: string | null;
+    bodyBottom?: string | null;
+}
+
 interface WebsiteSettings {
     tokens: {
         primary: string;
@@ -112,6 +118,7 @@ interface WebsiteSettings {
     header: Record<string, unknown>;
     footer: Record<string, unknown>;
     seo?: WebsiteSEOSettings;
+    customCode?: WebsiteCustomCodeSettings;
 }
 
 interface BillingUsageSnapshot {
@@ -153,6 +160,41 @@ const SERVICES_SECTION_DEFAULT_CONTENT = {
     ctaLink: '',
     bottomCtaText: 'Book Your Setup Call',
     bottomCtaLink: '#booking-widget',
+} as const;
+const BLOG_SECTION_DEFAULT_CONTENT = {
+    showAllPosts: true,
+    featuredCount: 3,
+    ctaText: '',
+    ctaLink: '/blog',
+} as const;
+const HOME_PAGE_SLUG = '/';
+const HOME_PAGE_SLUG_ALIASES = new Set([HOME_PAGE_SLUG]);
+const HOME_PAGE_TITLE = 'Home';
+const BLOG_PAGE_SLUG = 'blog';
+const BLOG_PAGE_SLUG_ALIASES = new Set([BLOG_PAGE_SLUG, '/blog']);
+const BLOG_PAGE_TITLE = 'Blog';
+const ABOUT_PAGE_SLUG = 'about';
+const ABOUT_PAGE_SLUG_ALIASES = new Set([ABOUT_PAGE_SLUG, '/about']);
+const ABOUT_PAGE_TITLE = 'About Us';
+const CONTACT_PAGE_SLUG = 'contact';
+const CONTACT_PAGE_SLUG_ALIASES = new Set([CONTACT_PAGE_SLUG, '/contact']);
+const CONTACT_PAGE_TITLE = 'Contact Us';
+const LEGACY_HIDDEN_PAGE_SLUG_ALIASES = new Set(['blog-layout', '/blog-layout']);
+const BLOG_FEATURE_ID = 'feature-blog';
+const BLOG_SECTION_COMPONENT_KEY_BY_TEMPLATE: Record<string, string> = {
+    'template-2026-editorial-pulse': 'blog/v15',
+};
+const BLOG_TEMPLATE_IDS = new Set<string>([
+    'template-2026-editorial-pulse',
+]);
+const BLOG_TEMPLATE_FORCE_REPLACE_SHARED_LAYOUT_IDS = new Set<string>([
+    'template-2026-editorial-pulse',
+]);
+const TRAIN_OF_THOUGHT_STACK = {
+    home: ['header/v15', 'hero/v15', 'blog/v15', 'footer/v15'],
+    blog: ['header/v15', 'blog/v15', 'footer/v15'],
+    about: ['header/v15', 'about/v15', 'footer/v15'],
+    contact: ['header/v15', 'contact/v15', 'footer/v15'],
 } as const;
 const PAGE_TITLE_SUGGESTIONS = ['About', 'Team', 'Services', 'Contact'] as const;
 
@@ -267,9 +309,269 @@ function normalizeHeaderSchema(
     };
 }
 
+function normalizeBlogSchema(
+    schema: React.ComponentProps<typeof SchemaForm>['schema']
+): React.ComponentProps<typeof SchemaForm>['schema'] {
+    const rawProperties = schema.properties || {};
+    const normalized: Record<string, unknown> = {};
+
+    const withFallback = (key: string, fallback: Record<string, unknown>) => {
+        normalized[key] = (rawProperties as Record<string, unknown>)[key] ?? fallback;
+    };
+
+    withFallback('title', { type: 'string', title: 'Section Title' });
+    withFallback('subtitle', { type: 'string', title: 'Subtitle', format: 'textarea' });
+    withFallback('showAllPosts', { type: 'boolean', title: 'Show All Posts' });
+    withFallback('featuredCount', { type: 'number', title: 'Featured Count' });
+    withFallback('ctaText', { type: 'string', title: 'Button Text (Optional)' });
+    withFallback('ctaLink', { type: 'string', title: 'Button Link', format: 'page-link' });
+
+    if ((rawProperties as Record<string, unknown>).postsList) {
+        normalized.postsList = (rawProperties as Record<string, unknown>).postsList;
+    }
+
+    for (const [key, value] of Object.entries(rawProperties)) {
+        if (!(key in normalized)) {
+            normalized[key] = value;
+        }
+    }
+
+    return {
+        ...schema,
+        properties: normalized as React.ComponentProps<typeof SchemaForm>['schema']['properties'],
+        required: schema.required || [],
+    };
+}
+
+function findPageBySlugAliases(candidates: PageData[], aliases: Set<string>): PageData | null {
+    return candidates.find((page) => aliases.has(page.slug)) || null;
+}
+
+function formatFirstValidationDetailMessage(
+    details: Array<{ field: string; message: string }> | undefined,
+    fallback: string,
+): string {
+    const firstDetail = details?.[0];
+    if (!firstDetail) {
+        return fallback;
+    }
+
+    return firstDetail.field
+        ? `${firstDetail.field}: ${firstDetail.message}`
+        : firstDetail.message;
+}
+
+async function ensureBuilderPageBySlug({
+    pages,
+    aliases,
+    title,
+    slug,
+}: {
+    pages: PageData[];
+    aliases: Set<string>;
+    title: string;
+    slug: string;
+}): Promise<{ page: PageData | null; created: boolean; errorMessage: string | null }> {
+    const existingPage = findPageBySlugAliases(pages, aliases);
+    if (existingPage) {
+        return { page: existingPage, created: false, errorMessage: null };
+    }
+
+    const createRes = await api.post<PageData>('/cms/pages', { title, slug });
+    if (!createRes.success || !createRes.data) {
+        return {
+            page: null,
+            created: false,
+            errorMessage: formatFirstValidationDetailMessage(
+                createRes.error?.details,
+                createRes.error?.message || `Failed to create ${title} page`,
+            ),
+        };
+    }
+
+    return { page: createRes.data, created: true, errorMessage: null };
+}
+
+async function resolveCatalogThemeByComponentKey({
+    featureId,
+    componentKey,
+}: {
+    featureId: string;
+    componentKey: string;
+}): Promise<{ theme: ThemeCatalogTheme | null; errorMessage: string | null }> {
+    const themeRes = await api.get<ThemeCatalogTheme[]>(
+        `/cms/catalog/themes?featureId=${encodeURIComponent(featureId)}&includePremiumPreview=true`,
+    );
+
+    if (!themeRes.success || !themeRes.data) {
+        return {
+            theme: null,
+            errorMessage: themeRes.error?.message || 'Failed to load theme catalog',
+        };
+    }
+
+    const theme = themeRes.data.find((entry) => entry.componentKey === componentKey) || null;
+    if (!theme) {
+        return {
+            theme: null,
+            errorMessage: `Theme ${componentKey} is missing from catalog`,
+        };
+    }
+
+    return { theme, errorMessage: null };
+}
+
+function getFeatureSlugFromComponentKey(componentKey: string): string {
+    return componentKey.split('/')[0] || '';
+}
+
+async function applyTemplateToPage({
+    pageId,
+    templateId,
+    replaceSharedLayoutContent,
+}: {
+    pageId: string;
+    templateId: string;
+    replaceSharedLayoutContent?: boolean;
+}): Promise<{ success: boolean; errorMessage: string | null }> {
+    const response = await api.post(`/cms/pages/${pageId}/apply-template`, {
+        templateId,
+        ...(replaceSharedLayoutContent ? { replaceSharedLayoutContent: true } : {}),
+    });
+
+    if (!response.success) {
+        return {
+            success: false,
+            errorMessage: formatFirstValidationDetailMessage(
+                response.error?.details,
+                response.error?.message || 'Failed to apply template',
+            ),
+        };
+    }
+
+    return {
+        success: true,
+        errorMessage: null,
+    };
+}
+
+async function normalizePageSectionsToStack({
+    pageId,
+    desiredComponentKeys,
+    themesByComponentKey,
+    defaultContentByComponentKey = {},
+}: {
+    pageId: string;
+    desiredComponentKeys: readonly string[];
+    themesByComponentKey: Record<string, ThemeCatalogTheme>;
+    defaultContentByComponentKey?: Record<string, Record<string, unknown>>;
+}): Promise<{ success: boolean; errorMessage: string | null }> {
+    const initialSectionsRes = await api.get<SectionData[]>(`/cms/pages/${pageId}/sections`);
+    if (!initialSectionsRes.success || !initialSectionsRes.data) {
+        return {
+            success: false,
+            errorMessage: initialSectionsRes.error?.message || 'Failed to load page sections',
+        };
+    }
+
+    const selectedSectionIds: string[] = [];
+    const initialSections = initialSectionsRes.data;
+
+    for (const desiredComponentKey of desiredComponentKeys) {
+        const existingExact = initialSections.find((section) =>
+            !selectedSectionIds.includes(section.id) && section.theme.componentKey === desiredComponentKey
+        );
+        if (existingExact) {
+            selectedSectionIds.push(existingExact.id);
+            continue;
+        }
+
+        const desiredTheme = themesByComponentKey[desiredComponentKey];
+        if (!desiredTheme) {
+            return {
+                success: false,
+                errorMessage: `Theme ${desiredComponentKey} is missing from catalog`,
+            };
+        }
+
+        const desiredFeatureSlug = getFeatureSlugFromComponentKey(desiredComponentKey);
+        const existingFeatureMatch = initialSections.find((section) =>
+            !selectedSectionIds.includes(section.id)
+            && getFeatureSlugFromComponentKey(section.theme.componentKey) === desiredFeatureSlug
+        );
+
+        if (existingFeatureMatch) {
+            if (existingFeatureMatch.theme.componentKey !== desiredComponentKey) {
+                const updateRes = await api.put<SectionData>(`/cms/sections/${existingFeatureMatch.id}`, {
+                    themeId: desiredTheme.id,
+                });
+                if (!updateRes.success) {
+                    return {
+                        success: false,
+                        errorMessage: updateRes.error?.message || `Failed to update ${desiredComponentKey} section`,
+                    };
+                }
+            }
+
+            selectedSectionIds.push(existingFeatureMatch.id);
+            continue;
+        }
+
+        const createRes = await api.post<SectionData>(`/cms/pages/${pageId}/sections`, {
+            themeId: desiredTheme.id,
+            ...(defaultContentByComponentKey[desiredComponentKey]
+                ? { contentJsonb: defaultContentByComponentKey[desiredComponentKey] }
+                : {}),
+        });
+        if (!createRes.success || !createRes.data) {
+            return {
+                success: false,
+                errorMessage: createRes.error?.message || `Failed to create ${desiredComponentKey} section`,
+            };
+        }
+
+        selectedSectionIds.push(createRes.data.id);
+    }
+
+    const refreshedSectionsRes = await api.get<SectionData[]>(`/cms/pages/${pageId}/sections`);
+    if (!refreshedSectionsRes.success || !refreshedSectionsRes.data) {
+        return {
+            success: false,
+            errorMessage: refreshedSectionsRes.error?.message || 'Failed to load sections for stack normalization',
+        };
+    }
+
+    const selectedSet = new Set(selectedSectionIds);
+    const sectionsToDelete = refreshedSectionsRes.data.filter((section) => !selectedSet.has(section.id));
+    for (const section of sectionsToDelete) {
+        const deleteRes = await api.del(`/cms/sections/${section.id}`);
+        if (!deleteRes.success) {
+            return {
+                success: false,
+                errorMessage: deleteRes.error?.message || `Failed to remove ${section.theme.componentKey} section`,
+            };
+        }
+    }
+
+    const reorderPayload = selectedSectionIds.map((id, position) => ({ id, position }));
+    const reorderRes = await api.put(`/cms/pages/${pageId}/sections/reorder`, { sections: reorderPayload });
+    if (!reorderRes.success) {
+        return {
+            success: false,
+            errorMessage: reorderRes.error?.message || 'Failed to reorder sections',
+        };
+    }
+
+    return {
+        success: true,
+        errorMessage: null,
+    };
+}
+
 export default function BuilderPage() {
     const { currentTenant, currentInstance } = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
 
     const [pages, setPages] = useState<PageData[]>([]);
     const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
@@ -308,12 +610,15 @@ export default function BuilderPage() {
     const [activeOperation, setActiveOperation] = useState<BuilderOperation | null>(null);
 
     const tokens = settings?.tokens || DEFAULT_TOKENS;
+    const builderPanel = searchParams.get('panel');
+    const requestedWebsiteSettingsTab = searchParams.get('tab');
     useHostedFont(tokens.font);
 
     const selectedPage = pages.find((page) => page.id === selectedPageId) || null;
     const selectedSection = sections.find((s) => s.id === selectedSectionId);
     const themePickerTargetSection = sections.find((section) => section.id === themePickerTargetSectionId) || null;
     const isServicesSection = selectedSection?.theme.componentKey.startsWith('services/') === true;
+    const isBlogSection = selectedSection?.theme.componentKey.startsWith('blog/') === true;
     const selectedSectionIndex = selectedSection
         ? sections.findIndex((section) => section.id === selectedSection.id)
         : -1;
@@ -322,6 +627,10 @@ export default function BuilderPage() {
             ? normalizeServicesSchema(
                 selectedSection.theme.schemaJsonb as unknown as React.ComponentProps<typeof SchemaForm>['schema']
             )
+            : isBlogSection
+                ? normalizeBlogSchema(
+                    selectedSection.theme.schemaJsonb as unknown as React.ComponentProps<typeof SchemaForm>['schema']
+                )
             : isHeaderComponentKey(selectedSection.theme.componentKey)
                 ? normalizeHeaderSchema(
                     selectedSection.theme.schemaJsonb as unknown as React.ComponentProps<typeof SchemaForm>['schema']
@@ -334,6 +643,11 @@ export default function BuilderPage() {
                 ...SERVICES_SECTION_DEFAULT_CONTENT,
                 ...selectedSection.contentJsonb,
             }
+            : isBlogSection
+                ? {
+                    ...BLOG_SECTION_DEFAULT_CONTENT,
+                    ...selectedSection.contentJsonb,
+                }
             : isHeaderComponentKey(selectedSection.theme.componentKey)
                 ? {
                     projectName: ((selectedSection.contentJsonb as Record<string, unknown>).projectName as string | undefined)
@@ -435,7 +749,7 @@ export default function BuilderPage() {
                 return [];
             }
 
-            const nextPages = res.data;
+            const nextPages = res.data.filter((page) => !LEGACY_HIDDEN_PAGE_SLUG_ALIASES.has(page.slug));
             setPages(nextPages);
             setSelectedPageId((currentPageId) => {
                 const candidateId = preferredPageId || currentPageId;
@@ -740,6 +1054,17 @@ export default function BuilderPage() {
     }, [showSettings, selectedSectionId]);
 
     useEffect(() => {
+        if (builderPanel === 'website-settings') {
+            setShowSettings(true);
+            setSelectedSectionId(null);
+            setIsRightPanelOpen(true);
+            return;
+        }
+
+        setShowSettings(false);
+    }, [builderPanel]);
+
+    useEffect(() => {
         return () => {
             isMountedRef.current = false;
             activeOperationRef.current = null;
@@ -935,15 +1260,240 @@ export default function BuilderPage() {
         try {
             await flushPendingSectionSave();
             setTemplatePickerOpen(false);
-            const res = await api.post(`/cms/pages/${selectedPageId}/apply-template`, { templateId });
-            if (res.success) {
-                await loadSections();
-                await loadPages();
-                await loadSettings();
-                await loadPublishReadiness();
+            let targetPageId = selectedPageId;
+            let createdPageCount = 0;
+
+            if (BLOG_TEMPLATE_IDS.has(templateId)) {
+                const desiredBlogComponentKey = BLOG_SECTION_COMPONENT_KEY_BY_TEMPLATE[templateId] || 'blog/v15';
+                const shouldReplaceSharedLayout = BLOG_TEMPLATE_FORCE_REPLACE_SHARED_LAYOUT_IDS.has(templateId);
+
+                const homePageResult = await ensureBuilderPageBySlug({
+                    pages,
+                    aliases: HOME_PAGE_SLUG_ALIASES,
+                    title: HOME_PAGE_TITLE,
+                    slug: HOME_PAGE_SLUG,
+                });
+
+                if (!homePageResult.page) {
+                    alert(homePageResult.errorMessage || 'Failed to resolve Home page');
+                    return;
+                }
+
+                targetPageId = homePageResult.page.id;
+                if (homePageResult.created) {
+                    createdPageCount += 1;
+                }
+
+                // Apply Home first so fresh instances satisfy the API rule that non-home
+                // pages can only be created after Home has at least one section.
+                const homeApplyResult = await applyTemplateToPage({
+                    pageId: homePageResult.page.id,
+                    templateId,
+                    replaceSharedLayoutContent: shouldReplaceSharedLayout,
+                });
+                if (!homeApplyResult.success) {
+                    alert(homeApplyResult.errorMessage || 'Failed to apply template to Home');
+                    return;
+                }
+
+                const latestPagesRes = await api.get<PageData[]>('/cms/pages');
+                const latestPages = latestPagesRes.success && latestPagesRes.data
+                    ? latestPagesRes.data
+                    : pages;
+                let workingPages = latestPages;
+
+                const aboutPageResult = await ensureBuilderPageBySlug({
+                    pages: workingPages,
+                    aliases: ABOUT_PAGE_SLUG_ALIASES,
+                    title: ABOUT_PAGE_TITLE,
+                    slug: ABOUT_PAGE_SLUG,
+                });
+                if (!aboutPageResult.page) {
+                    alert(aboutPageResult.errorMessage || 'Failed to resolve About page');
+                    return;
+                }
+                if (aboutPageResult.created) {
+                    createdPageCount += 1;
+                    workingPages = [...workingPages, aboutPageResult.page];
+                }
+
+                const contactPageResult = await ensureBuilderPageBySlug({
+                    pages: workingPages,
+                    aliases: CONTACT_PAGE_SLUG_ALIASES,
+                    title: CONTACT_PAGE_TITLE,
+                    slug: CONTACT_PAGE_SLUG,
+                });
+                if (!contactPageResult.page) {
+                    alert(contactPageResult.errorMessage || 'Failed to resolve Contact page');
+                    return;
+                }
+                if (contactPageResult.created) {
+                    createdPageCount += 1;
+                    workingPages = [...workingPages, contactPageResult.page];
+                }
+
+                const blogPageResult = await ensureBuilderPageBySlug({
+                    pages: workingPages,
+                    aliases: BLOG_PAGE_SLUG_ALIASES,
+                    title: BLOG_PAGE_TITLE,
+                    slug: BLOG_PAGE_SLUG,
+                });
+                if (!blogPageResult.page) {
+                    alert(blogPageResult.errorMessage || 'Failed to resolve Blog page');
+                    return;
+                }
+                if (blogPageResult.created) {
+                    createdPageCount += 1;
+                    workingPages = [...workingPages, blogPageResult.page];
+                }
+                const blogPage = blogPageResult.page;
+
+                const blogThemeResult = await resolveCatalogThemeByComponentKey({
+                    featureId: BLOG_FEATURE_ID,
+                    componentKey: desiredBlogComponentKey,
+                });
+
+                if (!blogThemeResult.theme) {
+                    alert(blogThemeResult.errorMessage || 'Failed to resolve blog section theme');
+                    return;
+                }
+
+                const stackComponentKeys = Array.from(new Set([
+                    ...TRAIN_OF_THOUGHT_STACK.home,
+                    ...TRAIN_OF_THOUGHT_STACK.about,
+                    ...TRAIN_OF_THOUGHT_STACK.contact,
+                    ...TRAIN_OF_THOUGHT_STACK.blog,
+                ]));
+                const themesByComponentKey: Record<string, ThemeCatalogTheme> = {
+                    [desiredBlogComponentKey]: blogThemeResult.theme,
+                };
+
+                for (const componentKey of stackComponentKeys) {
+                    if (themesByComponentKey[componentKey]) {
+                        continue;
+                    }
+
+                    const featureSlug = getFeatureSlugFromComponentKey(componentKey);
+                    const featureId = `feature-${featureSlug}`;
+
+                    const resolvedThemeResult = await resolveCatalogThemeByComponentKey({
+                        featureId,
+                        componentKey,
+                    });
+
+                    if (!resolvedThemeResult.theme) {
+                        alert(resolvedThemeResult.errorMessage || `Failed to resolve ${componentKey} theme`);
+                        return;
+                    }
+
+                    themesByComponentKey[componentKey] = resolvedThemeResult.theme;
+                }
+
+                const homeNormalizeResult = await normalizePageSectionsToStack({
+                    pageId: homePageResult.page.id,
+                    desiredComponentKeys: TRAIN_OF_THOUGHT_STACK.home,
+                    themesByComponentKey,
+                    defaultContentByComponentKey: {
+                        [desiredBlogComponentKey]: {
+                            ...BLOG_SECTION_DEFAULT_CONTENT,
+                            ctaLink: '/blog',
+                        },
+                    },
+                });
+                if (!homeNormalizeResult.success) {
+                    alert(homeNormalizeResult.errorMessage || 'Failed to normalize Home page sections');
+                    return;
+                }
+
+                const aboutApplyResult = await applyTemplateToPage({
+                    pageId: aboutPageResult.page.id,
+                    templateId,
+                    replaceSharedLayoutContent: shouldReplaceSharedLayout,
+                });
+                if (!aboutApplyResult.success) {
+                    alert(aboutApplyResult.errorMessage || 'Failed to apply template');
+                    return;
+                }
+
+                const aboutNormalizeResult = await normalizePageSectionsToStack({
+                    pageId: aboutPageResult.page.id,
+                    desiredComponentKeys: TRAIN_OF_THOUGHT_STACK.about,
+                    themesByComponentKey,
+                });
+                if (!aboutNormalizeResult.success) {
+                    alert(aboutNormalizeResult.errorMessage || 'Failed to normalize About page sections');
+                    return;
+                }
+
+                const contactApplyResult = await applyTemplateToPage({
+                    pageId: contactPageResult.page.id,
+                    templateId,
+                    replaceSharedLayoutContent: shouldReplaceSharedLayout,
+                });
+                if (!contactApplyResult.success) {
+                    alert(contactApplyResult.errorMessage || 'Failed to apply template');
+                    return;
+                }
+
+                const contactNormalizeResult = await normalizePageSectionsToStack({
+                    pageId: contactPageResult.page.id,
+                    desiredComponentKeys: TRAIN_OF_THOUGHT_STACK.contact,
+                    themesByComponentKey,
+                });
+                if (!contactNormalizeResult.success) {
+                    alert(contactNormalizeResult.errorMessage || 'Failed to normalize Contact page sections');
+                    return;
+                }
+
+                const applyResult = await applyTemplateToPage({
+                    pageId: blogPage.id,
+                    templateId,
+                    replaceSharedLayoutContent: shouldReplaceSharedLayout,
+                });
+                if (!applyResult.success) {
+                    alert(applyResult.errorMessage || 'Failed to apply template');
+                    return;
+                }
+
+                const blogNormalizeResult = await normalizePageSectionsToStack({
+                    pageId: blogPage.id,
+                    desiredComponentKeys: TRAIN_OF_THOUGHT_STACK.blog,
+                    themesByComponentKey,
+                    defaultContentByComponentKey: {
+                        [desiredBlogComponentKey]: {
+                            ...BLOG_SECTION_DEFAULT_CONTENT,
+                            ctaLink: '/blog',
+                        },
+                    },
+                });
+                if (!blogNormalizeResult.success) {
+                    alert(blogNormalizeResult.errorMessage || 'Failed to normalize Blog page sections');
+                    return;
+                }
             } else {
-                alert(res.error?.message || 'Failed to apply template');
+                const applyResult = await applyTemplateToPage({ pageId: targetPageId, templateId });
+                if (!applyResult.success) {
+                    alert(applyResult.errorMessage || 'Failed to apply template');
+                    return;
+                }
             }
+
+            setSelectedPageId(targetPageId);
+            selectedPageIdRef.current = targetPageId;
+            setSelectedSectionId(null);
+            setShowSettings(false);
+
+            await loadPages(targetPageId);
+            const sectionsRes = await api.get<SectionData[]>(`/cms/pages/${targetPageId}/sections`);
+            if (sectionsRes.success && sectionsRes.data) {
+                setSections(sectionsRes.data);
+            }
+
+            if (createdPageCount > 0) {
+                await loadInstanceUsage();
+            }
+            await loadSettings();
+            await loadPublishReadiness();
         } finally {
             endOperation();
         }
@@ -1668,6 +2218,7 @@ export default function BuilderPage() {
                                         tenantId: currentTenant.id,
                                         instanceId: currentInstance.id,
                                         pageSlug: selectedPage?.slug,
+                                        subdomain: currentInstance.subdomain,
                                     } : undefined}
                                 />
                             </div>
@@ -1795,6 +2346,7 @@ export default function BuilderPage() {
                                     onSave={handleSaveSettings}
                                     onSavePageSeo={handleSavePageSeo}
                                     saving={settingsSaving}
+                                    initialTab={requestedWebsiteSettingsTab}
                                 />
                             ) : selectedSection ? (
                                 <div className="p-4">
@@ -1910,9 +2462,17 @@ function SectionAppearanceControls({ values, onChange }: {
 }) {
     const backgroundAliases = ['sectionBackgroundColor', 'backgroundColor', 'bgColor'];
     const textAliases = ['sectionTextColor', 'textColor', 'foregroundColor', 'color'];
+    const primaryButtonBackgroundAliases = ['primaryButtonBackgroundColor', 'primaryButtonColor', 'buttonColor'];
+    const primaryButtonTextAliases = ['primaryButtonTextColor', 'buttonTextColor'];
+    const secondaryButtonBackgroundAliases = ['secondaryButtonBackgroundColor', 'secondaryButtonColor'];
+    const secondaryButtonTextAliases = ['secondaryButtonTextColor', 'secondaryButtonLabelColor'];
 
     const backgroundColor = readStyleColorValue(values, backgroundAliases);
     const textColor = readStyleColorValue(values, textAliases);
+    const primaryButtonBackgroundColor = readStyleColorValue(values, primaryButtonBackgroundAliases);
+    const primaryButtonTextColor = readStyleColorValue(values, primaryButtonTextAliases);
+    const secondaryButtonBackgroundColor = readStyleColorValue(values, secondaryButtonBackgroundAliases);
+    const secondaryButtonTextColor = readStyleColorValue(values, secondaryButtonTextAliases);
     const autoTextContrast = (values.autoTextContrast as boolean | undefined) !== false;
     const colorInputStyle: React.CSSProperties = {
         width: '100%',
@@ -1966,7 +2526,7 @@ function SectionAppearanceControls({ values, onChange }: {
                 Section Appearance
             </p>
             <p style={{ margin: 0, fontSize: '12px', color: 'var(--be-form-muted, #64748b)' }}>
-                Override this section text/background colors without changing the whole website theme.
+                Override this section text, background, and button colors without changing the whole website theme.
             </p>
 
             <div style={{ display: 'grid', gap: '10px' }}>
@@ -2033,6 +2593,94 @@ function SectionAppearanceControls({ values, onChange }: {
                         style={{ width: '14px', height: '14px' }}
                     />
                     Auto-pick readable text color when only background is set
+                </label>
+
+                <label style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--be-form-label, #475569)' }}>Primary Button Background</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input
+                            type="color"
+                            value={toSectionColorPickerValue(primaryButtonBackgroundColor)}
+                            onChange={(event) => updateColor(primaryButtonBackgroundAliases, event.target.value)}
+                            style={{ width: '40px', height: '32px', padding: 0, border: 'none', background: 'transparent' }}
+                        />
+                        <input
+                            type="text"
+                            value={primaryButtonBackgroundColor}
+                            onChange={(event) => updateColor(primaryButtonBackgroundAliases, event.target.value)}
+                            placeholder="#1f160f"
+                            style={colorInputStyle}
+                        />
+                        <button type="button" onClick={() => clearColor(primaryButtonBackgroundAliases)} style={resetButtonStyle}>
+                            Reset
+                        </button>
+                    </div>
+                </label>
+
+                <label style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--be-form-label, #475569)' }}>Primary Button Text</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input
+                            type="color"
+                            value={toSectionColorPickerValue(primaryButtonTextColor)}
+                            onChange={(event) => updateColor(primaryButtonTextAliases, event.target.value)}
+                            style={{ width: '40px', height: '32px', padding: 0, border: 'none', background: 'transparent' }}
+                        />
+                        <input
+                            type="text"
+                            value={primaryButtonTextColor}
+                            onChange={(event) => updateColor(primaryButtonTextAliases, event.target.value)}
+                            placeholder="#ffffff"
+                            style={colorInputStyle}
+                        />
+                        <button type="button" onClick={() => clearColor(primaryButtonTextAliases)} style={resetButtonStyle}>
+                            Reset
+                        </button>
+                    </div>
+                </label>
+
+                <label style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--be-form-label, #475569)' }}>Secondary Button Background</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input
+                            type="color"
+                            value={toSectionColorPickerValue(secondaryButtonBackgroundColor)}
+                            onChange={(event) => updateColor(secondaryButtonBackgroundAliases, event.target.value)}
+                            style={{ width: '40px', height: '32px', padding: 0, border: 'none', background: 'transparent' }}
+                        />
+                        <input
+                            type="text"
+                            value={secondaryButtonBackgroundColor}
+                            onChange={(event) => updateColor(secondaryButtonBackgroundAliases, event.target.value)}
+                            placeholder="#fffaf2"
+                            style={colorInputStyle}
+                        />
+                        <button type="button" onClick={() => clearColor(secondaryButtonBackgroundAliases)} style={resetButtonStyle}>
+                            Reset
+                        </button>
+                    </div>
+                </label>
+
+                <label style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--be-form-label, #475569)' }}>Secondary Button Text</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input
+                            type="color"
+                            value={toSectionColorPickerValue(secondaryButtonTextColor)}
+                            onChange={(event) => updateColor(secondaryButtonTextAliases, event.target.value)}
+                            style={{ width: '40px', height: '32px', padding: 0, border: 'none', background: 'transparent' }}
+                        />
+                        <input
+                            type="text"
+                            value={secondaryButtonTextColor}
+                            onChange={(event) => updateColor(secondaryButtonTextAliases, event.target.value)}
+                            placeholder="#1f160f"
+                            style={colorInputStyle}
+                        />
+                        <button type="button" onClick={() => clearColor(secondaryButtonTextAliases)} style={resetButtonStyle}>
+                            Reset
+                        </button>
+                    </div>
                 </label>
             </div>
         </div>
@@ -2202,22 +2850,26 @@ function cloneSeoSettings(value: WebsiteSEOSettings | null | undefined): Website
     };
 }
 
-function SettingsPanel({ settings, pages, onSave, onSavePageSeo, saving }: {
+function SettingsPanel({ settings, pages, onSave, onSavePageSeo, saving, initialTab }: {
     settings: WebsiteSettings | null;
     pages: PageData[];
     onSave: (settings: Partial<WebsiteSettings>) => void;
     onSavePageSeo: (pageId: string, seoJsonb: SEOData | null) => Promise<{ success: boolean; message?: string }>;
     saving: boolean;
+    initialTab?: string | null;
 }) {
     const [tokens, setTokens] = useState<WebsiteSettings['tokens']>(settings?.tokens || DEFAULT_TOKENS);
     const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(findMatchingTemplateId(settings?.tokens || DEFAULT_TOKENS));
-    const [websiteSettingsTab, setWebsiteSettingsTab] = useState<'themes' | 'metadata'>('themes');
+    const [websiteSettingsTab, setWebsiteSettingsTab] = useState<'themes' | 'metadata' | 'code'>(
+        initialTab === 'metadata' || initialTab === 'code' ? initialTab : 'themes',
+    );
     const [seoMode, setSeoMode] = useState<'website' | 'page'>('website');
     const [seoSettings, setSeoSettings] = useState<WebsiteSEOSettings>(cloneSeoSettings(settings?.seo));
     const [selectedSeoPageId, setSelectedSeoPageId] = useState<string>(pages[0]?.id || '');
     const [pageSeoDraft, setPageSeoDraft] = useState<SEOData | null>(pages[0]?.seoJsonb ? cloneSeoData(pages[0].seoJsonb) : null);
     const [pageSeoSaving, setPageSeoSaving] = useState(false);
     const [pageSeoMessage, setPageSeoMessage] = useState<string | null>(null);
+    const [customCode, setCustomCode] = useState<WebsiteCustomCodeSettings>(settings?.customCode || {});
 
     useEffect(() => {
         if (!settings?.tokens) return;
@@ -2253,8 +2905,18 @@ function SettingsPanel({ settings, pages, onSave, onSavePageSeo, saving }: {
         setPageSeoDraft(page?.seoJsonb ? cloneSeoData(page.seoJsonb) : null);
     }, [pages, selectedSeoPageId]);
 
+    useEffect(() => {
+        setCustomCode(settings?.customCode || {});
+    }, [settings?.customCode]);
+
+    useEffect(() => {
+        if (initialTab === 'metadata' || initialTab === 'code' || initialTab === 'themes') {
+            setWebsiteSettingsTab(initialTab);
+        }
+    }, [initialTab]);
+
     const handleSave = () => {
-        onSave({ tokens, seo: seoSettings });
+        onSave({ tokens, seo: seoSettings, customCode });
     };
 
     const updateTokens = (nextTokens: WebsiteSettings['tokens']) => {
@@ -2364,6 +3026,18 @@ function SettingsPanel({ settings, pages, onSave, onSavePageSeo, saving }: {
                         }}
                     >
                         Metadata
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setWebsiteSettingsTab('code')}
+                        style={{
+                            ...actionBtnStyle,
+                            backgroundColor: websiteSettingsTab === 'code' ? 'var(--be-form-active-bg, #eff6ff)' : actionBtnStyle.backgroundColor,
+                            borderColor: websiteSettingsTab === 'code' ? '#3b82f6' : 'var(--be-form-border, #cbd5e1)',
+                            color: websiteSettingsTab === 'code' ? 'var(--be-form-active-text, #1d4ed8)' : 'var(--be-form-label, #475569)',
+                        }}
+                    >
+                        Custom Code
                     </button>
                 </div>
 
@@ -3048,6 +3722,62 @@ function SettingsPanel({ settings, pages, onSave, onSavePageSeo, saving }: {
                             )}
                         </div>
                     )}
+                    </div>
+                )}
+
+                {websiteSettingsTab === 'code' && (
+                    <div>
+                        <div style={sectionTitleStyle}>Custom HTML Tags</div>
+                        <p style={{ fontSize: '12px', color: 'var(--be-form-muted, #64748b)', margin: '0 0 14px 0' }}>
+                            Add verification tags, analytics scripts, or any custom HTML into your published website. Save settings, then publish the site again to see the changes in page source.
+                        </p>
+
+                        <div style={{ marginBottom: '16px' }}>
+
+                            <label style={labelStyle}>Head HTML</label>
+
+                            <p style={{ fontSize: '11px', color: 'var(--be-form-muted, #64748b)', margin: '2px 0 6px 0' }}>
+                                Rendered inside the published document <code style={{ background: '#f1f5f9', padding: '0 3px', borderRadius: '3px' }}>&lt;head&gt;</code> - ideal for Google Site Verification, GA4, and other meta tags or scripts.
+                            </p>
+                            <textarea
+                                value={customCode.head || ''}
+                                onChange={(e) => setCustomCode({ ...customCode, head: e.target.value })}
+                                rows={4}
+                                placeholder={'<meta name="google-site-verification" content="..." />\n<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXX"></script>'}
+                                style={{ ...inputStyle, fontFamily: 'monospace', fontSize: '12px', resize: 'vertical' }}
+                            />
+                        </div>
+
+                        <div style={{ marginBottom: '16px' }}>
+
+                            <label style={labelStyle}>Body HTML</label>
+
+                            <p style={{ fontSize: '11px', color: 'var(--be-form-muted, #64748b)', margin: '2px 0 6px 0' }}>
+                                Rendered immediately after the opening <code style={{ background: '#f1f5f9', padding: '0 3px', borderRadius: '3px' }}>&lt;body&gt;</code> tag - ideal for Google Tag Manager noscript.
+                            </p>
+                            <textarea
+                                value={customCode.bodyTop || ''}
+                                onChange={(e) => setCustomCode({ ...customCode, bodyTop: e.target.value })}
+                                rows={4}
+                                placeholder={'<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-XXXXXXX" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>'}
+                                style={{ ...inputStyle, fontFamily: 'monospace', fontSize: '12px', resize: 'vertical' }}
+                            />
+                        </div>
+
+                        <div style={{ marginBottom: '16px' }}>
+                            <label style={labelStyle}>Footer HTML</label>
+                            <p style={{ fontSize: '11px', color: 'var(--be-form-muted, #64748b)', margin: '2px 0 6px 0' }}>
+                                Injected right before the closing <code style={{ background: '#f1f5f9', padding: '0 3px', borderRadius: '3px' }}>&lt;/body&gt;</code> even if the page has no visible theme footer section - ideal for chat widgets or deferred scripts.
+
+                            </p>
+                            <textarea
+                                value={customCode.bodyBottom || ''}
+                                onChange={(e) => setCustomCode({ ...customCode, bodyBottom: e.target.value })}
+                                rows={4}
+                                placeholder={'<script src="https://cdn.example.com/widget.js" defer></script>'}
+                                style={{ ...inputStyle, fontFamily: 'monospace', fontSize: '12px', resize: 'vertical' }}
+                            />
+                        </div>
                     </div>
                 )}
             </div>

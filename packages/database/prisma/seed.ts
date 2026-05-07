@@ -28,6 +28,12 @@ const PERMISSIONS = [
     { key: 'products.update', name: 'Update Products', description: 'Update existing products', module: 'products' },
     { key: 'products.delete', name: 'Delete Products', description: 'Deactivate or delete products', module: 'products' },
 
+    // Blogs
+    { key: 'blogs.view', name: 'View Blogs', description: 'View blog posts', module: 'blogs' },
+    { key: 'blogs.create', name: 'Create Blogs', description: 'Create new blog posts', module: 'blogs' },
+    { key: 'blogs.update', name: 'Update Blogs', description: 'Update existing blog posts', module: 'blogs' },
+    { key: 'blogs.delete', name: 'Delete Blogs', description: 'Deactivate or delete blog posts', module: 'blogs' },
+
     // Customers
     { key: 'customers.view', name: 'View Customers', description: 'View customer list and details', module: 'customers' },
     { key: 'customers.create', name: 'Create Customers', description: 'Create new customers', module: 'customers' },

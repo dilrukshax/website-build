@@ -17,6 +17,25 @@ const FEATURE_SLUG_ALIASES: Record<string, string> = {
     logo: 'logos',
 };
 
+const HEX_SHORT_COLOR_REGEX = /^#([0-9a-f]{3})$/i;
+const HEX_LONG_COLOR_REGEX = /^#([0-9a-f]{6})$/i;
+const RGB_COLOR_REGEX = /^rgba?\(([^)]+)\)$/i;
+
+interface RGBColor {
+    r: number;
+    g: number;
+    b: number;
+}
+
+interface ThemeTokens {
+    primary: string;
+    secondary: string;
+    accent: string;
+    text: string;
+    background: string;
+    font: string;
+}
+
 const LATEST_REGISTERED_KEY_BY_FEATURE: Record<string, string> = getRegisteredKeys().reduce((acc, key) => {
     const match = key.match(VERSIONED_KEY_PATTERN);
     if (!match) {
@@ -129,6 +148,157 @@ function normalizeAnchorId(raw: string): string {
         .replace(/\s+/g, '-');
 }
 
+function clampChannel(value: number): number {
+    if (Number.isNaN(value)) return 0;
+    return Math.max(0, Math.min(255, value));
+}
+
+function parseHexColor(color: string): RGBColor | null {
+    const shortMatch = color.match(HEX_SHORT_COLOR_REGEX);
+    if (shortMatch?.[1]) {
+        const expanded = shortMatch[1]
+            .split('')
+            .map((char) => `${char}${char}`)
+            .join('');
+        const numeric = Number.parseInt(expanded, 16);
+        return {
+            r: (numeric >> 16) & 0xff,
+            g: (numeric >> 8) & 0xff,
+            b: numeric & 0xff,
+        };
+    }
+
+    const longMatch = color.match(HEX_LONG_COLOR_REGEX);
+    if (longMatch?.[1]) {
+        const numeric = Number.parseInt(longMatch[1], 16);
+        return {
+            r: (numeric >> 16) & 0xff,
+            g: (numeric >> 8) & 0xff,
+            b: numeric & 0xff,
+        };
+    }
+
+    return null;
+}
+
+function parseRgbColor(color: string): RGBColor | null {
+    const rgbMatch = color.match(RGB_COLOR_REGEX);
+    if (!rgbMatch?.[1]) return null;
+
+    const channels = rgbMatch[1]
+        .split(',')
+        .slice(0, 3)
+        .map((token) => clampChannel(Number.parseFloat(token.trim())));
+
+    if (channels.length < 3) return null;
+
+    return {
+        r: channels[0] || 0,
+        g: channels[1] || 0,
+        b: channels[2] || 0,
+    };
+}
+
+function parseColor(color: string): RGBColor | null {
+    const normalized = color.trim();
+    if (!normalized) return null;
+    return parseHexColor(normalized) || parseRgbColor(normalized);
+}
+
+function toLinear(channel: number): number {
+    const normalized = channel / 255;
+    return normalized <= 0.03928
+        ? normalized / 12.92
+        : ((normalized + 0.055) / 1.055) ** 2.4;
+}
+
+function luminance(color: string): number | null {
+    const parsed = parseColor(color);
+    if (!parsed) return null;
+
+    const r = toLinear(parsed.r);
+    const g = toLinear(parsed.g);
+    const b = toLinear(parsed.b);
+    return (0.2126 * r) + (0.7152 * g) + (0.0722 * b);
+}
+
+function getContrastRatio(foreground: string, background: string): number {
+    const foregroundLum = luminance(foreground);
+    const backgroundLum = luminance(background);
+
+    if (foregroundLum === null || backgroundLum === null) {
+        return 1;
+    }
+
+    const lighter = Math.max(foregroundLum, backgroundLum);
+    const darker = Math.min(foregroundLum, backgroundLum);
+    return (lighter + 0.05) / (darker + 0.05);
+}
+
+function getReadableTextColor(background: string, preferred: string, minContrast = 4.5): string {
+    const candidates = [
+        preferred,
+        '#0f172a',
+        '#111827',
+        '#000000',
+        '#f8fafc',
+        '#ffffff',
+    ];
+
+    let best = candidates[0] || '#0f172a';
+    let bestRatio = 0;
+
+    for (const candidate of candidates) {
+        const ratio = getContrastRatio(candidate, background);
+        if (ratio >= minContrast) {
+            return candidate;
+        }
+
+        if (ratio > bestRatio) {
+            best = candidate;
+            bestRatio = ratio;
+        }
+    }
+
+    return best;
+}
+
+function readStyleColorValue(values: Record<string, unknown>, keys: string[]): string | null {
+    for (const key of keys) {
+        const candidate = values[key];
+        if (typeof candidate === 'string' && candidate.trim().length > 0) {
+            return candidate.trim();
+        }
+    }
+    return null;
+}
+
+function resolveSectionTokens(tokens: ThemeTokens, styles: Record<string, unknown>): ThemeTokens {
+    const backgroundColor = readStyleColorValue(styles, ['sectionBackgroundColor', 'backgroundColor', 'bgColor']);
+    const explicitTextColor = readStyleColorValue(styles, ['sectionTextColor', 'textColor', 'foregroundColor', 'color']);
+    const autoTextContrast = styles.autoTextContrast !== false;
+
+    if (!backgroundColor && !explicitTextColor) {
+        return tokens;
+    }
+
+    const resolved: ThemeTokens = {
+        ...tokens,
+    };
+
+    if (backgroundColor) {
+        resolved.background = backgroundColor;
+    }
+
+    if (explicitTextColor) {
+        resolved.text = explicitTextColor;
+    } else if (backgroundColor && autoTextContrast) {
+        resolved.text = getReadableTextColor(backgroundColor, tokens.text, 4.5);
+    }
+
+    return resolved;
+}
+
 function resolveSectionAnchorId(componentKey: string, content: Record<string, unknown>): string {
     const explicit = typeof content.sectionId === 'string' ? content.sectionId.trim() : '';
     if (explicit) {
@@ -175,25 +345,20 @@ interface SectionRendererProps {
     componentKey: string;
     content: Record<string, unknown>;
     styles: Record<string, unknown>;
-    tokens: {
-        primary: string;
-        secondary: string;
-        accent: string;
-        text: string;
-        background: string;
-        font: string;
-    };
+    tokens: ThemeTokens;
     conditions?: SDUICondition[] | null;
     features?: Record<string, boolean>;
     isEditor?: boolean;
-    context?: { tenantId: string; instanceId: string; pageSlug?: string };
+    context?: { tenantId: string; instanceId: string; pageSlug?: string; subdomain?: string; blogPost?: any };
 }
 
 export function SectionRenderer({ componentKey, content, styles, tokens, conditions, features, isEditor, context: rContext }: SectionRendererProps) {
+    const resolvedTokens = resolveSectionTokens(tokens, styles || {});
+
     // In editor mode, always render (show everything). In preview/public, evaluate conditions.
     if (!isEditor && conditions && conditions.length > 0) {
         const context: Record<string, unknown> = {
-            tokens,
+            tokens: resolvedTokens,
             features: features || {},
             props: content,
         };
@@ -213,7 +378,7 @@ export function SectionRenderer({ componentKey, content, styles, tokens, conditi
     }
 
     const { component: Component, resolvedKey } = resolvedTheme;
-    const contentNode = <Component content={content} styles={styles} tokens={tokens} isEditor={isEditor} context={rContext} />;
+    const contentNode = <Component content={content} styles={styles} tokens={resolvedTokens} isEditor={isEditor} context={rContext} />;
     const anchorId = resolveSectionAnchorId(resolvedKey, content);
 
     return (
@@ -223,7 +388,17 @@ export function SectionRenderer({ componentKey, content, styles, tokens, conditi
                 data-section-anchor={anchorId}
                 style={isEditor ? { display: 'contents' } : { scrollMarginTop: '108px' }}
                 onClick={(e) => {
-                    if (isEditor && (e.target as HTMLElement).closest('a')) {
+                    if (!isEditor) {
+                        return;
+                    }
+
+                    const anchor = (e.target as HTMLElement).closest('a');
+                    if (!anchor) {
+                        return;
+                    }
+
+                    // Keep default editor safety unless a link opts in for navigation.
+                    if (anchor.getAttribute('data-editor-nav') !== 'allow') {
                         e.preventDefault();
                     }
                 }}

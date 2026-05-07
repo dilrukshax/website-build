@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { isCmsHost, normalizeHost, resolveCanonicalHost, resolvePublishedManifest } from '../../../../lib/published-site';
+import { isCmsHost, resolveCanonicalHost, resolvePublishedManifest, resolveRoutedRequestHost } from '../../../../lib/published-site';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -16,7 +16,7 @@ export async function GET(
     request: NextRequest,
     context: { params: { subdomain: string } },
 ): Promise<NextResponse> {
-    const requestHost = normalizeHost(request.headers.get('host'));
+    const requestHost = resolveRoutedRequestHost(request.headers);
     const { manifest } = await resolvePublishedManifest({
         subdomain: context.params.subdomain,
         hostname: requestHost,

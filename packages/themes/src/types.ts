@@ -10,7 +10,7 @@ export interface ThemeComponentProps {
         font: string;
     };
     isEditor?: boolean;
-    context?: { tenantId: string; instanceId: string; pageSlug?: string };
+    context?: { tenantId: string; instanceId: string; pageSlug?: string; subdomain?: string; blogPost?: any };
 }
 
 export interface ThemeTemplate {

@@ -299,6 +299,7 @@ model Instance {
   customers      Customer[]
   services       Service[]
   products       Product[]
+  blogPosts      BlogPost[]
   bookings       Booking[]
   inquiries      Inquiry[]
   toggles        FeatureToggle[]
@@ -833,6 +834,35 @@ model Product {
   @@index([instanceId, isActive])
   @@index([instanceId, sortOrder])
   @@map("products")
+}
+
+// ============================================================
+// BLOG POSTS (Instance-scoped)
+// ============================================================
+
+model BlogPost {
+  id               String   @id @default(uuid())
+  tenantId         String   @map("tenant_id")
+  instanceId       String   @map("instance_id")
+  title            String
+  slug             String
+  excerpt          String?
+  contentHtml      String   @map("content_html")
+  featuredImageUrl String?  @map("featured_image_url")
+  seoJsonb         Json?    @map("seo_jsonb")
+  isPublished      Boolean  @default(false) @map("is_published")
+  publishedAt      DateTime? @map("published_at")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  instance Instance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  @@unique([instanceId, slug])
+  @@index([tenantId])
+  @@index([instanceId])
+  @@index([instanceId, isPublished])
+  @@index([instanceId, publishedAt])
+  @@map("blog_posts")
 }
 
 // ============================================================

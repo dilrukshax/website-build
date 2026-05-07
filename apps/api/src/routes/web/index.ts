@@ -6,6 +6,7 @@ import { resolvePublicWebContext } from '../../middleware/public-web-context';
 import { validate } from '../../middleware/validate';
 import { ServicesController } from '../../controllers/services.controller';
 import { ProductsController } from '../../controllers/products.controller';
+import { BlogsController } from '../../controllers/blogs.controller';
 import { BookingsController } from '../../controllers/bookings.controller';
 import { InquiriesController } from '../../controllers/inquiries.controller';
 import { PublicSitesController } from '../../controllers/public-sites.controller';
@@ -30,6 +31,10 @@ router.get('/services/:id', ServicesController.getById);
 // --- Products (public read) ---
 router.get('/products', ProductsController.listPublic);
 router.get('/products/:id', ProductsController.getById);
+
+// --- Blogs (public read) ---
+router.get('/blogs', BlogsController.listPublic);
+router.get('/blogs/:slug', BlogsController.getBySlugPublic);
 
 // --- Bookings (public create — customer self-serve) ---
 router.post('/bookings', validate(createBookingSchema), BookingsController.create);

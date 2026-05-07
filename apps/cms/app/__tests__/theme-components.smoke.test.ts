@@ -31,4 +31,12 @@ describe('Theme component smoke checks', () => {
             expect(Component, `Failed to resolve variant key: ${key}`).not.toBeNull();
         }
     });
+
+    it('includes blog section registry coverage', () => {
+        expect(getThemeComponent('blog/v1')).not.toBeNull();
+        expect(getThemeComponent('blog/v2')).not.toBeNull();
+        expect(getThemeComponent('blog/v3')).not.toBeNull();
+        expect(getThemeComponent('blog/v15')).not.toBeNull();
+        expect(getThemeComponent('blog-post-detail/v2')).not.toBeNull();
+    });
 });

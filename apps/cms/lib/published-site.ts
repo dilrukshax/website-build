@@ -1,6 +1,6 @@
 import { fetchCurrentRoutingIndexPointer } from './routing-index';
 
-const UNKNOWN_SUBDOMAIN = '__unknown__';
+export const UNKNOWN_SUBDOMAIN = '__unknown__';
 const ROOT_DOMAIN = normalizeHost(process.env.NEXT_PUBLIC_SITE_DOMAIN || process.env.SITE_DOMAIN || 'buildmyonlineweb.site');
 const CMS_PLATFORM_HOST = normalizeHost(process.env.CMS_URL || process.env.NEXT_PUBLIC_CMS_URL || '');
 
@@ -26,6 +26,10 @@ type CachedManifest = {
 
 let cachedRoutingIndex: CachedRoutingIndex | null = null;
 const cachedManifests = new Map<string, CachedManifest>();
+
+interface ResolveManifestCacheOptions {
+    bypassCache?: boolean;
+}
 
 export type TwitterCardType = 'summary' | 'summary_large_image';
 
@@ -105,6 +109,11 @@ export interface PublishedManifest {
     features: Record<string, boolean>;
     header: Record<string, unknown>;
     footer: Record<string, unknown>;
+    customCode?: {
+        head?: string | null;
+        bodyTop?: string | null;
+        bodyBottom?: string | null;
+    } | null;
     pages: PublishedManifestPage[];
 }
 
@@ -198,7 +207,7 @@ export function normalizeHost(host: string | null | undefined): string {
         return '';
     }
 
-    const trimmed = host.trim().toLowerCase();
+    const trimmed = host.split(',')[0]?.trim().toLowerCase() || '';
     if (!trimmed) {
         return '';
     }
@@ -209,6 +218,14 @@ export function normalizeHost(host: string | null | undefined): string {
     } catch {
         return '';
     }
+}
+
+export function resolveRoutedRequestHost(headersLike: { get(name: string): string | null }): string {
+    return normalizeHost(
+        headersLike.get('x-routed-host')
+        || headersLike.get('x-forwarded-host')
+        || headersLike.get('host'),
+    );
 }
 
 function isLocalDevelopmentHost(host: string): boolean {
@@ -304,9 +321,10 @@ function findRoutingIndexEntry(index: RoutingIndexDocument, options: {
     return null;
 }
 
-async function fetchRoutingIndexDocument(): Promise<RoutingIndexDocument | null> {
+async function fetchRoutingIndexDocument(options: ResolveManifestCacheOptions = {}): Promise<RoutingIndexDocument | null> {
+    const bypassCache = options.bypassCache === true;
     const now = Date.now();
-    if (SHOULD_CACHE && cachedRoutingIndex && cachedRoutingIndex.expiresAt > now) {
+    if (!bypassCache && SHOULD_CACHE && cachedRoutingIndex && cachedRoutingIndex.expiresAt > now) {
         return cachedRoutingIndex.index;
     }
 
@@ -325,7 +343,7 @@ async function fetchRoutingIndexDocument(): Promise<RoutingIndexDocument | null>
             return null;
         }
 
-        if (SHOULD_CACHE) {
+        if (!bypassCache && SHOULD_CACHE) {
             cachedRoutingIndex = {
                 expiresAt: now + ROUTING_INDEX_CACHE_TTL_MS,
                 index,
@@ -341,7 +359,11 @@ function buildManifestCacheKey(entry: RoutingIndexEntry): string {
     return `${entry.instanceId}:${entry.manifestUrl || ''}`;
 }
 
-async function fetchManifestFromRoutingEntry(entry: RoutingIndexEntry): Promise<PublishedManifest | null> {
+async function fetchManifestFromRoutingEntry(
+    entry: RoutingIndexEntry,
+    options: ResolveManifestCacheOptions = {},
+): Promise<PublishedManifest | null> {
+    const bypassCache = options.bypassCache === true;
     if (!entry.manifestUrl) {
         return null;
     }
@@ -349,7 +371,7 @@ async function fetchManifestFromRoutingEntry(entry: RoutingIndexEntry): Promise<
     const now = Date.now();
     const cacheKey = buildManifestCacheKey(entry);
     const cached = cachedManifests.get(cacheKey);
-    if (SHOULD_CACHE && cached && cached.expiresAt > now) {
+    if (!bypassCache && SHOULD_CACHE && cached && cached.expiresAt > now) {
         return cached.manifest;
     }
 
@@ -374,7 +396,7 @@ async function fetchManifestFromRoutingEntry(entry: RoutingIndexEntry): Promise<
             return null;
         }
 
-        if (SHOULD_CACHE) {
+        if (!bypassCache && SHOULD_CACHE) {
             cachedManifests.set(cacheKey, {
                 expiresAt: now + MANIFEST_CACHE_TTL_MS,
                 manifest,
@@ -422,10 +444,11 @@ async function fetchManifestBySubdomainFallback(subdomain: string): Promise<Publ
 export async function resolvePublishedManifest(input: {
     subdomain: string;
     hostname: string;
+    bypassCache?: boolean;
 }): Promise<{ manifest: PublishedManifest | null; entry: RoutingIndexEntry | null }> {
     const normalizedSubdomain = input.subdomain.trim().toLowerCase();
     const normalizedHost = normalizeHost(input.hostname);
-    const index = await fetchRoutingIndexDocument();
+    const index = await fetchRoutingIndexDocument({ bypassCache: input.bypassCache });
 
     if (index) {
         const entry = findRoutingIndexEntry(index, {
@@ -434,7 +457,7 @@ export async function resolvePublishedManifest(input: {
         });
 
         if (entry) {
-            const manifest = await fetchManifestFromRoutingEntry(entry);
+            const manifest = await fetchManifestFromRoutingEntry(entry, { bypassCache: input.bypassCache });
             if (manifest) {
                 return { manifest, entry };
             }

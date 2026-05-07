@@ -40,6 +40,22 @@ export interface PublicProduct {
     currency: string;
 }
 
+export interface PublicBlogCard {
+    id: string;
+    title: string;
+    slug: string;
+    excerpt: string | null;
+    featuredImageUrl: string | null;
+    publishedAt: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface PublicBlogPost extends PublicBlogCard {
+    contentHtml: string;
+    seoJsonb?: Record<string, unknown> | null;
+}
+
 export type AsyncStatus = 'idle' | 'loading' | 'success' | 'error';
 
 export interface BookingPayload {
@@ -130,6 +146,41 @@ function normalizeProduct(item: unknown): PublicProduct | null {
     };
 }
 
+function normalizeBlogCard(item: unknown): PublicBlogCard | null {
+    if (!item || typeof item !== 'object') return null;
+    const record = item as Record<string, unknown>;
+    if (typeof record.id !== 'string' || typeof record.title !== 'string' || typeof record.slug !== 'string') return null;
+    return {
+        id: record.id,
+        title: record.title,
+        slug: record.slug,
+        excerpt: typeof record.excerpt === 'string' ? record.excerpt : null,
+        featuredImageUrl: typeof record.featuredImageUrl === 'string' && record.featuredImageUrl.trim().length > 0
+            ? record.featuredImageUrl
+            : null,
+        publishedAt: typeof record.publishedAt === 'string' ? record.publishedAt : null,
+        createdAt: typeof record.createdAt === 'string' ? record.createdAt : '',
+        updatedAt: typeof record.updatedAt === 'string' ? record.updatedAt : '',
+    };
+}
+
+function normalizeBlogPost(item: unknown): PublicBlogPost | null {
+    const card = normalizeBlogCard(item);
+    if (!card) return null;
+    const record = item as Record<string, unknown>;
+    if (typeof record.contentHtml !== 'string') {
+        return null;
+    }
+
+    return {
+        ...card,
+        contentHtml: record.contentHtml,
+        seoJsonb: typeof record.seoJsonb === 'object' && record.seoJsonb !== null
+            ? record.seoJsonb as Record<string, unknown>
+            : null,
+    };
+}
+
 function normalizeServices(payload: unknown): PublicService[] {
     if (!payload || typeof payload !== 'object') {
         return [];
@@ -178,6 +229,44 @@ function normalizeProducts(payload: unknown): PublicProduct[] {
     }
 
     return [];
+}
+
+function normalizeBlogs(payload: unknown): PublicBlogCard[] {
+    if (!payload || typeof payload !== 'object') {
+        return [];
+    }
+
+    const response = payload as ApiResponse<PublicBlogCard[] | ApiListPayload<PublicBlogCard>>;
+    if (!response.success || !response.data) {
+        return [];
+    }
+
+    if (Array.isArray(response.data)) {
+        return response.data
+            .map(normalizeBlogCard)
+            .filter((post): post is PublicBlogCard => post !== null);
+    }
+
+    if (Array.isArray(response.data.items)) {
+        return response.data.items
+            .map(normalizeBlogCard)
+            .filter((post): post is PublicBlogCard => post !== null);
+    }
+
+    return [];
+}
+
+function normalizeBlogDetail(payload: unknown): PublicBlogPost | null {
+    if (!payload || typeof payload !== 'object') {
+        return null;
+    }
+
+    const response = payload as ApiResponse<PublicBlogPost>;
+    if (!response.success || !response.data) {
+        return null;
+    }
+
+    return normalizeBlogPost(response.data);
 }
 
 function toNumber(value: number | string): number {
@@ -293,6 +382,53 @@ export async function fetchPublicProducts(context?: ThemeContext): Promise<Publi
     }
 
     return normalizeProducts(payload);
+}
+
+export async function fetchPublicBlogs(context?: ThemeContext): Promise<PublicBlogCard[]> {
+    const response = await fetch(createApiUrl('/web/blogs'), {
+        method: 'GET',
+        headers: toHeaders(context),
+        cache: 'no-store',
+    });
+
+    if (!response.ok) {
+        return [];
+    }
+
+    let payload: unknown;
+    try {
+        payload = await response.json();
+    } catch {
+        return [];
+    }
+
+    return normalizeBlogs(payload);
+}
+
+export async function fetchPublicBlogBySlug(slug: string, context?: ThemeContext): Promise<PublicBlogPost | null> {
+    const normalizedSlug = normalizeOptionalText(slug);
+    if (!normalizedSlug) {
+        return null;
+    }
+
+    const response = await fetch(createApiUrl(`/web/blogs/${encodeURIComponent(normalizedSlug)}`), {
+        method: 'GET',
+        headers: toHeaders(context),
+        cache: 'no-store',
+    });
+
+    if (!response.ok) {
+        return null;
+    }
+
+    let payload: unknown;
+    try {
+        payload = await response.json();
+    } catch {
+        return null;
+    }
+
+    return normalizeBlogDetail(payload);
 }
 
 export async function createPublicInquiry(payload: InquiryPayload, context?: ThemeContext): Promise<{ success: boolean; message?: string }> {
@@ -425,6 +561,40 @@ export function usePublicProducts(context?: ThemeContext) {
     }, [context?.tenantId, context?.instanceId]);
 
     return { products, loading, error };
+}
+
+export function usePublicBlogs(context?: ThemeContext) {
+    const [blogs, setBlogs] = useState<PublicBlogCard[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        let mounted = true;
+        setLoading(true);
+        setError(null);
+
+        void (async () => {
+            try {
+                const nextBlogs = await fetchPublicBlogs(context);
+                if (!mounted) return;
+                setBlogs(nextBlogs);
+            } catch (err) {
+                if (!mounted) return;
+                const message = err instanceof Error ? err.message : 'Could not load blog posts right now.';
+                setError(message);
+            } finally {
+                if (mounted) {
+                    setLoading(false);
+                }
+            }
+        })();
+
+        return () => {
+            mounted = false;
+        };
+    }, [context?.tenantId, context?.instanceId]);
+
+    return { blogs, loading, error };
 }
 
 export function useContactInquiryForm(context?: ThemeContext) {

@@ -45,6 +45,17 @@ function createTestApp() {
         next(prismaError);
     });
 
+    app.get('/prisma-init', (_req, _res, next) => {
+        const prismaInitError = Object.assign(
+            new Error("Can't reach database server"),
+            {
+                name: 'PrismaClientInitializationError',
+                code: 'P1001',
+            },
+        );
+        next(prismaInitError);
+    });
+
     app.use(errorHandler);
     return app;
 }
@@ -106,6 +117,20 @@ describe('error middleware', () => {
                 code: ERROR_CODES.VALIDATION_ERROR,
                 message: 'A record with this value already exists',
                 field: 'slug',
+            },
+        });
+    });
+
+    it('maps Prisma initialization errors to DATABASE_ERROR with 503', async () => {
+        const app = createTestApp();
+        const response = await request(app).get('/prisma-init');
+
+        expect(response.status).toBe(503);
+        expect(response.body).toEqual({
+            success: false,
+            error: {
+                code: ERROR_CODES.DATABASE_ERROR,
+                message: 'Database is temporarily unavailable. Please try again in a moment.',
             },
         });
     });

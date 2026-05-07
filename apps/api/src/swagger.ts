@@ -181,6 +181,86 @@ const schemas = {
         },
     },
 
+    // --- Blog ---
+    BlogSEOData: {
+        type: 'object',
+        properties: {
+            metaTitle: { type: 'string', nullable: true },
+            metaDescription: { type: 'string', nullable: true },
+            metaKeywords: { type: 'string', nullable: true },
+            canonicalPath: { type: 'string', nullable: true, example: '/blog/my-post' },
+            robotsIndex: { type: 'boolean', nullable: true },
+            robotsFollow: { type: 'boolean', nullable: true },
+            ogTitle: { type: 'string', nullable: true },
+            ogDescription: { type: 'string', nullable: true },
+            ogImageUrl: { type: 'string', format: 'uri', nullable: true },
+            ogImageAlt: { type: 'string', nullable: true },
+            twitterCard: { type: 'string', nullable: true, enum: ['summary', 'summary_large_image'] },
+            twitterTitle: { type: 'string', nullable: true },
+            twitterDescription: { type: 'string', nullable: true },
+            twitterImageUrl: { type: 'string', format: 'uri', nullable: true },
+            twitterImageAlt: { type: 'string', nullable: true },
+        },
+    },
+    Blog: {
+        type: 'object',
+        properties: {
+            id: { type: 'string', format: 'uuid' },
+            tenantId: { type: 'string', format: 'uuid' },
+            instanceId: { type: 'string', format: 'uuid' },
+            title: { type: 'string', example: 'How to Prepare for Your First Visit' },
+            slug: { type: 'string', example: 'how-to-prepare-for-your-first-visit' },
+            excerpt: { type: 'string', nullable: true },
+            contentHtml: { type: 'string', example: '<p>Welcome to our guide...</p>' },
+            featuredImageUrl: { type: 'string', nullable: true, example: 'https://cdn.example.com/uploads/blog-cover.jpg' },
+            seoJsonb: { $ref: '#/components/schemas/BlogSEOData' },
+            isPublished: { type: 'boolean', example: true },
+            publishedAt: { type: 'string', format: 'date-time', nullable: true },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+        },
+    },
+    PublicBlogCard: {
+        type: 'object',
+        properties: {
+            id: { type: 'string', format: 'uuid' },
+            title: { type: 'string' },
+            slug: { type: 'string' },
+            excerpt: { type: 'string', nullable: true },
+            featuredImageUrl: { type: 'string', nullable: true },
+            publishedAt: { type: 'string', format: 'date-time', nullable: true },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+        },
+    },
+    CreateBlogBody: {
+        type: 'object',
+        required: ['title', 'slug', 'contentHtml'],
+        properties: {
+            title: { type: 'string', minLength: 1, maxLength: 255, example: 'How to Prepare for Your First Visit' },
+            slug: { type: 'string', minLength: 1, maxLength: 200, example: 'how-to-prepare-for-your-first-visit' },
+            excerpt: { type: 'string', nullable: true, maxLength: 1000 },
+            contentHtml: { type: 'string', minLength: 1 },
+            featuredImageUrl: { type: 'string', format: 'uri', nullable: true, example: 'https://cdn.example.com/uploads/blog-cover.jpg' },
+            seoJsonb: { $ref: '#/components/schemas/BlogSEOData' },
+            isPublished: { type: 'boolean', example: false },
+            publishedAt: { type: 'string', format: 'date-time', nullable: true },
+        },
+    },
+    UpdateBlogBody: {
+        type: 'object',
+        properties: {
+            title: { type: 'string', minLength: 1, maxLength: 255 },
+            slug: { type: 'string', minLength: 1, maxLength: 200 },
+            excerpt: { type: 'string', nullable: true, maxLength: 1000 },
+            contentHtml: { type: 'string', minLength: 1 },
+            featuredImageUrl: { type: 'string', format: 'uri', nullable: true },
+            seoJsonb: { $ref: '#/components/schemas/BlogSEOData' },
+            isPublished: { type: 'boolean' },
+            publishedAt: { type: 'string', format: 'date-time', nullable: true },
+        },
+    },
+
     // --- Booking ---
     Booking: {
         type: 'object',
@@ -1071,6 +1151,118 @@ const paths = {
         },
     },
 
+    // ── CMS — Blogs ─────────────────────────────────────────
+    '/cms/blogs': {
+        get: {
+            tags: ['CMS / Blogs'],
+            summary: 'List blogs',
+            description: 'Returns blog posts for the resolved tenant instance.',
+            security: [{ bearerAuth: [] }],
+            responses: {
+                200: {
+                    description: 'Blog list',
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    success: { type: 'boolean', example: true },
+                                    data: { type: 'array', items: { $ref: '#/components/schemas/Blog' } },
+                                },
+                            },
+                        },
+                    },
+                },
+                401: errors[401],
+                403: errors[403],
+                500: errors[500],
+            },
+        },
+        post: {
+            tags: ['CMS / Blogs'],
+            summary: 'Create a blog post',
+            description: 'Requires `blogs.create` permission.',
+            security: [{ bearerAuth: [] }],
+            requestBody: {
+                required: true,
+                content: { 'application/json': { schema: { $ref: '#/components/schemas/CreateBlogBody' } } },
+            },
+            responses: {
+                201: singleResponse('Blog', 'Blog post created', 201),
+                400: errors[400],
+                401: errors[401],
+                403: errors[403],
+                409: errors[409],
+                500: errors[500],
+            },
+        },
+    },
+    '/cms/blogs/{id}': {
+        get: {
+            tags: ['CMS / Blogs'],
+            summary: 'Get a blog post',
+            security: [{ bearerAuth: [] }],
+            parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+            responses: {
+                200: singleResponse('Blog'),
+                401: errors[401],
+                403: errors[403],
+                404: errors[404],
+                500: errors[500],
+            },
+        },
+        put: {
+            tags: ['CMS / Blogs'],
+            summary: 'Update a blog post',
+            description: 'Requires `blogs.update` permission.',
+            security: [{ bearerAuth: [] }],
+            parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+            requestBody: {
+                required: true,
+                content: { 'application/json': { schema: { $ref: '#/components/schemas/UpdateBlogBody' } } },
+            },
+            responses: {
+                200: singleResponse('Blog'),
+                400: errors[400],
+                401: errors[401],
+                403: errors[403],
+                404: errors[404],
+                409: errors[409],
+                500: errors[500],
+            },
+        },
+        delete: {
+            tags: ['CMS / Blogs'],
+            summary: 'Unpublish blog post',
+            description: 'Sets `isPublished = false` and clears publish date. Requires `blogs.delete` permission.',
+            security: [{ bearerAuth: [] }],
+            parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+            responses: {
+                200: {
+                    description: 'Blog post unpublished',
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    success: { type: 'boolean', example: true },
+                                    data: {
+                                        type: 'object',
+                                        properties: { message: { type: 'string', example: 'Blog post unpublished' } },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                401: errors[401],
+                403: errors[403],
+                404: errors[404],
+                500: errors[500],
+            },
+        },
+    },
+
     // ── CMS — Bookings ──────────────────────────────────────
     '/cms/bookings': {
         get: {
@@ -1512,6 +1704,45 @@ const paths = {
             parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
             responses: {
                 200: singleResponse('Product'),
+                404: errors[404],
+                500: errors[500],
+            },
+        },
+    },
+
+    // ── Web — Blogs (public) ─────────────────────────────────
+    '/web/blogs': {
+        get: {
+            tags: ['Web / Blogs'],
+            summary: 'List blogs (public)',
+            description: 'Returns published blog cards. No authentication required. Tenant/instance resolved from trusted `X-Routed-Host` (via CMS proxy) with `X-Tenant-ID` + `X-Instance-ID` fallback for legacy clients.',
+            responses: {
+                200: {
+                    description: 'Blog list',
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    success: { type: 'boolean', example: true },
+                                    data: { type: 'array', items: { $ref: '#/components/schemas/PublicBlogCard' } },
+                                },
+                            },
+                        },
+                    },
+                },
+                404: errors[404],
+                500: errors[500],
+            },
+        },
+    },
+    '/web/blogs/{slug}': {
+        get: {
+            tags: ['Web / Blogs'],
+            summary: 'Get a published blog post (public)',
+            parameters: [{ name: 'slug', in: 'path', required: true, schema: { type: 'string', example: 'how-to-prepare-for-your-first-visit' } }],
+            responses: {
+                200: singleResponse('Blog'),
                 404: errors[404],
                 500: errors[500],
             },

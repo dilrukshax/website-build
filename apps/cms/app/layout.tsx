@@ -35,12 +35,40 @@ export const metadata: Metadata = {
     },
 };
 
-export default function RootLayout({
+import { headers } from 'next/headers';
+import parseHtml from 'html-react-parser';
+import { normalizeCustomHtmlFragment, renderCustomBodyHtml } from '../lib/custom-html';
+import { resolvePublishedManifest, isCmsHost, resolveRoutedRequestHost, UNKNOWN_SUBDOMAIN } from '../lib/published-site';
+
+export default async function RootLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
+    const requestHeaders = headers();
+    const host = resolveRoutedRequestHost(requestHeaders);
+    let customHeadCode: string | null = null;
+    let customBodyTopCode: string | null = null;
+    let customBodyBottomCode: string | null = null;
+
+    if (!isCmsHost(host)) {
+        const { manifest } = await resolvePublishedManifest({
+            subdomain: UNKNOWN_SUBDOMAIN,
+            hostname: host,
+        });
+        if (manifest?.customCode?.head) {
+            customHeadCode = normalizeCustomHtmlFragment(manifest.customCode.head, 'head');
+        }
+        if (manifest?.customCode?.bodyTop) {
+            customBodyTopCode = manifest.customCode.bodyTop;
+        }
+        if (manifest?.customCode?.bodyBottom) {
+            customBodyBottomCode = manifest.customCode.bodyBottom;
+        }
+    }
+
     const clarityId = process.env.NEXT_PUBLIC_CLARITY_ID?.trim();
+  const ecommexMerchantId = process.env.NEXT_PUBLIC_ECOMMEX_MERCHANT_ID?.trim();
     const themeInitScript = `(() => {
   const key = 'be_theme';
   const root = document.documentElement;
@@ -174,7 +202,10 @@ export default function RootLayout({
 
     if (target instanceof HTMLScriptElement) {
       const src = target.src || '';
-      if (!src.includes('/_next/static/chunks/')) return;
+      const isNextAssetScript = src.includes('/_next/static/chunks/')
+        || src.includes('/_next/undefined')
+        || /\/\_next\/.+undefined/i.test(src);
+      if (!isNextAssetScript) return;
       recover();
       return;
     }
@@ -202,11 +233,22 @@ export default function RootLayout({
                 <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
                 <script dangerouslySetInnerHTML={{ __html: chunkRecoveryScript }} />
                 {clarityInitScript ? <script dangerouslySetInnerHTML={{ __html: clarityInitScript }} /> : null}
+                {ecommexMerchantId ? (
+                    <script
+                        src="https://inbox-backend-fignp.sevalla.app/widget/ecommex-widget.js"
+                        data-api-url="https://inbox-backend-fignp.sevalla.app/"
+                        data-merchant-id="356"
+                        defer
+                    />
+                ) : null}
+                {customHeadCode ? parseHtml(customHeadCode) : null}
             </head>
             <body>
+                {renderCustomBodyHtml(customBodyTopCode, 'body-top')}
                 <ThemeProvider>
                     <AuthProvider>{children}</AuthProvider>
                 </ThemeProvider>
+                {renderCustomBodyHtml(customBodyBottomCode, 'body-bottom')}
             </body>
         </html>
     );

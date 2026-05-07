@@ -86,6 +86,32 @@ function getPrismaUniqueConstraintField(error: unknown): string | undefined {
     return typeof target === 'string' ? target : undefined;
 }
 
+function getPrismaErrorCode(error: unknown): string | undefined {
+    if (!error || typeof error !== 'object') {
+        return undefined;
+    }
+
+    const candidate = error as Record<string, unknown>;
+    return typeof candidate.code === 'string' ? candidate.code : undefined;
+}
+
+function isPrismaInitializationError(error: unknown): boolean {
+    if (!error || typeof error !== 'object') {
+        return false;
+    }
+
+    const candidate = error as Record<string, unknown>;
+    const errorName = typeof candidate.name === 'string' ? candidate.name : '';
+    const code = typeof candidate.code === 'string' ? candidate.code : '';
+
+    if (errorName === 'PrismaClientInitializationError') {
+        return true;
+    }
+
+    // Prisma connection/auth startup errors.
+    return /^P10\d{2}$/.test(code);
+}
+
 /**
  * Global error handler middleware.
  * Must be registered LAST in the Express middleware stack.
@@ -123,6 +149,24 @@ export function errorHandler(
                 code: isEmail ? ERROR_CODES.EMAIL_ALREADY_EXISTS : ERROR_CODES.VALIDATION_ERROR,
                 message: isEmail ? 'A user with this email already exists' : 'A record with this value already exists',
                 field: uniqueField,
+            },
+        });
+        return;
+    }
+
+    // Prisma database initialization/connectivity errors
+    if (isPrismaInitializationError(err)) {
+        logger.error('Database unavailable', {
+            error: err.message,
+            prismaCode: getPrismaErrorCode(err),
+            stack: process.env.NODE_ENV !== 'production' ? err.stack : undefined,
+        });
+
+        res.status(503).json({
+            success: false,
+            error: {
+                code: ERROR_CODES.DATABASE_ERROR,
+                message: 'Database is temporarily unavailable. Please try again in a moment.',
             },
         });
         return;

@@ -2,12 +2,15 @@ import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { cache as reactCache } from 'react';
+import { renderCustomBodyHtml } from '../../../../lib/custom-html';
+import { applyCustomHeadMetadata } from '../../../../lib/custom-head-metadata';
+import { resolvePublishedRouteRequest } from '../../../../lib/published-request';
+import type { RouteSearchParams } from '../../../../lib/published-request';
 import { SectionRenderer } from '../../../../components/builder/section-renderer';
 import {
     buildStructuredDataForPublishedPage,
     findManifestPageByRequestedSlug,
     isCmsHost,
-    normalizeHost,
     resolvePublishedManifest,
     resolvePublishedPageSeo,
     resolveRequestedSlug,
@@ -35,6 +38,11 @@ interface PreviewPageParams {
     slug?: string[];
 }
 
+interface PreviewPageProps {
+    params: PreviewPageParams;
+    searchParams?: RouteSearchParams;
+}
+
 const cacheIfAvailable: <T extends (...args: any[]) => any>(fn: T) => T = typeof reactCache === 'function'
     ? (reactCache as <T extends (...args: any[]) => any>(fn: T) => T)
     : ((fn) => fn);
@@ -56,12 +64,12 @@ const getPublishedPageData = cacheIfAvailable(async (subdomain: string, requeste
     };
 });
 
-export async function generateMetadata({ params }: { params: PreviewPageParams }): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: PreviewPageProps): Promise<Metadata> {
     const requestHeaders = headers();
-    const host = normalizeHost(requestHeaders.get('host'));
+    const { routeHost } = resolvePublishedRouteRequest({ headers: requestHeaders, searchParams });
     const requestedSlug = resolveRequestedSlug(params.slug);
-    const forceNoIndex = isCmsHost(host);
-    const { manifest, pageEntry } = await getPublishedPageData(params.subdomain, requestedSlug, host);
+    const forceNoIndex = isCmsHost(routeHost);
+    const { manifest, pageEntry } = await getPublishedPageData(params.subdomain, requestedSlug, routeHost);
 
     if (!manifest || !pageEntry) {
         return {
@@ -76,11 +84,11 @@ export async function generateMetadata({ params }: { params: PreviewPageParams }
     const seo = resolvePublishedPageSeo({
         manifest,
         pageEntry,
-        fallbackHost: host,
+        fallbackHost: routeHost,
         forceNoIndex,
     });
 
-    return {
+    return applyCustomHeadMetadata({
         title: seo.title,
         description: seo.description || undefined,
         keywords: seo.metaKeywords ? seo.metaKeywords.split(',').map((entry) => entry.trim()).filter(Boolean) : undefined,
@@ -117,15 +125,18 @@ export async function generateMetadata({ params }: { params: PreviewPageParams }
                 ? [{ url: seo.twitterImageUrl, alt: seo.twitterImageAlt || undefined }]
                 : undefined,
         },
-    };
+    }, manifest.customCode?.head);
 }
 
-export default async function PreviewPage({ params }: { params: PreviewPageParams }) {
+export default async function PreviewPage({ params, searchParams }: PreviewPageProps) {
     const requestHeaders = headers();
-    const host = normalizeHost(requestHeaders.get('host'));
+    const { routeHost, shouldRenderPageBodySlots } = resolvePublishedRouteRequest({
+        headers: requestHeaders,
+        searchParams,
+    });
     const requestedSlug = resolveRequestedSlug(params.slug);
-    const forceNoIndex = isCmsHost(host);
-    const { manifest, pageEntry } = await getPublishedPageData(params.subdomain, requestedSlug, host);
+    const forceNoIndex = isCmsHost(routeHost);
+    const { manifest, pageEntry } = await getPublishedPageData(params.subdomain, requestedSlug, routeHost);
 
     if (!manifest || !pageEntry) {
         notFound();
@@ -134,7 +145,7 @@ export default async function PreviewPage({ params }: { params: PreviewPageParam
     const seo = resolvePublishedPageSeo({
         manifest,
         pageEntry,
-        fallbackHost: host,
+        fallbackHost: routeHost,
         forceNoIndex,
     });
     const structuredDataEntries = buildStructuredDataForPublishedPage({
@@ -157,6 +168,8 @@ export default async function PreviewPage({ params }: { params: PreviewPageParam
                     <link rel="stylesheet" href={hostedFont.href} />
                 </>
             )}
+
+            {shouldRenderPageBodySlots ? renderCustomBodyHtml(manifest.customCode?.bodyTop, 'body-top') : null}
 
             {structuredDataEntries.map((entry, index) => (
                 <script
@@ -211,9 +224,12 @@ export default async function PreviewPage({ params }: { params: PreviewPageParam
                             tenantId: manifest.tenantId,
                             instanceId: manifest.instanceId,
                             pageSlug: pageEntry.page.slug,
+                            subdomain: params.subdomain,
                         }}
                     />
                 ))}
+
+            {shouldRenderPageBodySlots ? renderCustomBodyHtml(manifest.customCode?.bodyBottom, 'body-bottom') : null}
         </div>
     );
 }

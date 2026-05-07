@@ -220,6 +220,104 @@ describe('PagesController.applyTemplate', () => {
         expect(secondCreatedSection?.themeId).toBe('theme-about-v2');
     });
 
+    it('replaces shared layout content when replaceSharedLayoutContent is true', async () => {
+        mocks.pageTemplateFindUnique.mockResolvedValue({
+            id: 'tpl-replace-shared',
+            isActive: true,
+            sectionsJsonb: [
+                {
+                    themeComponentKey: 'header/v2',
+                    defaultContent: { businessName: 'Template Header Content' },
+                    defaultStyles: { variant: 'template-header' },
+                },
+                {
+                    themeComponentKey: 'about/v2',
+                    defaultContent: { title: 'About Section' },
+                    defaultStyles: {},
+                },
+                {
+                    themeComponentKey: 'footer/v2',
+                    defaultContent: { businessName: 'Template Footer Content' },
+                    defaultStyles: { variant: 'template-footer' },
+                },
+            ],
+        });
+
+        mocks.themeFindMany.mockResolvedValue([
+            {
+                id: 'theme-header-v2',
+                componentKey: 'header/v2',
+                version: 2,
+            },
+            {
+                id: 'theme-about-v2',
+                componentKey: 'about/v2',
+                version: 2,
+            },
+            {
+                id: 'theme-footer-v2',
+                componentKey: 'footer/v2',
+                version: 2,
+            },
+        ]);
+
+        mocks.pageSectionFindMany.mockResolvedValue([
+            {
+                id: 'sec-existing-header',
+                pageId: 'page-1',
+                instanceId: 'instance-1',
+                themeId: 'theme-header-v1',
+                themeVersionUsed: 1,
+                enabled: true,
+                contentJsonb: { businessName: 'Existing Header Content' },
+                stylesJsonb: { variant: 'existing-header' },
+                conditionsJsonb: null,
+                theme: {
+                    componentKey: 'header/v1',
+                },
+            },
+            {
+                id: 'sec-existing-footer',
+                pageId: 'page-1',
+                instanceId: 'instance-1',
+                themeId: 'theme-footer-v1',
+                themeVersionUsed: 1,
+                enabled: true,
+                contentJsonb: { businessName: 'Existing Footer Content' },
+                stylesJsonb: { variant: 'existing-footer' },
+                conditionsJsonb: null,
+                theme: {
+                    componentKey: 'footer/v1',
+                },
+            },
+        ]);
+
+        const req = {
+            instance: { id: 'instance-1' },
+            tenant: { id: 'tenant-1' },
+            params: { id: 'page-1' },
+            body: {
+                templateId: 'tpl-replace-shared',
+                replaceSharedLayoutContent: true,
+            },
+        } as any;
+        const res = createResponse();
+        const next = vi.fn();
+
+        await PagesController.applyTemplate(req, res as any, next);
+
+        expect(next).not.toHaveBeenCalled();
+        const createdSections = mocks.txPageSectionCreate.mock.calls.map((call) => call?.[0]?.data);
+
+        const createdHeader = createdSections.find((section) => section?.themeId === 'theme-header-v2');
+        expect(createdHeader?.contentJsonb).toEqual({ businessName: 'Template Header Content' });
+        expect(createdHeader?.stylesJsonb).toEqual({ variant: 'template-header' });
+
+        const createdFooter = createdSections.find((section) => section?.themeId === 'theme-footer-v2');
+        expect(createdFooter?.contentJsonb).toEqual({ businessName: 'Template Footer Content' });
+        expect(createdFooter?.stylesJsonb).toEqual({ variant: 'template-footer' });
+    });
+
     it('preserves existing header/footer content while applying a higher lane template version', async () => {
         mocks.pageTemplateFindUnique.mockResolvedValue({
             id: 'tpl-lane-8',

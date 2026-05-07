@@ -34,4 +34,9 @@ export const updateWebsiteSettingsSchema = z.object({
         })).optional(),
     }).optional(),
     seo: websiteSeoSettingsSchema.optional(),
+    customCode: z.object({
+        head: z.string().optional(),
+        bodyTop: z.string().optional(),
+        bodyBottom: z.string().optional(),
+    }).optional(),
 });

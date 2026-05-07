@@ -39,6 +39,15 @@ function isSharedLayoutComponentKey(componentKey: string): boolean {
     return Boolean(getSharedLayoutFeatureFromComponentKey(componentKey));
 }
 
+function normalizePageSlug(rawSlug: unknown): string {
+    const value = String(rawSlug ?? '').trim().toLowerCase();
+    if (value === HOME_PAGE_SLUG) {
+        return HOME_PAGE_SLUG;
+    }
+
+    return value.replace(/^\/+/, '').replace(/\/+$/, '');
+}
+
 const WEBSITE_TOKEN_KEYS: Array<keyof WebsiteSettings['tokens']> = [
     'primary',
     'secondary',
@@ -113,7 +122,7 @@ export class PagesController {
             const instanceId = req.instance!.id;
             const tenantId = req.tenant!.id;
             const { title, slug, seoJsonb } = req.body;
-            const normalizedSlug = slug === HOME_PAGE_SLUG ? HOME_PAGE_SLUG : String(slug || '').trim();
+            const normalizedSlug = normalizePageSlug(slug);
 
             const totalPages = await db.page.count({ where: { instanceId } });
             if (totalPages === 0 && normalizedSlug !== HOME_PAGE_SLUG) {
@@ -242,26 +251,27 @@ export class PagesController {
             const instanceId = req.instance!.id;
             const id = req.params.id!;
             const { title, slug, seoJsonb, isPublished } = req.body;
+            const normalizedSlug = slug !== undefined ? normalizePageSlug(slug) : undefined;
 
             const page = await db.page.findFirst({ where: { id, instanceId } });
             if (!page) {
                 throw new AppError(ERROR_CODES.PAGE_NOT_FOUND, 'Page not found', 404);
             }
 
-            if (slug !== undefined) {
-                if (page.slug === HOME_PAGE_SLUG && slug !== HOME_PAGE_SLUG) {
+            if (normalizedSlug !== undefined) {
+                if (page.slug === HOME_PAGE_SLUG && normalizedSlug !== HOME_PAGE_SLUG) {
                     throw new AppError(ERROR_CODES.INVALID_INPUT, 'Home page slug cannot be changed', 400, 'slug');
                 }
 
-                if (page.slug !== HOME_PAGE_SLUG && slug === HOME_PAGE_SLUG) {
+                if (page.slug !== HOME_PAGE_SLUG && normalizedSlug === HOME_PAGE_SLUG) {
                     throw new AppError(ERROR_CODES.INVALID_INPUT, 'Only the Home page can use "/" slug', 400, 'slug');
                 }
             }
 
             // Check slug uniqueness if changing
-            if (slug && slug !== page.slug) {
+            if (normalizedSlug && normalizedSlug !== page.slug) {
                 const existing = await db.page.findFirst({
-                    where: { instanceId, slug, NOT: { id } },
+                    where: { instanceId, slug: normalizedSlug, NOT: { id } },
                 });
                 if (existing) {
                     throw new AppError(ERROR_CODES.SLUG_TAKEN, 'A page with this slug already exists', 409, 'slug');
@@ -272,7 +282,7 @@ export class PagesController {
                 where: { id },
                 data: {
                     ...(title !== undefined && { title }),
-                    ...(slug !== undefined && { slug }),
+                    ...(normalizedSlug !== undefined && { slug: normalizedSlug }),
                     ...(seoJsonb !== undefined && { seoJsonb }),
                     ...(isPublished !== undefined && { isPublished }),
                 },
@@ -331,7 +341,13 @@ export class PagesController {
             const instanceId = req.instance!.id;
             const tenantId = req.tenant!.id;
             const id = req.params.id!;
-            const { templateId } = req.body;
+            const {
+                templateId,
+                replaceSharedLayoutContent = false,
+            } = (req.body || {}) as {
+                templateId: string;
+                replaceSharedLayoutContent?: boolean;
+            };
 
             const page = await db.page.findFirst({ where: { id, instanceId } });
             if (!page) {
@@ -467,6 +483,16 @@ export class PagesController {
                 const templateTheme = templateSection
                     ? themeMap.get(templateSection.themeComponentKey)
                     : undefined;
+
+                if (replaceSharedLayoutContent && templateSection && templateTheme) {
+                    return {
+                        themeId: templateTheme.id,
+                        themeVersionUsed: templateTheme.version,
+                        enabled: true,
+                        contentJsonb: templateSection.defaultContent || {},
+                        stylesJsonb: templateSection.defaultStyles || {},
+                    };
+                }
 
                 if (existingSection && templateTheme) {
                     return {

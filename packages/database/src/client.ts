@@ -83,6 +83,7 @@ const INSTANCE_SCOPED_MODELS = new Set([
     'Customer',
     'Service',
     'Product',
+    'BlogPost',
     'Booking',
     'Inquiry',
     'FeatureToggle',

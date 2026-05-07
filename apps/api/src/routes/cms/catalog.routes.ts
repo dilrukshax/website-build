@@ -12,6 +12,7 @@ import {
     createThemeSchema,
     updateThemeSchema,
 } from '../../validators/catalog.validators';
+import { PageTemplatesController } from '../../controllers/page-templates.controller';
 
 const router: ExpressRouter = Router();
 
@@ -25,9 +26,8 @@ router.get('/industries/:id/themes', CatalogController.getIndustryThemes);
 router.get('/features', CatalogController.listFeatures);
 router.get('/themes', CatalogController.listThemes);
 router.get('/themes/:id', CatalogController.getThemeById);
-
-import { PageTemplatesController } from '../../controllers/page-templates.controller';
 router.get('/page-templates', PageTemplatesController.list);
+router.get('/page-templates/:id', PageTemplatesController.getById);
 
 
 // ============================================================

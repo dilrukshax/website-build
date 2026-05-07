@@ -462,12 +462,19 @@ export interface PublishRecord {
 // Website Settings (stored in Instance.settingsJsonb)
 // ============================================================
 
+export interface WebsiteCustomCodeSettings {
+  head?: string;
+  bodyTop?: string;
+  bodyBottom?: string;
+}
+
 export interface WebsiteSettings {
   tokens: WebsiteTokens;
   features: Record<string, boolean>;
   header: WebsiteHeaderSettings;
   footer: WebsiteFooterSettings;
   seo?: WebsiteSEOSettings;
+  customCode?: WebsiteCustomCodeSettings;
 }
 
 export interface WebsiteTokens {
@@ -545,6 +552,7 @@ export interface PublishedSiteManifest {
   features: Record<string, boolean>;
   header: WebsiteHeaderSettings;
   footer: WebsiteFooterSettings;
+  customCode?: WebsiteCustomCodeSettings;
   pages: Array<{
     page: {
       id: string;
@@ -606,4 +614,5 @@ export interface UpdateWebsiteSettingsRequest {
   header?: Partial<WebsiteHeaderSettings>;
   footer?: Partial<WebsiteFooterSettings>;
   seo?: WebsiteSEOSettings;
+  customCode?: WebsiteCustomCodeSettings;
 }

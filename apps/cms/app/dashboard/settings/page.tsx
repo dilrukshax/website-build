@@ -99,13 +99,13 @@ export default function SettingsPage() {
                     <h2 className="text-lg font-bold text-slate-900 dark:text-white">Website Customization</h2>
                 </div>
                 <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
-                    Manage colors, typography, templates, and publish settings from the visual builder workspace.
+                    Manage published-site HTML snippets from the dedicated website settings page.
                 </p>
                 <Link
-                    href="/dashboard/builder"
+                    href="/dashboard/website-settings"
                     className="inline-flex items-center gap-2 rounded-lg bg-[#5048e5] px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-[#5048e5]/25 transition hover:bg-[#433bcf]"
                 >
-                    Open Builder Settings
+                    Open Website Settings
                     <ArrowUpRight className="h-4 w-4" />
                 </Link>
             </section>

@@ -26,6 +26,7 @@ const ALLOWED_MIME_TYPES = [
     'image/webp',
     'image/gif',
     'image/svg+xml',
+    'image/avif',
 ];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const PRESIGNED_URL_TTL_SECONDS = 600;

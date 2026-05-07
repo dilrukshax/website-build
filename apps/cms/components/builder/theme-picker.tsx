@@ -77,6 +77,13 @@ function buildPreviewContent(theme: ThemeCatalogTheme): Record<string, unknown> 
                 showAllProducts: true,
                 featuredCount: 3,
             };
+        case 'blog':
+            return {
+                title: `${theme.name} Preview`,
+                subtitle: 'Blogs are previewed with fallback sample content.',
+                showAllPosts: true,
+                featuredCount: 3,
+            };
         case 'gallery':
             return {
                 title: `${theme.name} Preview`,

@@ -13,6 +13,9 @@ import HeaderV9 from './components/header/v9';
 import HeaderV10 from './components/header/v10';
 import HeaderV11 from './components/header/v11';
 import HeaderV12 from './components/header/v12';
+import HeaderV13 from './components/fusion-growth-v1/header-v1';
+import HeaderV14 from './components/harmozi-vsl-v1/header-v1';
+import HeaderV15 from './components/header/v15';
 
 // Hero
 import HeroV1 from './components/hero/v1';
@@ -27,6 +30,9 @@ import HeroV9 from './components/hero/v9';
 import HeroV10 from './components/hero/v10';
 import HeroV11 from './components/hero/v11';
 import HeroV12 from './components/hero/v12';
+import HeroV13 from './components/fusion-growth-v1/hero-v1';
+import HeroV14 from './components/harmozi-vsl-v1/hero-v1';
+import HeroV15 from './components/hero/v15';
 
 // About
 import AboutV1 from './components/about/v1';
@@ -41,6 +47,9 @@ import AboutV9 from './components/about/v9';
 import AboutV10 from './components/about/v10';
 import AboutV11 from './components/about/v11';
 import AboutV12 from './components/about/v12';
+import AboutV13 from './components/fusion-growth-v1/about-v1';
+import AboutV14 from './components/harmozi-vsl-v1/about-v1';
+import AboutV15 from './components/about/v15';
 
 // Services
 import ServicesV1 from './components/services/v1';
@@ -55,6 +64,8 @@ import ServicesV9 from './components/services/v9';
 import ServicesV10 from './components/services/v10';
 import ServicesV11 from './components/services/v11';
 import ServicesV12 from './components/services/v12';
+import ServicesV13 from './components/fusion-growth-v1/services-v1';
+import ServicesV14 from './components/harmozi-vsl-v1/services-v1';
 
 // Products
 import ProductV1 from './components/product/v1';
@@ -69,6 +80,16 @@ import ProductV9 from './components/product/v9';
 import ProductV10 from './components/product/v10';
 import ProductV11 from './components/product/v11';
 import ProductV12 from './components/product/v12';
+import ProductV13 from './components/fusion-growth-v1/product-v1';
+import ProductV14 from './components/harmozi-vsl-v1/product-v1';
+
+// Blog
+import BlogV1 from './components/blog/v1';
+import BlogV2 from './components/blog/v2';
+import BlogV3 from './components/blog/v3';
+import BlogV15 from './components/blog/v15';
+import BlogPostDetailV1 from './components/blog-post-detail/v1';
+import BlogPostDetailV2 from './components/blog-post-detail/v2';
 
 // Logos
 import LogosV5 from './components/logos/v5';
@@ -79,6 +100,7 @@ import LogosV9 from './components/logos/v9';
 import LogosV10 from './components/logos/v10';
 import LogosV11 from './components/logos/v11';
 import LogosV12 from './components/logos/v12';
+import LogosV13 from './components/fusion-growth-v1/logos-v1';
 
 // Gallery
 import GalleryV1 from './components/gallery/v1';
@@ -107,6 +129,8 @@ import TestimonialsV9 from './components/testimonials/v9';
 import TestimonialsV10 from './components/testimonials/v10';
 import TestimonialsV11 from './components/testimonials/v11';
 import TestimonialsV12 from './components/testimonials/v12';
+import TestimonialsV13 from './components/fusion-growth-v1/testimonials-v1';
+import TestimonialsV14 from './components/harmozi-vsl-v1/testimonials-v1';
 
 // Contact
 import ContactV1 from './components/contact/v1';
@@ -121,6 +145,8 @@ import ContactV9 from './components/contact/v9';
 import ContactV10 from './components/contact/v10';
 import ContactV11 from './components/contact/v11';
 import ContactV12 from './components/contact/v12';
+import ContactV14 from './components/harmozi-vsl-v1/contact-v1';
+import ContactV15 from './components/contact/v15';
 
 // Footer
 import FooterV1 from './components/footer/v1';
@@ -135,6 +161,9 @@ import FooterV9 from './components/footer/v9';
 import FooterV10 from './components/footer/v10';
 import FooterV11 from './components/footer/v11';
 import FooterV12 from './components/footer/v12';
+import FooterV13 from './components/fusion-growth-v1/footer-v1';
+import FooterV14 from './components/harmozi-vsl-v1/footer-v1';
+import FooterV15 from './components/footer/v15';
 
 // Booking Widget
 import BookingWidgetV1 from './components/booking-widget/v1';
@@ -177,6 +206,7 @@ import FAQV9 from './components/faq/v9';
 import FAQV10 from './components/faq/v10';
 import FAQV11 from './components/faq/v11';
 import FAQV12 from './components/faq/v12';
+import FAQV13 from './components/faq/v13';
 
 // Team
 import TeamV1 from './components/team/v1';
@@ -191,6 +221,8 @@ import TeamV9 from './components/team/v9';
 import TeamV10 from './components/team/v10';
 import TeamV11 from './components/team/v11';
 import TeamV12 from './components/team/v12';
+import TeamV13 from './components/fusion-growth-v1/team-v1';
+import TeamV14 from './components/harmozi-vsl-v1/team-v1';
 
 import type { ThemeComponentProps } from './types';
 
@@ -199,28 +231,32 @@ type ThemeComponent = React.ComponentType<ThemeComponentProps>;
 const VERSIONED_KEY_PATTERN = /^([a-z-]+)\/v(\d+)$/;
 const FEATURE_SLUG_ALIASES: Record<string, string> = {
     products: 'product',
+    blogs: 'blog',
     service: 'services',
     testimonial: 'testimonials',
     logo: 'logos',
 };
 
 const MAX_REGISTERED_VERSION_BY_FEATURE: Record<string, number> = {
-    about: 12,
+    about: 14,
     'booking-widget': 12,
-    contact: 12,
-    faq: 12,
-    footer: 12,
+    contact: 14,
+    'blog-post-detail': 2,
+    faq: 13,
+    footer: 14,
     gallery: 12,
-    header: 12,
-    hero: 12,
+    header: 14,
+    hero: 14,
+    logos: 13,
     pricing: 12,
-    product: 12,
-    services: 12,
-    team: 12,
-    testimonials: 12,
+    blog: 3,
+    product: 14,
+    services: 14,
+    team: 14,
+    testimonials: 14,
 };
 
-const TARGET_THEME_VERSION = 12;
+const TARGET_THEME_VERSION = 14;
 
 export const THEME_REGISTRY: Record<string, ThemeComponent> = {
     // Header
@@ -236,6 +272,9 @@ export const THEME_REGISTRY: Record<string, ThemeComponent> = {
     'header/v10': HeaderV10,
     'header/v11': HeaderV11,
     'header/v12': HeaderV12,
+    'header/v13': HeaderV13,
+    'header/v14': HeaderV14,
+    'header/v15': HeaderV15,
 
     // Hero
     'hero/v1': HeroV1,
@@ -250,6 +289,9 @@ export const THEME_REGISTRY: Record<string, ThemeComponent> = {
     'hero/v10': HeroV10,
     'hero/v11': HeroV11,
     'hero/v12': HeroV12,
+    'hero/v13': HeroV13,
+    'hero/v14': HeroV14,
+    'hero/v15': HeroV15,
 
     // About
     'about/v1': AboutV1,
@@ -264,6 +306,9 @@ export const THEME_REGISTRY: Record<string, ThemeComponent> = {
     'about/v10': AboutV10,
     'about/v11': AboutV11,
     'about/v12': AboutV12,
+    'about/v13': AboutV13,
+    'about/v14': AboutV14,
+    'about/v15': AboutV15,
 
     // Services
     'services/v1': ServicesV1,
@@ -278,6 +323,8 @@ export const THEME_REGISTRY: Record<string, ThemeComponent> = {
     'services/v10': ServicesV10,
     'services/v11': ServicesV11,
     'services/v12': ServicesV12,
+    'services/v13': ServicesV13,
+    'services/v14': ServicesV14,
 
     // Products
     'product/v1': ProductV1,
@@ -292,6 +339,16 @@ export const THEME_REGISTRY: Record<string, ThemeComponent> = {
     'product/v10': ProductV10,
     'product/v11': ProductV11,
     'product/v12': ProductV12,
+    'product/v13': ProductV13,
+    'product/v14': ProductV14,
+
+    // Blog
+    'blog/v1': BlogV1,
+    'blog/v2': BlogV2,
+    'blog/v3': BlogV3,
+    'blog/v15': BlogV15,
+    'blog-post-detail/v1': BlogPostDetailV1,
+    'blog-post-detail/v2': BlogPostDetailV2,
 
     // Logos
     'logos/v5': LogosV5,
@@ -302,6 +359,7 @@ export const THEME_REGISTRY: Record<string, ThemeComponent> = {
     'logos/v10': LogosV10,
     'logos/v11': LogosV11,
     'logos/v12': LogosV12,
+    'logos/v13': LogosV13,
 
     // Gallery
     'gallery/v1': GalleryV1,
@@ -330,6 +388,8 @@ export const THEME_REGISTRY: Record<string, ThemeComponent> = {
     'testimonials/v10': TestimonialsV10,
     'testimonials/v11': TestimonialsV11,
     'testimonials/v12': TestimonialsV12,
+    'testimonials/v13': TestimonialsV13,
+    'testimonials/v14': TestimonialsV14,
 
     // Contact
     'contact/v1': ContactV1,
@@ -344,6 +404,8 @@ export const THEME_REGISTRY: Record<string, ThemeComponent> = {
     'contact/v10': ContactV10,
     'contact/v11': ContactV11,
     'contact/v12': ContactV12,
+    'contact/v14': ContactV14,
+    'contact/v15': ContactV15,
 
     // Footer
     'footer/v1': FooterV1,
@@ -358,6 +420,9 @@ export const THEME_REGISTRY: Record<string, ThemeComponent> = {
     'footer/v10': FooterV10,
     'footer/v11': FooterV11,
     'footer/v12': FooterV12,
+    'footer/v13': FooterV13,
+    'footer/v14': FooterV14,
+    'footer/v15': FooterV15,
 
     // Booking Widget
     'booking-widget/v1': BookingWidgetV1,
@@ -400,6 +465,7 @@ export const THEME_REGISTRY: Record<string, ThemeComponent> = {
     'faq/v10': FAQV10,
     'faq/v11': FAQV11,
     'faq/v12': FAQV12,
+    'faq/v13': FAQV13,
 
     // Team
     'team/v1': TeamV1,
@@ -414,6 +480,8 @@ export const THEME_REGISTRY: Record<string, ThemeComponent> = {
     'team/v10': TeamV10,
     'team/v11': TeamV11,
     'team/v12': TeamV12,
+    'team/v13': TeamV13,
+    'team/v14': TeamV14,
 };
 
 for (const [featureSlug, maxVersion] of Object.entries(MAX_REGISTERED_VERSION_BY_FEATURE)) {

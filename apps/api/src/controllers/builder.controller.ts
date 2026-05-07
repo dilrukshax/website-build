@@ -344,6 +344,7 @@ export class BuilderController {
                         features: settings.features || DEFAULT_WEBSITE_SETTINGS.features,
                         header: settings.header || DEFAULT_WEBSITE_SETTINGS.header,
                         footer: settings.footer || DEFAULT_WEBSITE_SETTINGS.footer,
+                        customCode: settings.customCode,
                         pages: fullManifest,
                     })),
                 },

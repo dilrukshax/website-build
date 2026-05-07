@@ -11,13 +11,14 @@ const API_PLATFORM_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_BASE
 const PLATFORM_HOST_BYPASS = process.env.PLATFORM_HOST_BYPASS || process.env.NEXT_PUBLIC_PLATFORM_HOST_BYPASS || '';
 const RESERVED_PLATFORM_SUBDOMAINS = ['staging', 'staging-api'];
 const ROUTING_INDEX_CACHE_TTL_MS = Number(process.env.NEXT_PUBLIC_ROUTING_INDEX_CACHE_TTL_MS || 30_000);
+const ROUTED_HOST_SEARCH_PARAM = '__be_routed_host';
 
 function normalizeHost(host: string | null | undefined): string {
     if (!host) {
         return '';
     }
 
-    const trimmed = host.trim().toLowerCase();
+    const trimmed = host.split(',')[0]?.trim().toLowerCase() || '';
     if (!trimmed) {
         return '';
     }
@@ -121,9 +122,31 @@ function isLocalDevelopmentHost(hostname: string): boolean {
 
 function buildPreviewRewriteUrl(request: NextRequest, subdomain: string): URL {
     const rewriteUrl = request.nextUrl.clone();
-    const pathname = request.nextUrl.pathname;
+    let pathname = request.nextUrl.pathname;
+
+    // Rewrite /blog/<slug>.md → /blog/<slug>/markdown so the markdown route handler
+    // lives at a non-conflicting path inside [slug]/ and does not shadow [slug]/page.tsx.
+    const blogMdMatch = pathname.match(/^(\/blog\/)([\w-]+)\.md$/);
+    if (blogMdMatch) {
+        pathname = `${blogMdMatch[1]}${blogMdMatch[2]}/markdown`;
+    }
+
     rewriteUrl.pathname = `/preview/${subdomain}${pathname === '/' ? '' : pathname}`;
     return rewriteUrl;
+}
+
+function rewritePublishedHostRequest(request: NextRequest, subdomain: string, hostname: string): NextResponse {
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set('x-routed-host', hostname);
+    requestHeaders.set('x-forwarded-host', hostname);
+    const rewriteUrl = buildPreviewRewriteUrl(request, subdomain);
+    rewriteUrl.searchParams.set(ROUTED_HOST_SEARCH_PARAM, hostname);
+
+    return NextResponse.rewrite(rewriteUrl, {
+        request: {
+            headers: requestHeaders,
+        },
+    });
 }
 
 interface RoutingIndexEntry {
@@ -286,7 +309,7 @@ export async function middleware(request: NextRequest) {
     if (isPublishedHostCandidate && !isWebProxyPath && !isPreviewPath && !isRoutingIndexPath && !isPublishedProxyPath && !isApiProxyPath) {
         const resolvedSubdomain = await resolveSubdomainFromHost(hostname);
         if (resolvedSubdomain) {
-            return NextResponse.rewrite(buildPreviewRewriteUrl(request, resolvedSubdomain));
+            return rewritePublishedHostRequest(request, resolvedSubdomain, hostname);
         }
 
         // If no host mapping exists yet, keep normal CMS routing instead of forcing a preview 404.

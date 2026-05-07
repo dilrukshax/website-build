@@ -10,6 +10,7 @@ import { InstancesController } from '../../controllers/instances.controller';
 import { CustomersController } from '../../controllers/customers.controller';
 import { ServicesController } from '../../controllers/services.controller';
 import { ProductsController } from '../../controllers/products.controller';
+import { BlogsController } from '../../controllers/blogs.controller';
 import { BookingsController } from '../../controllers/bookings.controller';
 import { InquiriesController } from '../../controllers/inquiries.controller';
 import { FeedbackController } from '../../controllers/feedback.controller';
@@ -19,6 +20,7 @@ import { PermissionsController } from '../../controllers/permissions.controller'
 import { createCustomerSchema, updateCustomerSchema } from '../../validators/customers.validators';
 import { createServiceSchema, reorderServicesSchema, updateServiceSchema } from '../../validators/services.validators';
 import { createProductSchema, reorderProductsSchema, updateProductSchema } from '../../validators/products.validators';
+import { createBlogSchema, updateBlogSchema } from '../../validators/blogs.validators';
 import { createBookingSchema, cancelBookingSchema } from '../../validators/bookings.validators';
 import { updateInquiryStatusSchema } from '../../validators/inquiries.validators';
 import { createFeedbackRatingSchema, createFeedbackSuggestionSchema } from '../../validators/feedback.validators';
@@ -30,7 +32,12 @@ import {
 import { createTenantSchema, updateTenantSchema } from '../../validators/tenants.validators';
 import { createRoleSchema, updateRoleSchema } from '../../validators/roles.validators';
 import { createStaffSchema, updateStaffSchema } from '../../validators/staff.validators';
-import { createPageSchema, updatePageSchema, reorderPagesSchema } from '../../validators/pages.validators';
+import {
+    createPageSchema,
+    updatePageSchema,
+    applyTemplateSchema,
+    reorderPagesSchema,
+} from '../../validators/pages.validators';
 import { createSectionSchema, updateSectionSchema, reorderSectionsSchema } from '../../validators/sections.validators';
 import { updateWebsiteSettingsSchema } from '../../validators/builder.validators';
 import { PagesController } from '../../controllers/pages.controller';
@@ -187,6 +194,13 @@ instanceRouter.get('/products/:id', requirePermission('products.view'), Products
 instanceRouter.put('/products/:id', requirePermission('products.update'), validate(updateProductSchema), ProductsController.update);
 instanceRouter.delete('/products/:id', requirePermission('products.delete'), ProductsController.delete);
 
+// --- Blogs (instance-scoped) ---
+instanceRouter.get('/blogs', requirePermission('blogs.view'), BlogsController.listCms);
+instanceRouter.post('/blogs', requirePermission('blogs.create'), validate(createBlogSchema), BlogsController.create);
+instanceRouter.get('/blogs/:id', requirePermission('blogs.view'), BlogsController.getById);
+instanceRouter.put('/blogs/:id', requirePermission('blogs.update'), validate(updateBlogSchema), BlogsController.update);
+instanceRouter.delete('/blogs/:id', requirePermission('blogs.delete'), BlogsController.delete);
+
 // --- Bookings (instance-scoped) ---
 instanceRouter.get('/bookings', requirePermission('bookings.view'), BookingsController.list);
 instanceRouter.post('/bookings/calendar', requirePermission('bookings.view'), BookingsController.calendar);
@@ -211,7 +225,7 @@ instanceRouter.put('/pages/reorder', validate(reorderPagesSchema), PagesControll
 instanceRouter.get('/pages/:id', PagesController.getById);
 instanceRouter.put('/pages/:id', validate(updatePageSchema), PagesController.update);
 instanceRouter.delete('/pages/:id', PagesController.delete);
-instanceRouter.post('/pages/:id/apply-template', PagesController.applyTemplate);
+instanceRouter.post('/pages/:id/apply-template', validate(applyTemplateSchema), PagesController.applyTemplate);
 
 // --- Page Sections (instance-scoped, website builder) ---
 instanceRouter.get('/pages/:pageId/sections', SectionsController.listByPage);

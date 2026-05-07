@@ -13,6 +13,10 @@ build/
 out/
 .output/
 *.tsbuildinfo
+web-themes/
+.graphify_detect.json
+CLAUDE.md
+graphify-out/
 
 # Next.js
 .next/

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createPageSchema, updatePageSchema } from '../../validators/pages.validators';
+import { applyTemplateSchema, createPageSchema, updatePageSchema } from '../../validators/pages.validators';
 
 describe('page validators', () => {
     it('accepts extended SEO metadata payload fields', () => {
@@ -45,5 +45,33 @@ describe('page validators', () => {
 
         expect(parsed.success).toBe(true);
     });
-});
 
+    it('accepts legacy leading-slash non-home slugs for compatibility', () => {
+        const createParsed = createPageSchema.safeParse({
+            title: 'Blog',
+            slug: '/blog',
+        });
+
+        const updateParsed = updatePageSchema.safeParse({
+            slug: '/about-us',
+        });
+
+        expect(createParsed.success).toBe(true);
+        expect(updateParsed.success).toBe(true);
+    });
+
+    it('requires templateId in apply-template requests', () => {
+        const parsed = applyTemplateSchema.safeParse({});
+
+        expect(parsed.success).toBe(false);
+    });
+
+    it('accepts optional replaceSharedLayoutContent for apply-template requests', () => {
+        const parsed = applyTemplateSchema.safeParse({
+            templateId: 'template-2026-editorial-pulse',
+            replaceSharedLayoutContent: true,
+        });
+
+        expect(parsed.success).toBe(true);
+    });
+});

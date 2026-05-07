@@ -19,6 +19,26 @@ interface UploadProxyResponse {
 
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 
+const SUPPORTED_IMAGE_MIME_TYPES = new Set<string>([
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/gif',
+    'image/svg+xml',
+    'image/avif',
+]);
+
+const EXTENSION_TO_MIME: Record<string, string> = {
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    jfif: 'image/jpeg',
+    png: 'image/png',
+    webp: 'image/webp',
+    gif: 'image/gif',
+    svg: 'image/svg+xml',
+    avif: 'image/avif',
+};
+
 function headersToRecord(headers: Headers): Record<string, string> {
     const record: Record<string, string> = {};
     headers.forEach((value, key) => {
@@ -33,6 +53,66 @@ function readErrorMessage(rawError: unknown, fallbackMessage: string): string {
     }
 
     return fallbackMessage;
+}
+
+function getFileExtension(fileName: string): string {
+    const parts = fileName.toLowerCase().split('.');
+    if (parts.length < 2) {
+        return '';
+    }
+
+    return parts[parts.length - 1] || '';
+}
+
+function resolveSupportedMimeType(file: File): string {
+    const directMime = file.type.trim().toLowerCase();
+    if (SUPPORTED_IMAGE_MIME_TYPES.has(directMime)) {
+        return directMime;
+    }
+
+    const extensionMime = EXTENSION_TO_MIME[getFileExtension(file.name)];
+    if (extensionMime && SUPPORTED_IMAGE_MIME_TYPES.has(extensionMime)) {
+        return extensionMime;
+    }
+
+    throw new Error('Unsupported image format. Use JPG, PNG, WebP, GIF, SVG, or AVIF.');
+}
+
+function normalizePublicUrl(value: string): string {
+    const trimmed = value.trim();
+    if (!trimmed) {
+        return trimmed;
+    }
+
+    const withProtocol = (() => {
+        if (/^https?:\/\//i.test(trimmed)) {
+            return trimmed;
+        }
+
+        if (trimmed.startsWith('//')) {
+            return `https:${trimmed}`;
+        }
+
+        if (trimmed.startsWith('/')) {
+            if (typeof window !== 'undefined' && window.location?.origin) {
+                return `${window.location.origin}${trimmed}`;
+            }
+            return trimmed;
+        }
+
+        return `https://${trimmed}`;
+    })();
+
+    try {
+        const parsed = new URL(withProtocol);
+        if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+            return parsed.toString();
+        }
+    } catch {
+        // Fall back to the best effort value.
+    }
+
+    return withProtocol;
 }
 
 async function uploadViaProxy(uploadUrl: string, uploadHeaders: Headers, file: File): Promise<string | null> {
@@ -81,9 +161,7 @@ async function uploadDirect(uploadUrl: string, uploadHeaders: Headers, file: Fil
 }
 
 export async function uploadCmsImage(file: File): Promise<string> {
-    if (!file.type.startsWith('image/')) {
-        throw new Error('Only image files are allowed.');
-    }
+    const mimeType = resolveSupportedMimeType(file);
 
     if (file.size > MAX_IMAGE_SIZE_BYTES) {
         throw new Error('Image exceeds 10MB upload limit.');
@@ -91,7 +169,7 @@ export async function uploadCmsImage(file: File): Promise<string> {
 
     const presignResponse = await api.post<PresignUploadData>('/cms/uploads/presign', {
         fileName: file.name,
-        mimeType: file.type,
+        mimeType,
         fileSize: file.size,
     });
 
@@ -101,8 +179,8 @@ export async function uploadCmsImage(file: File): Promise<string> {
 
     const presignData = presignResponse.data;
     const uploadHeaders = new Headers(presignData.headers || {});
-    if (!uploadHeaders.has('Content-Type') && file.type) {
-        uploadHeaders.set('Content-Type', file.type);
+    if (!uploadHeaders.has('Content-Type')) {
+        uploadHeaders.set('Content-Type', mimeType);
     }
 
     let etag: string | null = null;
@@ -127,5 +205,5 @@ export async function uploadCmsImage(file: File): Promise<string> {
         throw new Error(completeResponse.error?.message || 'Unable to finalize image upload.');
     }
 
-    return presignData.publicUrl;
+    return normalizePublicUrl(presignData.publicUrl);
 }

@@ -9,6 +9,9 @@ const VISIBLE_TEMPLATE_IDS = new Set([
     'template-2026-motion-studio',
     'template-2026-signal-horizon',
     'template-2026-acquisition-shop',
+    'template-2026-fusion-growth',
+    'template-2026-editorial-pulse',
+    'template-2026-harmozi-vsl',
 ]);
 
 interface PageTemplate {
@@ -97,7 +100,7 @@ export function TemplatePicker({ open, onClose, onSelect }: TemplatePickerProps)
                     <div>
                         <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Choose a Page Template</h2>
                         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                            Preview any template in full screen, then apply it to this page.
+                            Preview any template in full screen, then apply it. Train of Thought applies across Home, /about, /contact, and /blog.
                         </p>
                     </div>
                     <button

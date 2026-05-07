@@ -18,6 +18,7 @@ export type {
     Customer,
     Service,
     Product,
+    BlogPost,
     Booking,
     Inquiry,
     Feedback,
