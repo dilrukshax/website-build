@@ -12,6 +12,12 @@ const ALL_PERMISSION_KEYS = [
     'staff.view', 'staff.create', 'staff.update', 'staff.delete',
     'roles.view', 'roles.create', 'roles.update', 'roles.delete',
     'website.view', 'website.edit', 'website.publish', 'website.settings',
+    // E-commerce / dropshipping (see docs/ecommerce-dropshipping-automation-system-design.md §17)
+    'store.settings',
+    'suppliers.view', 'suppliers.manage',
+    'imports.view', 'imports.manage',
+    'orders.view', 'orders.manage', 'orders.approve', 'orders.fulfill',
+    'refunds.create', 'pricing.manage',
 ];
 
 const ADMIN_EXCLUDED = ['staff.delete', 'roles.delete'];
@@ -25,6 +31,8 @@ const STAFF_PERMISSIONS = [
     'inquiries.view', 'inquiries.update', 'inquiries.update_status',
     'settings.view',
     'website.view', 'website.edit',
+    'suppliers.view', 'imports.view', 'imports.manage',
+    'orders.view', 'orders.manage',
 ];
 
 const READONLY_PERMISSIONS = [
@@ -38,6 +46,7 @@ const READONLY_PERMISSIONS = [
     'staff.view',
     'roles.view',
     'website.view',
+    'suppliers.view', 'imports.view', 'orders.view',
 ];
 
 interface DefaultRole {

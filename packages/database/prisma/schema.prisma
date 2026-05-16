@@ -824,15 +824,27 @@ model Product {
   currency    String   @default("USD")
   isActive    Boolean  @default(true) @map("is_active")
   sortOrder   Int      @default(0) @map("sort_order")
+  // E-commerce extensions (additive — see ecommerce design doc)
+  status          ProductStatus @default(draft)
+  supplierId      String?       @map("supplier_id")
+  supplierItemRef String?       @map("supplier_item_ref")
+  sourceUrl       String?       @map("source_url")
+  costPrice       Decimal?      @db.Decimal(10, 2) @map("cost_price")
+  compareAtPrice  Decimal?      @db.Decimal(10, 2) @map("compare_at_price")
+  slug            String?
+  galleryJsonb    Json?         @map("gallery_jsonb")
+  shippingInfo    String?       @map("shipping_info")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  instance Instance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  instance Instance         @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  variants ProductVariant[]
 
   @@index([tenantId])
   @@index([instanceId])
   @@index([instanceId, isActive])
   @@index([instanceId, sortOrder])
+  @@index([instanceId, status])
   @@map("products")
 }
 
@@ -918,6 +930,7 @@ model Inquiry {
   message    String
   sourceType String?       @map("source_type")
   sourcePageSlug String?   @map("source_page_slug")
+  orderId    String?       @map("order_id")
   status     InquiryStatus @default(new)
   createdAt  DateTime      @default(now()) @map("created_at")
   updatedAt  DateTime      @updatedAt @map("updated_at")
@@ -1202,4 +1215,498 @@ enum PublishStatus {
   publishing
   published
   failed
+}
+
+// ============================================================
+// E-COMMERCE / DROPSHIPPING (Instance-scoped, additive)
+// See docs/ecommerce-dropshipping-automation-system-design.md
+// instance_id / tenant_id FKs (ON DELETE CASCADE) are defined in
+// migration SQL so the large Instance/Tenant models stay untouched.
+// ============================================================
+
+model StoreCommerceProfile {
+  id                String   @id @default(uuid())
+  tenantId          String   @map("tenant_id")
+  instanceId        String   @unique @map("instance_id")
+  niche             String?
+  storeCurrency     String   @default("USD") @map("store_currency")
+  legalBusinessName String?  @map("legal_business_name")
+  businessAddress   String?  @map("business_address")
+  supportEmail      String?  @map("support_email")
+  supportPhone      String?  @map("support_phone")
+  supportWhatsapp   String?  @map("support_whatsapp")
+  shippingPolicy    String?  @map("shipping_policy")
+  returnsPolicy     String?  @map("returns_policy")
+  refundPolicy      String?  @map("refund_policy")
+  privacyPolicy     String?  @map("privacy_policy")
+  termsPolicy       String?  @map("terms_policy")
+  shippingLeadDays  Int?     @map("shipping_lead_days")
+  defaultFxRate     Decimal? @db.Decimal(12, 6) @map("default_fx_rate")
+  orderNumberPrefix String?  @map("order_number_prefix")
+  nextOrderSeq      Int      @default(1) @map("next_order_seq")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@index([tenantId])
+  @@map("store_commerce_profiles")
+}
+
+model Supplier {
+  id             String         @id @default(uuid())
+  tenantId       String         @map("tenant_id")
+  instanceId     String         @map("instance_id")
+  type           SupplierType   @default(aliexpress)
+  displayName    String         @map("display_name")
+  status         SupplierStatus @default(disconnected)
+  credentialEnc  String?        @map("credential_enc")
+  tokenExpiresAt DateTime?      @map("token_expires_at")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  imports SupplierProductImport[]
+
+  @@index([tenantId])
+  @@index([instanceId])
+  @@map("suppliers")
+}
+
+enum SupplierType {
+  aliexpress
+}
+
+enum SupplierStatus {
+  disconnected
+  connected
+  expired
+  error
+}
+
+model SupplierProductImport {
+  id                 String       @id @default(uuid())
+  tenantId           String       @map("tenant_id")
+  instanceId         String       @map("instance_id")
+  supplierId         String       @map("supplier_id")
+  supplierItemRef    String       @map("supplier_item_ref")
+  sourceUrl          String?      @map("source_url")
+  rawJsonb           Json         @map("raw_jsonb")
+  normalizedJsonb    Json?        @map("normalized_jsonb")
+  availabilityJsonb  Json?        @map("availability_jsonb")
+  status             ImportStatus @default(imported)
+  reviewNote         String?      @map("review_note")
+  publishedProductId String?      @map("published_product_id")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
+
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@unique([instanceId, supplierItemRef])
+  @@index([tenantId])
+  @@index([instanceId, status])
+  @@map("supplier_product_imports")
+}
+
+enum ImportStatus {
+  imported
+  needs_review
+  approved
+  rejected
+  published
+}
+
+model ProductVariant {
+  id                 String              @id @default(uuid())
+  tenantId           String              @map("tenant_id")
+  instanceId         String              @map("instance_id")
+  productId          String              @map("product_id")
+  sku                String?
+  optionsJsonb       Json?               @map("options_jsonb")
+  supplierVariantRef String?             @map("supplier_variant_ref")
+  supplierSkuId      String?             @map("supplier_sku_id")
+  costPrice          Decimal?            @db.Decimal(10, 2) @map("cost_price")
+  price              Decimal             @db.Decimal(10, 2)
+  compareAtPrice     Decimal?            @db.Decimal(10, 2) @map("compare_at_price")
+  currency           String              @default("USD")
+  availability       VariantAvailability @default(unknown)
+  stockQty           Int?                @map("stock_qty")
+  imageUrl           String?             @map("image_url")
+  isActive           Boolean             @default(true) @map("is_active")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, sku])
+  @@index([tenantId])
+  @@index([instanceId])
+  @@index([productId])
+  @@map("product_variants")
+}
+
+enum ProductStatus {
+  draft
+  active
+  archived
+}
+
+enum VariantAvailability {
+  in_stock
+  low_stock
+  out_of_stock
+  discontinued
+  unknown
+}
+
+model PricingRule {
+  id           String     @id @default(uuid())
+  tenantId     String     @map("tenant_id")
+  instanceId   String     @unique @map("instance_id")
+  marginType   MarginType @default(percent)
+  marginValue  Decimal    @db.Decimal(10, 2) @map("margin_value")
+  roundingMode String     @default("end_99") @map("rounding_mode")
+  minMargin    Decimal?   @db.Decimal(10, 2) @map("min_margin")
+  fxRate       Decimal?   @db.Decimal(12, 6) @map("fx_rate")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  @@index([tenantId])
+  @@map("pricing_rules")
+}
+
+enum MarginType {
+  percent
+  fixed
+}
+
+model Cart {
+  id         String     @id @default(uuid())
+  tenantId   String     @map("tenant_id")
+  instanceId String     @map("instance_id")
+  token      String     @unique
+  status     CartStatus @default(active)
+  currency   String     @default("USD")
+  email      String?
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+
+  items CartItem[]
+
+  @@index([instanceId, status])
+  @@map("carts")
+}
+
+model CartItem {
+  id                String   @id @default(uuid())
+  cartId            String   @map("cart_id")
+  productId         String   @map("product_id")
+  productVariantId  String   @map("product_variant_id")
+  quantity          Int      @default(1)
+  unitPriceSnapshot Decimal  @db.Decimal(10, 2) @map("unit_price_snapshot")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  cart Cart @relation(fields: [cartId], references: [id], onDelete: Cascade)
+
+  @@index([cartId])
+  @@map("cart_items")
+}
+
+enum CartStatus {
+  active
+  converted
+  abandoned
+}
+
+model Order {
+  id                String            @id @default(uuid())
+  tenantId          String            @map("tenant_id")
+  instanceId        String            @map("instance_id")
+  orderNumber       String            @map("order_number")
+  customerId        String?           @map("customer_id")
+  email             String
+  phone             String?
+  currency          String            @default("USD")
+  subtotal          Decimal           @db.Decimal(10, 2)
+  shippingTotal     Decimal           @default(0) @db.Decimal(10, 2) @map("shipping_total")
+  discountTotal     Decimal           @default(0) @db.Decimal(10, 2) @map("discount_total")
+  taxTotal          Decimal           @default(0) @db.Decimal(10, 2) @map("tax_total")
+  grandTotal        Decimal           @db.Decimal(10, 2) @map("grand_total")
+  estimatedCost     Decimal?          @db.Decimal(10, 2) @map("estimated_cost")
+  status            OrderStatus       @default(pending)
+  paymentStatus     PaymentStatus     @default(unpaid) @map("payment_status")
+  fulfillmentStatus FulfillmentStatus @default(unfulfilled) @map("fulfillment_status")
+  customerNote      String?           @map("customer_note")
+  internalNote      String?           @map("internal_note")
+  accessToken       String            @unique @map("access_token")
+  riskJsonb         Json?             @map("risk_jsonb")
+  placedAt          DateTime?         @map("placed_at")
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+
+  items          OrderItem[]
+  addresses      OrderAddress[]
+  events         OrderEvent[]
+  payments       Payment[]
+  refunds        Refund[]
+  supplierOrders SupplierOrder[]
+  shipments      Shipment[]
+
+  @@unique([instanceId, orderNumber])
+  @@index([tenantId])
+  @@index([instanceId, status])
+  @@index([instanceId, paymentStatus])
+  @@index([instanceId, fulfillmentStatus])
+  @@index([instanceId, createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id                 String   @id @default(uuid())
+  orderId            String   @map("order_id")
+  productId          String   @map("product_id")
+  productVariantId   String   @map("product_variant_id")
+  nameSnapshot       String   @map("name_snapshot")
+  optionsSnapshot    Json?    @map("options_snapshot")
+  skuSnapshot        String?  @map("sku_snapshot")
+  supplierItemRef    String?  @map("supplier_item_ref")
+  supplierVariantRef String?  @map("supplier_variant_ref")
+  quantity           Int
+  unitPrice          Decimal  @db.Decimal(10, 2) @map("unit_price")
+  unitCost           Decimal? @db.Decimal(10, 2) @map("unit_cost")
+  lineTotal          Decimal  @db.Decimal(10, 2) @map("line_total")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+model OrderAddress {
+  id          String      @id @default(uuid())
+  orderId     String      @map("order_id")
+  type        AddressType
+  fullName    String      @map("full_name")
+  line1       String
+  line2       String?
+  city        String
+  region      String?
+  postalCode  String?     @map("postal_code")
+  countryCode String      @map("country_code")
+  phone       String?
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("order_addresses")
+}
+
+model OrderEvent {
+  id        String   @id @default(uuid())
+  orderId   String   @map("order_id")
+  type      String
+  actor     String   @default("system")
+  message   String?
+  dataJsonb Json?    @map("data_jsonb")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, createdAt])
+  @@map("order_events")
+}
+
+enum AddressType {
+  shipping
+  billing
+}
+
+enum OrderStatus {
+  pending
+  awaiting_payment
+  paid
+  awaiting_approval
+  approved
+  fulfilling
+  shipped
+  delivered
+  cancelled
+  refunded
+  on_hold
+}
+
+enum PaymentStatus {
+  unpaid
+  authorized
+  paid
+  partially_refunded
+  refunded
+  failed
+}
+
+enum FulfillmentStatus {
+  unfulfilled
+  awaiting_approval
+  approved
+  supplier_ordered
+  in_transit
+  delivered
+  failed
+  cancelled
+}
+
+model Payment {
+  id          String          @id @default(uuid())
+  tenantId    String          @map("tenant_id")
+  instanceId  String          @map("instance_id")
+  orderId     String          @map("order_id")
+  provider    PaymentProvider
+  providerRef String?         @map("provider_ref")
+  amount      Decimal         @db.Decimal(10, 2)
+  currency    String          @default("USD")
+  status      PaymentStatus   @default(unpaid)
+  methodJsonb Json?           @map("method_jsonb")
+  capturedAt  DateTime?       @map("captured_at")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([instanceId])
+  @@index([orderId])
+  @@map("payments")
+}
+
+model PaymentWebhookEvent {
+  id           String          @id @default(uuid())
+  provider     PaymentProvider
+  eventId      String          @map("event_id")
+  payloadJsonb Json            @map("payload_jsonb")
+  processedAt  DateTime?       @map("processed_at")
+  createdAt    DateTime        @default(now()) @map("created_at")
+
+  @@unique([provider, eventId])
+  @@map("payment_webhook_events")
+}
+
+model Refund {
+  id          String          @id @default(uuid())
+  tenantId    String          @map("tenant_id")
+  instanceId  String          @map("instance_id")
+  orderId     String          @map("order_id")
+  paymentId   String?         @map("payment_id")
+  provider    PaymentProvider
+  providerRef String?         @map("provider_ref")
+  amount      Decimal         @db.Decimal(10, 2)
+  reason      String?
+  status      RefundStatus    @default(pending)
+  createdBy   String?         @map("created_by")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([instanceId])
+  @@index([orderId])
+  @@map("refunds")
+}
+
+enum PaymentProvider {
+  stripe
+  paypal
+  local
+}
+
+enum RefundStatus {
+  pending
+  processing
+  succeeded
+  failed
+}
+
+model SupplierOrder {
+  id               String              @id @default(uuid())
+  tenantId         String              @map("tenant_id")
+  instanceId       String              @map("instance_id")
+  orderId          String              @map("order_id")
+  supplierId       String              @map("supplier_id")
+  status           SupplierOrderStatus @default(awaiting_approval)
+  supplierOrderRef String?             @map("supplier_order_ref")
+  placedCost       Decimal?            @db.Decimal(10, 2) @map("placed_cost")
+  currency         String              @default("USD")
+  approvedBy       String?             @map("approved_by")
+  approvedAt       DateTime?           @map("approved_at")
+  placedAt         DateTime?           @map("placed_at")
+  idempotencyKey   String              @unique @map("idempotency_key")
+  requestJsonb     Json?               @map("request_jsonb")
+  responseJsonb    Json?               @map("response_jsonb")
+  errorMessage     String?             @map("error_message")
+  createdAt        DateTime            @default(now()) @map("created_at")
+  updatedAt        DateTime            @updatedAt @map("updated_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([instanceId, status])
+  @@index([orderId])
+  @@map("supplier_orders")
+}
+
+model Shipment {
+  id                  String         @id @default(uuid())
+  tenantId            String         @map("tenant_id")
+  instanceId          String         @map("instance_id")
+  orderId             String         @map("order_id")
+  supplierOrderId     String?        @map("supplier_order_id")
+  carrier             String?
+  trackingNumber      String?        @map("tracking_number")
+  trackingUrl         String?        @map("tracking_url")
+  status              ShipmentStatus @default(pending)
+  shippedAt           DateTime?      @map("shipped_at")
+  estimatedDeliveryAt DateTime?      @map("estimated_delivery_at")
+  deliveredAt         DateTime?      @map("delivered_at")
+  eventsJsonb         Json?          @map("events_jsonb")
+  createdAt           DateTime       @default(now()) @map("created_at")
+  updatedAt           DateTime       @updatedAt @map("updated_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([instanceId])
+  @@index([orderId])
+  @@map("shipments")
+}
+
+enum SupplierOrderStatus {
+  awaiting_approval
+  approved
+  placing
+  placed
+  failed
+  cancelled
+}
+
+enum ShipmentStatus {
+  pending
+  in_transit
+  out_for_delivery
+  delivered
+  exception
+  cancelled
+}
+
+model AutomationTask {
+  id           String    @id @default(uuid())
+  tenantId     String?   @map("tenant_id")
+  instanceId   String?   @map("instance_id")
+  type         String
+  payloadJsonb Json      @map("payload_jsonb")
+  runAt        DateTime  @default(now()) @map("run_at")
+  attempts     Int       @default(0)
+  maxAttempts  Int       @default(5) @map("max_attempts")
+  status       String    @default("queued")
+  lockedAt     DateTime? @map("locked_at")
+  lastError    String?   @map("last_error")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@index([status, runAt])
+  @@index([instanceId])
+  @@map("automation_tasks")
 }
