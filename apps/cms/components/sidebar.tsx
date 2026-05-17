@@ -91,6 +91,24 @@ const NAV_ITEMS: NavItem[] = [
         icon: Mail,
         permission: 'inquiries.view',
     },
+    {
+        label: 'Orders',
+        href: '/dashboard/orders',
+        icon: CreditCard,
+        permission: 'orders.view',
+    },
+    {
+        label: 'Suppliers & Imports',
+        href: '/dashboard/suppliers',
+        icon: Package,
+        permission: 'suppliers.view',
+    },
+    {
+        label: 'Store Settings',
+        href: '/dashboard/store-settings',
+        icon: Settings2,
+        permission: 'store.settings',
+    },
 ];
 
 const ADMIN_NAV_ITEMS: NavItem[] = [

@@ -825,6 +825,29 @@ If tests are skipped, explicitly record why and residual risk.
 
 ## 23) Change Log
 
+### 2026-05-17 (E-Commerce Dropshipping System — Phase 1 Foundation)
+
+- Added an additive, instance-scoped e-commerce/dropshipping capability on top of the existing multi-tenant website builder. Booking/services behaviour is unchanged; commerce is gated per-instance by a new `FeatureToggle` key `ecommerce_enabled`. Full design: `docs/ecommerce-dropshipping-automation-system-design.md`.
+- Data model: 17 new Prisma models + 15 enums — `StoreCommerceProfile`, `Supplier`, `SupplierProductImport`, `ProductVariant`, `PricingRule`, `Cart`, `CartItem`, `Order` (three orthogonal status axes: `status`/`paymentStatus`/`fulfillmentStatus`), `OrderItem`, `OrderAddress`, `OrderEvent`, `Payment`, `PaymentWebhookEvent`, `Refund`, `SupplierOrder`, `Shipment`, `AutomationTask`. Additive nullable columns on `products` (`status`, `supplier_id`, `cost_price`, `slug`, `gallery_jsonb`, …) and `inquiries.order_id`. instance/tenant FKs (`ON DELETE CASCADE`) are defined in migration SQL so the large `Instance`/`Tenant` models are untouched.
+- Migrations (5 cohesive, after `20260421153000`): `20260516090000_add_store_commerce_profile_and_supplier`, `20260516090100_add_product_status_variants`, `20260516090200_add_cart_order_payment_fulfillment`, `20260516090300_add_automation_and_inquiry_order_link`, `20260516090400_seed_commerce_permissions`.
+- Permissions: new keys `store.settings`, `suppliers.view/manage`, `imports.view/manage`, `orders.view/manage/approve/fulfill`, `refunds.create`, `pricing.manage` — seeded + mapped to system roles (migration for existing tenants; `seed-roles.ts` for new tenants). `orders.approve`/`refunds.create` stay owner-controlled by default (not Staff).
+- Backend: `pricing.service` (FX/margin/floor/rounding, 9 tests), `order-state.service` (3-axis state machine + **mandatory structural owner-approval gate** — no supplier purchase without an `approved` SupplierOrder; 7 tests), `payment-providers` (working manual/offline provider; Stripe/PayPal/local scaffolds report `configured:false` until keyed), `commerce.service` (gating, atomic per-instance order numbers, tokens), `automation-runner` (DB-backed, env-guarded, backoff/DLQ — Phase-2 handlers stubbed). Controllers: store-commerce, suppliers, product-imports (review-before-publish; refuses to publish all-unavailable items), product-variants, orders/fulfillment, cart, checkout (server-authoritative pricing), public catalog, tokenized order-tracking, payment-webhooks (idempotent via `payment_webhook_events` unique).
+- Route boundaries: owner endpoints under `/cms/*` (instance-scoped, permission-guarded), public storefront under `/web/*` (`/catalog`, `/store-info`, `/cart`, `/checkout`, `/orders/track`), and a NEW public `/webhooks/payments/:provider` boundary (signature + idempotency). New `ERROR_CODES` for commerce. Automation runner started in `server.ts` (non-test, env-guarded).
+- CMS dashboard: `Store Settings`, `Orders` (incl. the approval gate, mark-paid, place-supplier, tracking, hold/cancel/refund) and `Suppliers & Imports` (assisted-manual import + review) pages; sidebar nav entries (permission-gated).
+- Storefront delivery is dynamic-by-fetch (client calls `/web/*`, same pattern as existing `product/*` theme components) — the publish/manifest/R2 pipeline is unchanged. Theme storefront section components (`product-detail`/`cart`/`checkout`/`order-tracking`/`policy`) are intentionally NOT yet added to the theme registry to avoid regressions to the 150+ component builder system (Non-Negotiables #4/#5); they are the next UI increment.
+- Blocked pending decisions/credentials (scaffolded, not active): live Stripe/PayPal/local keys, the AliExpress official API (needs the approved Open Platform app — assisted-manual import works meanwhile), customer email provider. See design doc §22.
+- Impacted modules/files (high level):
+  - `packages/database/prisma/schema.prisma`, `packages/database/prisma/migrations/2026051609000{0..4}_*`, `packages/database/src/index.ts`, `packages/database/src/seed-roles.ts`
+  - `packages/core/src/constants/index.ts`
+  - `apps/api/src/services/{pricing,order-state,payment-providers,commerce,automation-runner}.service*.ts`
+  - `apps/api/src/controllers/{store-commerce,suppliers,product-imports,product-variants,orders,cart,checkout,public-catalog,order-tracking,payment-webhooks}.controller.ts`
+  - `apps/api/src/validators/commerce.validators.ts`, `apps/api/src/routes/{cms,web,webhooks}/index.ts`, `apps/api/src/server.ts`
+  - `apps/api/src/__tests__/services/{pricing,order-state}.service.test.ts`
+  - `apps/cms/components/sidebar.tsx`, `apps/cms/app/dashboard/{store-settings,orders,suppliers}/page.tsx`
+  - `.env.example`, `apps/api/.env.example`, `CLAUDE.md`, `docs/ecommerce-dropshipping-automation-system-design.md`
+- Verification: `prisma validate` OK; `prisma generate` OK; all 7 workspace packages build; `apps/api` `tsc --noEmit` clean; full API suite **158/158** pass across 40 files (incl. 9 pricing + 7 approval-gate; no regressions); `apps/cms` `tsc --noEmit` clean.
+- Migration/rollout implications: run `prisma migrate deploy` to apply the 5 additive migrations + permission seed (safe on existing DBs — all changes additive/nullable, `products.status` backfilled to `active` where `is_active=true`). Restart API so the new routes + (optional) automation runner load. Commerce is invisible until an instance enables the `ecommerce_enabled` feature toggle. No booking-engine behaviour changed; no existing endpoints altered.
+
 ### 2026-04-07 (CMS Deployment Build Unblock: `noUnusedLocals` Override + Generated Theme Cleanup)
 
 - Unblocked Coolify/Docker CMS builds that were failing during Next.js type-check with `TS6133` unused-local errors in generated v7-v12 theme component files.

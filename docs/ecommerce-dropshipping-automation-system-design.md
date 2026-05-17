@@ -1,8 +1,13 @@
 # E-Commerce Dropshipping Automation System — Architecture & Design
 
-Status: **Design only — no code yet.** Awaiting sign-off before Phase 1 implementation.
-Owner deliverable date: 2026-05-16
-Scope decision: extend this monorepo (do not build standalone), official AliExpress API, payment providers = **Stripe + PayPal + a local gateway**, deliver design before code.
+Status: **Phase 1 foundation IMPLEMENTED (2026-05-17).** Backend (data model, migrations, pricing engine, order state machine + approval gate, payments abstraction, supplier/import, cart/checkout, orders/fulfillment, webhooks boundary, automation runner) + owner dashboard pages are merged and verified (API `tsc` clean, 158/158 API tests across 40 files, CMS `tsc` clean). See `CLAUDE.md` §23 (2026-05-17).
+Owner deliverable date: 2026-05-16 (design) / 2026-05-17 (Phase-1 build)
+Scope decision: extend this monorepo (do not build standalone), official AliExpress API, payment providers = **Stripe + PayPal + a local gateway**.
+
+Implementation deltas vs. this design (code is authoritative):
+- §19 migration sequence consolidated from 9 → **5 cohesive migrations** (`2026051609000{0..4}_*`); all additive/nullable, behaviour-preserving.
+- Storefront theme section components (`product-detail`/`cart`/`checkout`/`order-tracking`/`policy`) are deliberately **not yet registered** in the theme registry to protect the existing 150+ component builder (Non-Negotiables #4/#5); public `/web` commerce APIs they will call are live. Next UI increment.
+- Live Stripe/PayPal/local gateways, AliExpress official API, and customer email remain scaffolded/blocked pending §22 decisions & credentials. Assisted-manual import is fully working in the meantime.
 
 This document is the source-of-truth design for adding a controlled, automation-first dropshipping commerce capability on top of the existing multi-tenant website-builder runtime. It is written to be implementable section-by-section and to satisfy the mandatory documentation rule in the root `CLAUDE.md` (every implementation phase must additionally update `CLAUDE.md` + its Change Log).
 
