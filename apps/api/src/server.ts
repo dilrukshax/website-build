@@ -10,7 +10,9 @@ import { logger } from '@booking-engine/core';
 import { authRouter } from './routes/auth';
 import { cmsRouter } from './routes/cms';
 import { webRouter } from './routes/web';
+import { webhooksRouter } from './routes/webhooks';
 import { deviceCheckRouter } from './routes/device-check';
+import { startAutomationRunner } from './services/automation-runner';
 import { errorHandler } from './middleware/error';
 import { swaggerSpec } from './swagger';
 import { createDynamicCorsOptionsDelegate } from './middleware/cors';
@@ -129,6 +131,9 @@ app.use('/cms', cmsRouter);
 // Web namespace — public routes for frontend themes
 app.use('/web', webRouter);
 
+// Webhooks namespace — payment provider callbacks (public, signature-verified)
+app.use('/webhooks', webhooksRouter);
+
 // Public device fingerprint fraud check endpoint
 app.use('/api/device-check', deviceCheckRouter);
 
@@ -158,6 +163,8 @@ if (process.env.NODE_ENV !== 'test') {
         logger.info(`Web routes:   http://localhost:${port}/web`);
         logger.info(`API Docs:     http://localhost:${port}/docs`);
     });
+    // Background automation runner (DB-backed; env-guarded). Design §14.
+    startAutomationRunner();
 }
 
 export default app;

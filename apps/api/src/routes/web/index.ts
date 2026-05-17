@@ -12,6 +12,17 @@ import { InquiriesController } from '../../controllers/inquiries.controller';
 import { PublicSitesController } from '../../controllers/public-sites.controller';
 import { createBookingSchema } from '../../validators/bookings.validators';
 import { createInquirySchema } from '../../validators/inquiries.validators';
+// E-commerce / dropshipping public endpoints
+import { PublicCatalogController } from '../../controllers/public-catalog.controller';
+import { CartController } from '../../controllers/cart.controller';
+import { CheckoutController } from '../../controllers/checkout.controller';
+import { OrderTrackingController } from '../../controllers/order-tracking.controller';
+import {
+    addCartItemSchema,
+    updateCartItemSchema,
+    checkoutSchema,
+    trackOrderSchema,
+} from '../../validators/commerce.validators';
 
 const router = Router();
 
@@ -41,5 +52,21 @@ router.post('/bookings', validate(createBookingSchema), BookingsController.creat
 
 // --- Inquiries (public create) ---
 router.post('/inquiries', validate(createInquirySchema), InquiriesController.create);
+
+// --- E-commerce: storefront catalog (public read) ---
+router.get('/catalog', PublicCatalogController.list);
+router.get('/store-info', PublicCatalogController.storeInfo);
+router.get('/catalog/:key', PublicCatalogController.getBySlugOrId);
+
+// --- E-commerce: guest cart (public) ---
+router.post('/cart', CartController.createOrGet);
+router.get('/cart/:token', CartController.get);
+router.post('/cart/:token/items', validate(addCartItemSchema), CartController.addItem);
+router.put('/cart/:token/items/:itemId', validate(updateCartItemSchema), CartController.updateItem);
+router.delete('/cart/:token/items/:itemId', CartController.removeItem);
+
+// --- E-commerce: checkout + public order tracking ---
+router.post('/checkout', validate(checkoutSchema), CheckoutController.checkout);
+router.post('/orders/track', validate(trackOrderSchema), OrderTrackingController.track);
 
 export const webRouter: ExpressRouter = router;
