@@ -70,6 +70,29 @@ import {
     rejectEnterpriseRewardSchema,
 } from '../../validators/superadmin-referrals.validators';
 import { RoutingIndexController } from '../../controllers/routing-index.controller';
+// E-commerce / dropshipping (design doc: docs/ecommerce-dropshipping-automation-system-design.md)
+import { StoreCommerceController } from '../../controllers/store-commerce.controller';
+import { SuppliersController } from '../../controllers/suppliers.controller';
+import { ProductImportsController } from '../../controllers/product-imports.controller';
+import { ProductVariantsController } from '../../controllers/product-variants.controller';
+import { OrdersController } from '../../controllers/orders.controller';
+import {
+    updateStoreCommerceSettingsSchema,
+    upsertPricingRuleSchema,
+    createSupplierSchema,
+    createImportSchema,
+    reviewImportSchema,
+    createVariantSchema,
+    updateVariantSchema,
+    listOrdersQuerySchema,
+    orderNoteSchema,
+    orderHoldSchema,
+    orderCancelSchema,
+    markPaidSchema,
+    createRefundSchema,
+    placeSupplierOrderSchema,
+    upsertShipmentSchema,
+} from '../../validators/commerce.validators';
 
 const router = Router();
 
@@ -253,6 +276,41 @@ instanceRouter.post('/builder/publish', BuilderController.publish);
 instanceRouter.post('/builder/purge-cache', BuilderController.purgeCache);
 instanceRouter.get('/builder/publish/history', BuilderController.publishHistory);
 instanceRouter.post('/builder/rollback', BuilderController.rollback);
+
+// --- E-commerce: store settings & pricing (instance-scoped) ---
+instanceRouter.get('/store/commerce-settings', requirePermission('store.settings', 'settings.view'), StoreCommerceController.getSettings);
+instanceRouter.put('/store/commerce-settings', requirePermission('store.settings'), validate(updateStoreCommerceSettingsSchema), StoreCommerceController.updateSettings);
+instanceRouter.get('/store/pricing-rule', requirePermission('pricing.manage', 'store.settings'), StoreCommerceController.getPricingRule);
+instanceRouter.put('/store/pricing-rule', requirePermission('pricing.manage'), validate(upsertPricingRuleSchema), StoreCommerceController.upsertPricingRule);
+
+// --- E-commerce: suppliers (instance-scoped) ---
+instanceRouter.get('/suppliers', requirePermission('suppliers.view'), SuppliersController.list);
+instanceRouter.post('/suppliers', requirePermission('suppliers.manage'), validate(createSupplierSchema), SuppliersController.create);
+
+// --- E-commerce: product imports & review (instance-scoped) ---
+instanceRouter.get('/imports', requirePermission('imports.view'), ProductImportsController.list);
+instanceRouter.post('/imports', requirePermission('imports.manage'), validate(createImportSchema), ProductImportsController.create);
+instanceRouter.get('/imports/:id', requirePermission('imports.view'), ProductImportsController.getById);
+instanceRouter.post('/imports/:id/approve', requirePermission('imports.manage'), ProductImportsController.approve);
+instanceRouter.post('/imports/:id/reject', requirePermission('imports.manage'), validate(reviewImportSchema), ProductImportsController.reject);
+
+// --- E-commerce: product variants (instance-scoped) ---
+instanceRouter.get('/products/:productId/variants', requirePermission('products.view'), ProductVariantsController.list);
+instanceRouter.post('/products/:productId/variants', requirePermission('products.update'), validate(createVariantSchema), ProductVariantsController.create);
+instanceRouter.put('/products/:productId/variants/:id', requirePermission('products.update'), validate(updateVariantSchema), ProductVariantsController.update);
+instanceRouter.delete('/products/:productId/variants/:id', requirePermission('products.update'), ProductVariantsController.delete);
+
+// --- E-commerce: orders & fulfillment (instance-scoped) ---
+instanceRouter.get('/orders', requirePermission('orders.view'), validate(listOrdersQuerySchema, 'query'), OrdersController.list);
+instanceRouter.get('/orders/:id', requirePermission('orders.view'), OrdersController.getById);
+instanceRouter.put('/orders/:id/note', requirePermission('orders.manage'), validate(orderNoteSchema), OrdersController.addNote);
+instanceRouter.post('/orders/:id/hold', requirePermission('orders.manage'), validate(orderHoldSchema), OrdersController.hold);
+instanceRouter.post('/orders/:id/cancel', requirePermission('orders.manage'), validate(orderCancelSchema), OrdersController.cancel);
+instanceRouter.post('/orders/:id/mark-paid', requirePermission('orders.manage'), validate(markPaidSchema), OrdersController.markPaid);
+instanceRouter.post('/orders/:id/approve', requirePermission('orders.approve'), OrdersController.approve);
+instanceRouter.post('/orders/:id/place-supplier-order', requirePermission('orders.fulfill'), validate(placeSupplierOrderSchema), OrdersController.placeSupplierOrder);
+instanceRouter.put('/orders/:id/shipment', requirePermission('orders.fulfill'), validate(upsertShipmentSchema), OrdersController.upsertShipment);
+instanceRouter.post('/orders/:id/refunds', requirePermission('refunds.create'), validate(createRefundSchema), OrdersController.createRefund);
 
 // Mount instance-scoped routes under tenant router
 tenantRouter.use('/', instanceRouter);
