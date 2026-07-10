@@ -26,6 +26,15 @@ const app: Express = express();
 const port = Number(process.env.PORT || 5074);
 app.set('trust proxy', true);
 
+// Lightweight health endpoint for platform health checks (Coolify/Sevalla).
+// Must respond 200 quickly and bypass auth/CSP so probes succeed.
+app.get('/health', (_req, res) => {
+    res.status(200).json({ status: 'ok', service: 'website-builder-api' });
+});
+app.get('/', (_req, res) => {
+    res.status(200).json({ status: 'ok', service: 'website-builder-api' });
+});
+
 function buildStaticCorsOrigins(): string {
     const values = new Set<string>();
 

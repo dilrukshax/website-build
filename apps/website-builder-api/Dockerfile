@@ -68,7 +68,8 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 
 # Runtime deps for Prisma + compatibility
-RUN apk add --no-cache libc6-compat openssl
+# curl is required so platform health checks (Coolify/Sevalla) can probe the container.
+RUN apk add --no-cache libc6-compat openssl curl
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \

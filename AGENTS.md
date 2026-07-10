@@ -2933,3 +2933,19 @@ If tests are skipped, explicitly record why and residual risk.
   - Operators can now delete the redundant legacy alias lines from their deployment env (Coolify/compose): `API_BASE_URL`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_WEBSITE_BUILDER_API_URL`, `CMS_URL`, `NEXT_PUBLIC_CMS_URL`, `NEXT_PUBLIC_SITE_DOMAIN` (derived from `SITE_DOMAIN`), and the `NEXT_PUBLIC_*` twins of routing-index/published-sites/platform-bypass. Setting the canonical name is sufficient.
   - Existing deploys that still set the legacy names continue to work unchanged because the resolvers read them as fallbacks.
   - Redeploy CMS (rebuild standalone) and API so the consolidated resolvers and Dockerfile changes take effect.
+
+### 2026-07-10 (API Health Endpoints + Healthcheck-Compatible Image)
+
+- Added explicit lightweight health endpoints to the API server so platform health checks (Coolify/Sevalla) succeed and the new container is not rolled back:
+  - `GET /health` returns `200 { status: 'ok' }`
+  - `GET /` returns `200 { status: 'ok' }` (platform probe default path)
+- Added `curl` to the API runner image (`apps/website-builder-api/Dockerfile`) because the `node:20-alpine` base lacks it and platform health checks require a probe client (`wget` alone surfaced `Connection refused` / `curl: not found` failures).
+- Impacted modules/files:
+  - `apps/website-builder-api/src/server.ts`
+  - `apps/website-builder-api/Dockerfile`
+  - `AGENTS.md`
+- Background: a deploy rolled the new API container back to the previous image because its health check failed (no `/health`/`/` 200 response and no `curl` in the image). That rollback is why a stale `/api/auth/register` response (404 then 502) persisted after the env-consolidation fix was built.
+- Migration/rollout implications:
+  - No database migration required.
+  - Point the platform health check at `GET /health` on port `5074` (or keep `/`); both now respond `200`.
+  - Redeploy the API image; the container should now pass the health check and stay live.
