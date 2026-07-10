@@ -46,10 +46,10 @@ RUN pnpm install --frozen-lockfile --prefer-offline
 
 COPY --from=pruner /app/out/full/ .
 
-ARG NEXT_PUBLIC_WEBSITE_BUILDER_API_URL
-ARG NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_WEBSITE_BUILDER_API_URL=${NEXT_PUBLIC_WEBSITE_BUILDER_API_URL}
-ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+# Only SITE_DOMAIN is baked at build time (it drives NEXT_PUBLIC_SITE_DOMAIN).
+# All other vars are read at runtime from the container environment.
+ARG SITE_DOMAIN
+ENV SITE_DOMAIN=${SITE_DOMAIN}
 ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN mkdir -p apps/website-builder-web/public

@@ -130,7 +130,7 @@ export default function BookingsPage() {
                     </button>
                     <Link
                         href="/dashboard/bookings"
-                        className="inline-flex items-center gap-2 rounded-lg bg-[#5048e5] px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-[#5048e5]/25 transition hover:bg-[#433bcf]"
+                        className="inline-flex items-center gap-2 rounded-lg bg-[#2563eb] px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-[#2563eb]/25 transition hover:bg-[#1d4ed8]"
                     >
                         <Plus className="h-4 w-4" />
                         New Booking
@@ -170,7 +170,7 @@ export default function BookingsPage() {
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             placeholder="Search by booking ID, customer, email, or service..."
-                            className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm outline-none transition focus:border-[#5048e5] focus:ring-2 focus:ring-[#5048e5]/20 dark:border-slate-700 dark:bg-slate-900"
+                            className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:border-slate-700 dark:bg-slate-900"
                         />
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -180,7 +180,7 @@ export default function BookingsPage() {
                                 onClick={() => setStatusFilter(status)}
                                 className={`rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition ${
                                     statusFilter === status
-                                        ? 'bg-[#5048e5] text-white'
+                                        ? 'bg-[#2563eb] text-white'
                                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
                                 }`}
                             >
@@ -205,7 +205,7 @@ export default function BookingsPage() {
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                             {filteredBookings.map((booking) => (
-                                <tr key={booking.id} className="transition-colors hover:bg-[#5048e5]/5">
+                                <tr key={booking.id} className="transition-colors hover:bg-[#2563eb]/5">
                                     <td className="px-6 py-4">
                                         <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                                             {booking.customer.firstName} {booking.customer.lastName}
@@ -241,7 +241,7 @@ export default function BookingsPage() {
                                             {booking.status === 'pending' && (
                                                 <button
                                                     onClick={() => updateStatus(booking.id, 'confirm')}
-                                                    className="text-sm font-medium text-[#5048e5] transition-colors hover:text-[#433bcf]"
+                                                    className="text-sm font-medium text-[#2563eb] transition-colors hover:text-[#1d4ed8]"
                                                 >
                                                     Confirm
                                                 </button>
@@ -262,7 +262,7 @@ export default function BookingsPage() {
                                                     Cancel
                                                 </button>
                                             )}
-                                            <button className="rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-[#5048e5] dark:hover:bg-slate-800">
+                                            <button className="rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-[#2563eb] dark:hover:bg-slate-800">
                                                 <MoreHorizontal className="h-4 w-4" />
                                             </button>
                                         </div>

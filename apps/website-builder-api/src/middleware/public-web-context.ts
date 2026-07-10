@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { logger } from '@project-aurora/core';
 import { RoutingIndexService } from '../services/routing-index.service';
 import { normalizeDomainHost } from '../utils/domain';
+import { env } from '../lib/env';
 
 const ROUTED_HOST_HEADER = 'x-routed-host';
 const PROXY_SECRET_HEADER = 'x-web-proxy-secret';
@@ -63,18 +64,11 @@ function addReservedPlatformSubdomainHosts(hosts: Set<string>, rootDomain: strin
 
 function resolvePlatformBypassHosts(): Set<string> {
     const hosts = new Set<string>();
-    const rootDomain =
-        normalizeDomainHost(process.env.SITE_DOMAIN || '')
-        || normalizeDomainHost(process.env.NEXT_PUBLIC_SITE_DOMAIN || '');
+    const rootDomain = normalizeDomainHost(env.siteDomain());
     const configuredHosts = [
-        normalizeDomainHost(process.env.CMS_URL || ''),
-        normalizeDomainHost(process.env.NEXT_PUBLIC_CMS_URL || ''),
-        normalizeDomainHost(process.env.WEBSITE_BUILDER_API_URL || ''),
-        normalizeDomainHost(process.env.API_BASE_URL || ''),
-        normalizeDomainHost(process.env.NEXT_PUBLIC_WEBSITE_BUILDER_API_URL || ''),
-        normalizeDomainHost(process.env.NEXT_PUBLIC_API_URL || ''),
+        normalizeDomainHost(env.cmsUrl()),
+        normalizeDomainHost(env.apiUrl()),
         ...parseHostList(process.env.PLATFORM_HOST_BYPASS || ''),
-        ...parseHostList(process.env.NEXT_PUBLIC_PLATFORM_HOST_BYPASS || ''),
     ];
 
     for (const host of configuredHosts) {
@@ -95,7 +89,7 @@ function isPlatformBypassHost(hostname: string): boolean {
 }
 
 function canResolveFromRoutedHost(req: Request): boolean {
-    const expectedSecret = (process.env.WEB_PROXY_SHARED_SECRET || '').trim();
+    const expectedSecret = env.webProxySharedSecret();
     const providedSecret = getHeaderValue(req, PROXY_SECRET_HEADER).trim();
 
     // Compatibility fallback: when no shared secret is configured, allow host-based

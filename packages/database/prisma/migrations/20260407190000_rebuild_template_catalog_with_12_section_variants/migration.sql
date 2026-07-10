@@ -147,7 +147,7 @@ SET
           "themeTokens": {
             "background": "#0b1020",
             "text": "#f8fafc",
-            "primary": "#6366f1",
+            "primary": "#3b82f6",
             "secondary": "#1f2937",
             "accent": "#10b981",
             "font": "Roboto, sans-serif"
@@ -522,7 +522,7 @@ SET
           "themeTokens": {
             "background": "#faf5ff",
             "text": "#312e81",
-            "primary": "#7c3aed",
+            "primary": "#3b82f6",
             "secondary": "#ede9fe",
             "accent": "#f97316",
             "font": "Outfit, sans-serif"

@@ -8,7 +8,7 @@ type ResolvedTheme = 'light' | 'dark';
 
 const THEME_STORAGE_KEY = 'be_theme';
 const SHARED_THEME_TOKENS: Record<string, string> = {
-    '--be-primary': '#5048e5',
+    '--be-primary': '#2563eb',
     '--be-bg-light': '#f6f6f8',
     '--be-bg-dark': '#121121',
 };

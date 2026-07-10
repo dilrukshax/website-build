@@ -186,7 +186,7 @@ VALUES
             "text": "#1f2937",
             "primary": "#f97316",
             "secondary": "#ffedd5",
-            "accent": "#7c3aed",
+            "accent": "#3b82f6",
             "font": "Outfit, sans-serif"
           }
         }

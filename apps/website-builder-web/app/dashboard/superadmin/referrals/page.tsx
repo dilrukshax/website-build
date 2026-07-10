@@ -122,7 +122,7 @@ export default function SuperAdminReferralsPage() {
                 <select
                     value={statusFilter}
                     onChange={(event) => setStatusFilter(event.target.value as ClaimRow['status'])}
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#5048e5] focus:ring-2 focus:ring-[#5048e5]/20 dark:border-slate-700 dark:bg-slate-900"
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:border-slate-700 dark:bg-slate-900"
                 >
                     <option value="pending">Pending</option>
                     <option value="verify">Verify</option>

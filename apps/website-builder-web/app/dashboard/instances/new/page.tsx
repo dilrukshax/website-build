@@ -276,7 +276,7 @@ export default function NewInstancePage() {
                             <label
                                 className={`flex cursor-pointer gap-2 rounded-xl border px-3 py-2 text-left text-sm transition ${
                                     formData.domainMode === 'subdomain'
-                                        ? 'border-[#5048e5] bg-[#5048e5]/10 text-[#5048e5]'
+                                        ? 'border-[#2563eb] bg-[#2563eb]/10 text-[#2563eb]'
                                         : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'
                                 }`}
                             >
@@ -286,7 +286,7 @@ export default function NewInstancePage() {
                                     value="subdomain"
                                     checked={formData.domainMode === 'subdomain'}
                                     onChange={() => updateField('domainMode', 'subdomain')}
-                                    className="mt-0.5 h-4 w-4 border-slate-300 text-[#5048e5] focus:ring-[#5048e5]"
+                                    className="mt-0.5 h-4 w-4 border-slate-300 text-[#2563eb] focus:ring-[#2563eb]"
                                 />
                                 <span>
                                     <p className="font-semibold">Subdomain</p>
@@ -296,7 +296,7 @@ export default function NewInstancePage() {
                             <label
                                 className={`flex cursor-pointer gap-2 rounded-xl border px-3 py-2 text-left text-sm transition ${
                                     formData.domainMode === 'customDomain'
-                                        ? 'border-[#5048e5] bg-[#5048e5]/10 text-[#5048e5]'
+                                        ? 'border-[#2563eb] bg-[#2563eb]/10 text-[#2563eb]'
                                         : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'
                                 }`}
                             >
@@ -306,7 +306,7 @@ export default function NewInstancePage() {
                                     value="customDomain"
                                     checked={formData.domainMode === 'customDomain'}
                                     onChange={() => updateField('domainMode', 'customDomain')}
-                                    className="mt-0.5 h-4 w-4 border-slate-300 text-[#5048e5] focus:ring-[#5048e5]"
+                                    className="mt-0.5 h-4 w-4 border-slate-300 text-[#2563eb] focus:ring-[#2563eb]"
                                 />
                                 <span>
                                     <p className="font-semibold">Custom domain</p>
@@ -326,7 +326,7 @@ export default function NewInstancePage() {
                             required
                             value={formData.name}
                             onChange={(e) => updateField('name', e.target.value)}
-                            className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#5048e5] focus:ring-2 focus:ring-[#5048e5]/20 dark:bg-slate-900 dark:text-slate-100 ${fieldErrors.name ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
+                            className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:bg-slate-900 dark:text-slate-100 ${fieldErrors.name ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
                             placeholder="Acme Booking Site"
                         />
                         {fieldErrors.name && (
@@ -346,7 +346,7 @@ export default function NewInstancePage() {
                                 required
                                 value={formData.subdomain}
                                 onChange={(e) => updateField('subdomain', e.target.value)}
-                                className={`flex-1 rounded-l-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:z-10 focus:border-[#5048e5] focus:ring-2 focus:ring-[#5048e5]/20 dark:bg-slate-900 dark:text-slate-100 ${fieldErrors.subdomain ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
+                                className={`flex-1 rounded-l-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:z-10 focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:bg-slate-900 dark:text-slate-100 ${fieldErrors.subdomain ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
                                 placeholder="acme-bookings"
                             />
                             <span className="inline-flex items-center rounded-r-xl border border-l-0 border-slate-300 bg-slate-100 px-3 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
@@ -379,7 +379,7 @@ export default function NewInstancePage() {
                                     required
                                     value={formData.customDomain}
                                     onChange={(e) => updateField('customDomain', e.target.value)}
-                                    className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#5048e5] focus:ring-2 focus:ring-[#5048e5]/20 dark:bg-slate-900 dark:text-slate-100 ${fieldErrors.customDomain ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
+                                    className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:bg-slate-900 dark:text-slate-100 ${fieldErrors.customDomain ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
                                     placeholder="example.com"
                                 />
                                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
@@ -400,7 +400,7 @@ export default function NewInstancePage() {
                         <button
                             type="submit"
                             disabled={isSubmitting || limitReached}
-                            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#5048e5] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#5048e5]/25 transition hover:bg-[#433bcf] disabled:cursor-not-allowed disabled:opacity-60"
+                            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#2563eb]/25 transition hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             {limitReached ? 'Instance limit reached' : isSubmitting ? 'Creating website...' : 'Create website'}
                             {!isSubmitting && !limitReached && <ArrowRight className="h-4 w-4" />}

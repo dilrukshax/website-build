@@ -224,7 +224,7 @@ export class DiscordWebhookService {
     static async notifyUserRegistered(event: UserRegisteredEvent): Promise<void> {
         await this.sendEmbed({
             title: 'New User Registered',
-            color: 0x4f46e5,
+            color: 0x2563eb,
             fields: [
                 { name: 'User ID', value: sanitize(event.userId), inline: false },
                 { name: 'Full Name', value: sanitize(event.fullName), inline: true },

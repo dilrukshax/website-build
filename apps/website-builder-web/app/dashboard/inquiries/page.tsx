@@ -116,7 +116,7 @@ export default function InquiriesPage() {
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         placeholder="Search by customer name, email, message, or source page..."
-                        className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm outline-none transition focus:border-[#5048e5] focus:ring-2 focus:ring-[#5048e5]/20 dark:border-slate-700 dark:bg-slate-900"
+                        className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:border-slate-700 dark:bg-slate-900"
                     />
                 </div>
             </div>
@@ -143,7 +143,7 @@ export default function InquiriesPage() {
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                             {filteredInquiries.map((inquiry) => (
-                                <tr key={inquiry.id} className="transition-colors hover:bg-[#5048e5]/5">
+                                <tr key={inquiry.id} className="transition-colors hover:bg-[#2563eb]/5">
                                     <td className="px-6 py-4">
                                         <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{inquiry.name}</p>
                                         <p className="text-xs text-slate-500">{inquiry.email}</p>
@@ -169,7 +169,7 @@ export default function InquiriesPage() {
                                     <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
                                         <Link
                                             href={`/dashboard/customers?search=${encodeURIComponent(inquiry.email)}`}
-                                            className="font-medium text-[#5048e5] hover:underline"
+                                            className="font-medium text-[#2563eb] hover:underline"
                                         >
                                             View Customer
                                         </Link>

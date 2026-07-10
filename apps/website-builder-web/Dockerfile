@@ -65,10 +65,12 @@ RUN pnpm install --frozen-lockfile --prefer-offline
 # Copy pruned sources and build only CMS + deps.
 COPY --from=pruner /app/out/full/ .
 
-ARG NEXT_PUBLIC_WEBSITE_BUILDER_API_URL
-ARG NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_WEBSITE_BUILDER_API_URL=${NEXT_PUBLIC_WEBSITE_BUILDER_API_URL}
-ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+# Only SITE_DOMAIN is baked at build time (it drives NEXT_PUBLIC_SITE_DOMAIN).
+# All other vars (WEBSITE_BUILDER_API_URL, WEB_PROXY_SHARED_SECRET, ...) are
+# read at runtime from the container environment — set them once in your
+# deployment platform (Coolify/compose) using the canonical names.
+ARG SITE_DOMAIN
+ENV SITE_DOMAIN=${SITE_DOMAIN}
 
 RUN mkdir -p apps/website-builder-web/public
 RUN pnpm turbo build --filter=@project-aurora/website-builder-web... --concurrency=1

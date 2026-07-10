@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { env } from './env';
 
 const REQUEST_HOP_BY_HOP_HEADERS = new Set([
     'connection',
@@ -42,13 +43,7 @@ function normalizeApiBaseUrl(rawBaseUrl: string): string {
 }
 
 function resolveApiBaseUrl(): string {
-    return normalizeApiBaseUrl(
-        process.env.NEXT_PUBLIC_WEBSITE_BUILDER_API_URL
-        || process.env.WEBSITE_BUILDER_API_URL
-        || process.env.NEXT_PUBLIC_API_URL
-        || process.env.API_BASE_URL
-        || 'http://localhost:3002'
-    );
+    return normalizeApiBaseUrl(env.apiBaseUrl() || 'http://localhost:3002');
 }
 
 function buildUpstreamUrl(request: NextRequest, pathSegments: string[]): string {
@@ -93,7 +88,7 @@ export async function proxyApiRequest(request: NextRequest, pathSegments: string
             success: false,
             error: {
                 code: 'UPSTREAM_NOT_CONFIGURED',
-                message: 'NEXT_PUBLIC_API_URL (or API_BASE_URL) is required for API proxy routing.',
+                message: 'WEBSITE_BUILDER_API_URL is required for API proxy routing.',
             },
         }, { status: 500 });
     }

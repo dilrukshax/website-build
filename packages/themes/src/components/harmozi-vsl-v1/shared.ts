@@ -10,7 +10,7 @@ export const HARMOZI_VSL_COLORS = {
     border: '#ddd6cc',
     text: '#151515',
     muted: '#5f5b56',
-    accent: '#6f39f6',
+    accent: '#3b82f6',
     accentSoft: '#f3edff',
     dark: '#12141f',
     darkMuted: '#cfd2df',

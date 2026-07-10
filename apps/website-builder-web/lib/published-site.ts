@@ -1,18 +1,11 @@
 import { fetchCurrentRoutingIndexPointer } from './routing-index';
+import { env } from './env';
 
 export const UNKNOWN_SUBDOMAIN = '__unknown__';
-const ROOT_DOMAIN = normalizeHost(process.env.NEXT_PUBLIC_SITE_DOMAIN || process.env.SITE_DOMAIN || 'buildmyonlineweb.site');
-const CMS_PLATFORM_HOST = normalizeHost(
-    process.env.WEBSITE_BUILDER_WEB_URL ||
-        process.env.CMS_URL ||
-        process.env.NEXT_PUBLIC_CMS_URL ||
-        ''
-);
+const ROOT_DOMAIN = normalizeHost(env.siteDomain() || 'buildmyonlineweb.site');
+const CMS_PLATFORM_HOST = normalizeHost(env.cmsUrl());
 
-const ROUTING_INDEX_CACHE_TTL_MS = parsePositiveInteger(
-    process.env.ROUTING_INDEX_CACHE_TTL_MS || process.env.NEXT_PUBLIC_ROUTING_INDEX_CACHE_TTL_MS,
-    30_000,
-);
+const ROUTING_INDEX_CACHE_TTL_MS = env.routingIndexCacheTtlMs();
 const MANIFEST_CACHE_TTL_MS = parsePositiveInteger(
     process.env.NEXT_PUBLIC_MANIFEST_CACHE_TTL_MS || process.env.MANIFEST_CACHE_TTL_MS,
     ROUTING_INDEX_CACHE_TTL_MS,
@@ -200,13 +193,7 @@ function normalizeBaseUrl(input: string | null | undefined): string {
 }
 
 function resolveApiBaseUrl(): string {
-    return normalizeBaseUrl(
-        process.env.NEXT_PUBLIC_WEBSITE_BUILDER_API_URL
-        || process.env.WEBSITE_BUILDER_API_URL
-        || process.env.NEXT_PUBLIC_API_URL
-        || process.env.API_BASE_URL
-        || '',
-    );
+    return normalizeBaseUrl(env.apiBaseUrl());
 }
 
 export function normalizeHost(host: string | null | undefined): string {

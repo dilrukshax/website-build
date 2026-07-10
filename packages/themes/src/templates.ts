@@ -33,7 +33,7 @@ export const TEMPLATES: ThemeTemplate[] = [
         name: 'Neon Grid Lab',
         description: 'Dark cyber-modern lane tuned for high-contrast booking funnels.',
         tokens: {
-            primary: '#6366f1',
+            primary: '#3b82f6',
             secondary: '#1f2937',
             accent: '#10b981',
             text: '#f8fafc',
@@ -321,7 +321,7 @@ export const TEMPLATES: ThemeTemplate[] = [
         name: 'Harmozi VSL',
         description: 'Storefront-style VSL lane rebuilt from the Acquisition shop long-form book sales page.',
         tokens: {
-            primary: '#6f39f6',
+            primary: '#3b82f6',
             secondary: '#f4f4f4',
             accent: '#ff8d3b',
             text: '#151515',

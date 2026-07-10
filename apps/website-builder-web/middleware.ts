@@ -1,25 +1,17 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { env } from './lib/env';
 
 const AUTH_PATHS = ['/login', '/register', '/forgot-password', '/reset-password'];
 const PUBLIC_PATHS = ['/preview', '/web', '/routing-index', '/published', '/api'];
 const ONBOARDING_PATHS = ['/onboarding'];
 
-const ROOT_DOMAIN = process.env.NEXT_PUBLIC_SITE_DOMAIN || process.env.SITE_DOMAIN || 'buildmyonlineweb.site';
-const CMS_PLATFORM_URL =
-    process.env.WEBSITE_BUILDER_WEB_URL ||
-    process.env.CMS_URL ||
-    process.env.NEXT_PUBLIC_CMS_URL ||
-    '';
-const API_PLATFORM_URL =
-    process.env.NEXT_PUBLIC_WEBSITE_BUILDER_API_URL ||
-    process.env.WEBSITE_BUILDER_API_URL ||
-    process.env.NEXT_PUBLIC_API_URL ||
-    process.env.API_BASE_URL ||
-    '';
-const PLATFORM_HOST_BYPASS = process.env.PLATFORM_HOST_BYPASS || process.env.NEXT_PUBLIC_PLATFORM_HOST_BYPASS || '';
+const ROOT_DOMAIN = env.siteDomain() || 'buildmyonlineweb.site';
+const CMS_PLATFORM_URL = env.cmsUrl();
+const API_PLATFORM_URL = env.apiBaseUrl();
+const PLATFORM_HOST_BYPASS = env.platformHostBypass();
 const RESERVED_PLATFORM_SUBDOMAINS = ['staging', 'staging-api'];
-const ROUTING_INDEX_CACHE_TTL_MS = Number(process.env.NEXT_PUBLIC_ROUTING_INDEX_CACHE_TTL_MS || 30_000);
+const ROUTING_INDEX_CACHE_TTL_MS = env.routingIndexCacheTtlMs();
 const ROUTED_HOST_SEARCH_PARAM = '__be_routed_host';
 
 function normalizeHost(host: string | null | undefined): string {
@@ -188,15 +180,14 @@ let cachedRoutingIndex: CachedRoutingIndex | null = null;
 
 function resolvePublishedBaseUrl(): string {
     return normalizeBaseUrl(
-        process.env.NEXT_PUBLIC_PUBLISHED_SITES_BASE_URL
-        || process.env.PUBLISHED_SITES_BASE_URL
+        env.publishedSitesBaseUrl()
         || process.env.R2_PUBLIC_URL
         || ''
     );
 }
 
 function resolveCurrentIndexUrl(): string {
-    const explicit = (process.env.NEXT_PUBLIC_ROUTING_INDEX_CURRENT_URL || process.env.ROUTING_INDEX_CURRENT_URL || '').trim();
+    const explicit = env.routingIndexCurrentUrl();
     if (explicit) {
         return explicit;
     }

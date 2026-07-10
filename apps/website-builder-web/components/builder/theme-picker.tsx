@@ -33,7 +33,7 @@ interface ThemePickerProps {
 }
 
 const PREVIEW_TOKENS = {
-    primary: '#5048e5',
+    primary: '#2563eb',
     secondary: '#e2e8f0',
     accent: '#0ea5e9',
     text: '#0f172a',
@@ -287,8 +287,8 @@ export function ThemePicker({
                                                         onClick={() => setSelectedThemeId(theme.id)}
                                                         className={`flex w-full items-center gap-3 rounded-xl border p-2 text-left transition ${
                                                             selected
-                                                                ? 'border-[#5048e5] bg-[#5048e5]/10'
-                                                                : 'border-slate-200 bg-white hover:border-[#5048e5]/50 dark:border-slate-700 dark:bg-slate-900'
+                                                                ? 'border-[#2563eb] bg-[#2563eb]/10'
+                                                                : 'border-slate-200 bg-white hover:border-[#2563eb]/50 dark:border-slate-700 dark:bg-slate-900'
                                                         }`}
                                                     >
                                                         <div
@@ -345,7 +345,7 @@ export function ThemePicker({
                                                 onClick={() => setPreviewMode('desktop')}
                                                 className={`rounded-md px-2.5 py-1 text-xs font-semibold transition ${
                                                     previewMode === 'desktop'
-                                                        ? 'bg-[#5048e5] text-white'
+                                                        ? 'bg-[#2563eb] text-white'
                                                         : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
                                                 }`}
                                             >
@@ -356,7 +356,7 @@ export function ThemePicker({
                                                 onClick={() => setPreviewMode('mobile')}
                                                 className={`rounded-md px-2.5 py-1 text-xs font-semibold transition ${
                                                     previewMode === 'mobile'
-                                                        ? 'bg-[#5048e5] text-white'
+                                                        ? 'bg-[#2563eb] text-white'
                                                         : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
                                                 }`}
                                             >
@@ -422,7 +422,7 @@ export function ThemePicker({
                                                 onClose();
                                             }}
                                             disabled={isThemeBlocked(selectedTheme) || isCurrentThemeForSelectedSection(selectedTheme)}
-                                            className="inline-flex items-center justify-center rounded-lg bg-[#5048e5] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#433bcf] disabled:cursor-not-allowed disabled:opacity-50"
+                                            className="inline-flex items-center justify-center rounded-lg bg-[#2563eb] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-50"
                                         >
                                             {isThemeBlocked(selectedTheme)
                                                 ? 'Already Added'

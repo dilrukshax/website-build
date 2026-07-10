@@ -4,6 +4,7 @@ import { AppError } from '../middleware/error';
 import { ERROR_CODES } from '@project-aurora/core';
 import { ReferralFraudProofService } from './referral-fraud-proof.service';
 import { ReferralRewardsService } from './referral-rewards.service';
+import { env } from '../lib/env';
 
 const REFERRAL_CODE_LENGTH = 8;
 const REFERRAL_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -56,7 +57,7 @@ function mapActionToStatus(action: 'allow' | 'verify' | 'review' | 'block'): 'pe
 }
 
 function getCmsBaseUrl(): string {
-    const fromEnv = process.env.CMS_URL || process.env.NEXT_PUBLIC_CMS_URL;
+    const fromEnv = env.cmsUrl();
     if (fromEnv && fromEnv.trim()) {
         return fromEnv.replace(/\/+$/, '');
     }

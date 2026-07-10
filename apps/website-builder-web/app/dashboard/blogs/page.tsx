@@ -362,7 +362,7 @@ export default function BlogsPage() {
                         onClick={() => setPreviewMode("desktop")}
                         className={`rounded-md px-2.5 py-1 text-xs font-semibold transition ${
                           previewMode === "desktop"
-                            ? "bg-[#5048e5] text-white"
+                            ? "bg-[#2563eb] text-white"
                             : "text-slate-600 hover:bg-slate-100"
                         }`}
                       >
@@ -373,7 +373,7 @@ export default function BlogsPage() {
                         onClick={() => setPreviewMode("mobile")}
                         className={`rounded-md px-2.5 py-1 text-xs font-semibold transition ${
                           previewMode === "mobile"
-                            ? "bg-[#5048e5] text-white"
+                            ? "bg-[#2563eb] text-white"
                             : "text-slate-600 hover:bg-slate-100"
                         }`}
                       >
@@ -407,7 +407,7 @@ export default function BlogsPage() {
 
                       {isPreviewFrameLoading && !isPreviewFrameError && (
                         <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60 backdrop-blur-sm">
-                          <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-[#5048e5]" />
+                          <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-[#2563eb]" />
                         </div>
                       )}
                     </div>

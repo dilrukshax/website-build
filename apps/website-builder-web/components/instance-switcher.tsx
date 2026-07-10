@@ -35,9 +35,9 @@ export function InstanceSwitcher() {
         return (
             <button
                 onClick={() => router.push('/dashboard/instances/new')}
-                className="flex w-full items-center gap-3 rounded-lg border border-dashed border-[#5048e5]/40 bg-[#5048e5]/5 px-3 py-2.5 text-left transition-colors hover:bg-[#5048e5]/10"
+                className="flex w-full items-center gap-3 rounded-lg border border-dashed border-[#2563eb]/40 bg-[#2563eb]/5 px-3 py-2.5 text-left transition-colors hover:bg-[#2563eb]/10"
             >
-                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-white text-[#5048e5]">
+                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-white text-[#2563eb]">
                     <Plus size={16} />
                 </div>
                 <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Create a website</p>
@@ -49,9 +49,9 @@ export function InstanceSwitcher() {
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex w-full items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-left transition-colors hover:border-[#5048e5]/30 hover:bg-[#5048e5]/5 dark:border-slate-700 dark:bg-slate-800/70"
+                className="flex w-full items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-left transition-colors hover:border-[#2563eb]/30 hover:bg-[#2563eb]/5 dark:border-slate-700 dark:bg-slate-800/70"
             >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#5048e5] text-sm font-semibold text-white">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#2563eb] text-sm font-semibold text-white">
                     {currentInstance?.name?.charAt(0).toUpperCase() || '?'}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -74,9 +74,9 @@ export function InstanceSwitcher() {
                         <button
                             key={instance.id}
                             onClick={() => handleSwitch(instance.id)}
-                            className={`flex w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-[#5048e5]/5 ${instance.id === currentInstance?.id ? 'bg-[#5048e5]/10' : ''}`}
+                            className={`flex w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-[#2563eb]/5 ${instance.id === currentInstance?.id ? 'bg-[#2563eb]/10' : ''}`}
                         >
-                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[#5048e5] text-xs font-semibold text-white">
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[#2563eb] text-xs font-semibold text-white">
                                 {instance.name.charAt(0).toUpperCase()}
                             </div>
                             <div className="flex-1 min-w-0">
@@ -84,14 +84,14 @@ export function InstanceSwitcher() {
                                 <p className="truncate text-xs text-slate-500 dark:text-slate-400">{getInstanceDisplayDomain(instance)}</p>
                             </div>
                             {instance.id === currentInstance?.id && (
-                                <Check size={16} className="shrink-0 text-[#5048e5]" />
+                                <Check size={16} className="shrink-0 text-[#2563eb]" />
                             )}
                         </button>
                     ))}
                     <div className="mt-1 border-t border-slate-200 pt-1 dark:border-slate-700">
                         <button
                             onClick={() => { setIsOpen(false); router.push('/dashboard/instances/new'); }}
-                            className="flex w-full items-center gap-3 px-3 py-2 text-left text-slate-600 transition-colors hover:bg-[#5048e5]/5 dark:text-slate-300"
+                            className="flex w-full items-center gap-3 px-3 py-2 text-left text-slate-600 transition-colors hover:bg-[#2563eb]/5 dark:text-slate-300"
                         >
                             <Plus size={16} />
                             <span className="text-sm">New website</span>

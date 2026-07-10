@@ -240,7 +240,7 @@ export default function BillingPage() {
                                 </p>
                                 {row.limit !== null && row.limit > 0 && (
                                     <div className="mt-2 h-2 overflow-hidden rounded bg-slate-200 dark:bg-slate-700">
-                                        <div className="h-full rounded bg-[#5048e5]" style={{ width: `${ratio}%` }} />
+                                        <div className="h-full rounded bg-[#2563eb]" style={{ width: `${ratio}%` }} />
                                     </div>
                                 )}
                             </div>
@@ -264,7 +264,7 @@ export default function BillingPage() {
                                 <select
                                     value={planForm.requestedPlan}
                                     onChange={(event) => setPlanForm((prev) => ({ ...prev, requestedPlan: event.target.value as PlanTier }))}
-                                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#5048e5] focus:ring-2 focus:ring-[#5048e5]/20 dark:border-slate-700 dark:bg-slate-950"
+                                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:border-slate-700 dark:bg-slate-950"
                                 >
                                     {PLAN_OPTIONS.map((option) => (
                                         <option key={option.plan} value={option.plan}>{option.label}</option>
@@ -273,7 +273,7 @@ export default function BillingPage() {
                                 <select
                                     value={planForm.requestedInterval}
                                     onChange={(event) => setPlanForm((prev) => ({ ...prev, requestedInterval: event.target.value as BillingInterval }))}
-                                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#5048e5] focus:ring-2 focus:ring-[#5048e5]/20 dark:border-slate-700 dark:bg-slate-950"
+                                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:border-slate-700 dark:bg-slate-950"
                                 >
                                     <option value="monthly">Monthly</option>
                                     <option value="annual">Annual</option>
@@ -284,13 +284,13 @@ export default function BillingPage() {
                                 onChange={(event) => setPlanForm((prev) => ({ ...prev, notes: event.target.value }))}
                                 rows={3}
                                 placeholder="Optional notes for superadmin"
-                                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#5048e5] focus:ring-2 focus:ring-[#5048e5]/20 dark:border-slate-700 dark:bg-slate-950"
+                                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:border-slate-700 dark:bg-slate-950"
                             />
                             <button
                                 type="button"
                                 onClick={submitPlanChange}
                                 disabled={submitting === 'plan'}
-                                className="rounded-lg bg-[#5048e5] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#433bcf] disabled:cursor-not-allowed disabled:opacity-60"
+                                className="rounded-lg bg-[#2563eb] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {submitting === 'plan' ? 'Submitting...' : 'Submit Plan Change'}
                             </button>
@@ -316,13 +316,13 @@ export default function BillingPage() {
                                     step={1}
                                     value={addonBundles}
                                     onChange={(event) => setAddonBundles(event.target.value)}
-                                    className="w-28 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#5048e5] focus:ring-2 focus:ring-[#5048e5]/20 dark:border-slate-700 dark:bg-slate-950"
+                                    className="w-28 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:border-slate-700 dark:bg-slate-950"
                                 />
                                 <button
                                     type="button"
                                     onClick={submitAddons}
                                     disabled={submitting === 'addon'}
-                                    className="rounded-lg bg-[#5048e5] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#433bcf] disabled:cursor-not-allowed disabled:opacity-60"
+                                    className="rounded-lg bg-[#2563eb] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     {submitting === 'addon' ? 'Submitting...' : 'Request Add-ons'}
                                 </button>
@@ -343,13 +343,13 @@ export default function BillingPage() {
                                     step={1}
                                     value={redeemPoints}
                                     onChange={(event) => setRedeemPoints(event.target.value)}
-                                    className="w-28 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#5048e5] focus:ring-2 focus:ring-[#5048e5]/20 dark:border-slate-700 dark:bg-slate-950"
+                                    className="w-28 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:border-slate-700 dark:bg-slate-950"
                                 />
                                 <button
                                     type="button"
                                     onClick={submitRedeem}
                                     disabled={submitting === 'redeem'}
-                                    className="rounded-lg bg-[#5048e5] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#433bcf] disabled:cursor-not-allowed disabled:opacity-60"
+                                    className="rounded-lg bg-[#2563eb] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     {submitting === 'redeem' ? 'Redeeming...' : 'Redeem'}
                                 </button>

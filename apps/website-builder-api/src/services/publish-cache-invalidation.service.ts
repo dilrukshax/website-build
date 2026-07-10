@@ -1,6 +1,7 @@
 import { logger } from '@project-aurora/core';
 import { normalizeDomainHost } from '../utils/domain';
 import { normalizePurgeHosts, CloudflareService } from './cloudflare.service';
+import { env } from '../lib/env';
 
 export interface CacheInvalidationContext {
     action: 'publish' | 'rollback' | 'manual' | 'blog';
@@ -128,7 +129,7 @@ export async function invalidatePublishedSiteCache(
     options: CacheInvalidationOptions = {}
 ): Promise<CacheInvalidationResult> {
     const failOpen = options.failOpen !== false;
-    const siteDomain = process.env.SITE_DOMAIN || process.env.NEXT_PUBLIC_SITE_DOMAIN || '';
+    const siteDomain = env.siteDomain();
 
     const hosts = buildInvalidationHosts({
         subdomain: context.subdomain,

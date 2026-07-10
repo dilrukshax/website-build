@@ -68,7 +68,7 @@ export default function AboutV14({ content }: ThemeComponentProps) {
                                     <div className="badge background-color-white text-align-center-mobile">
                                         <img src={asset('cdn/shop/t/15/assets/FireSimplehc89d.svg?v=147789248826584920361762187164')} loading="lazy" alt="" className="icon-1x1-xsmall" />
                                         <p className="text-size-medium text-style-allcaps">
-                                            <strong className="text-color-purple">over 100k copies sold on release</strong>
+                                            <strong className="text-color-blue">over 100k copies sold on release</strong>
                                         </p>
                                     </div>
                                     <div className="margin-bottom margin-small">
@@ -122,7 +122,7 @@ export default function AboutV14({ content }: ThemeComponentProps) {
                                 <div className="layout12_content">
                                     <div className="margin-bottom margin-small">
                                         <h3>
-                                            About <span className="text-color-purple">Acquisition.com</span>
+                                            About <span className="text-color-blue">Acquisition.com</span>
                                         </h3>
                                     </div>
                                     <div className="margin-bottom margin-small">

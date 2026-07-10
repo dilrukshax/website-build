@@ -290,7 +290,7 @@ VALUES (
           "themeTokens": {
             "background": "#f7f5f1",
             "text": "#151515",
-            "primary": "#6f39f6",
+            "primary": "#3b82f6",
             "secondary": "#f4f4f4",
             "accent": "#ff8d3b",
             "font": "Poppins, sans-serif"

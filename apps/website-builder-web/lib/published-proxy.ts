@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isPointerJsonPath, PUBLISHED_FALLBACK_CACHE_CONTROL, ROUTING_POINTER_CACHE_CONTROL } from './cache-policy';
+import { env } from './env';
 
 const REQUEST_HOP_BY_HOP_HEADERS = new Set([
     'connection',
@@ -43,8 +44,7 @@ function normalizeBaseUrl(input: string | null | undefined): string {
 
 function resolvePublishedBaseUrl(): string {
     return normalizeBaseUrl(
-        process.env.NEXT_PUBLIC_PUBLISHED_SITES_BASE_URL
-        || process.env.PUBLISHED_SITES_BASE_URL
+        env.publishedSitesBaseUrl()
         || process.env.R2_PUBLIC_URL
         || '',
     );

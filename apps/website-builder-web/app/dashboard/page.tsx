@@ -221,7 +221,7 @@ export default function DashboardPage() {
                                     <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 text-lg font-black ${
                                         step.done
                                             ? 'border-emerald-500 bg-emerald-500 text-white'
-                                            : 'border-[#5048e5] bg-[#5048e5]/10 text-[#5048e5]'
+                                            : 'border-[#2563eb] bg-[#2563eb]/10 text-[#2563eb]'
                                     }`}>
                                         {step.done ? <Check className="h-6 w-6" /> : index + 1}
                                     </div>
@@ -235,14 +235,14 @@ export default function DashboardPage() {
                                         <span className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${
                                             step.done
                                                 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
-                                                : 'bg-[#5048e5]/10 text-[#5048e5] dark:bg-[#5048e5]/20 dark:text-[#a9a4ff]'
+                                                : 'bg-[#2563eb]/10 text-[#2563eb] dark:bg-[#2563eb]/20 dark:text-[#a9a4ff]'
                                         }`}>
                                             {step.done ? 'Completed' : 'Pending'}
                                         </span>
                                     </div>
                                     <Link
                                         href={step.href}
-                                        className="inline-flex items-center gap-1 self-start rounded-lg border border-[#5048e5]/25 bg-[#5048e5]/10 px-3 py-1.5 text-xs font-semibold text-[#5048e5] transition hover:bg-[#5048e5]/15 hover:text-[#433bcf] sm:self-center"
+                                        className="inline-flex items-center gap-1 self-start rounded-lg border border-[#2563eb]/25 bg-[#2563eb]/10 px-3 py-1.5 text-xs font-semibold text-[#2563eb] transition hover:bg-[#2563eb]/15 hover:text-[#1d4ed8] sm:self-center"
                                     >
                                         Open
                                         <ArrowRight className="h-3.5 w-3.5" />

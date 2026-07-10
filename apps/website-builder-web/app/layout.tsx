@@ -79,7 +79,7 @@ export default async function RootLayout({
   const key = 'be_theme';
   const root = document.documentElement;
   const sharedTokens = {
-    '--be-primary': '#5048e5',
+    '--be-primary': '#2563eb',
     '--be-bg-light': '#f6f6f8',
     '--be-bg-dark': '#121121',
   };

@@ -1,3 +1,5 @@
+import { env } from './env';
+
 const DEFAULT_SITE_DOMAIN = 'buildmyonlineweb.site';
 const DOMAIN_PROTOCOL_REGEX = /^https?:\/\//i;
 
@@ -14,7 +16,7 @@ function normalizeDomainHost(domain: string | null | undefined): string {
 }
 
 export function getPrimarySiteDomain(): string {
-    return normalizeDomainHost(process.env.NEXT_PUBLIC_SITE_DOMAIN) || DEFAULT_SITE_DOMAIN;
+    return normalizeDomainHost(env.siteDomain()) || DEFAULT_SITE_DOMAIN;
 }
 
 export function getPrimaryDomainSuffix(): string {

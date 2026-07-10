@@ -128,8 +128,8 @@ export function TemplatePicker({ open, onClose, onSelect }: TemplatePickerProps)
                                         onClick={() => setSelectedTemplateId(template.id)}
                                         className={`flex w-full items-center gap-3 rounded-xl border p-2 text-left transition ${
                                             selected
-                                                ? 'border-[#5048e5] bg-[#5048e5]/10'
-                                                : 'border-slate-200 bg-white hover:border-[#5048e5]/50 dark:border-slate-700 dark:bg-slate-900'
+                                                ? 'border-[#2563eb] bg-[#2563eb]/10'
+                                                : 'border-slate-200 bg-white hover:border-[#2563eb]/50 dark:border-slate-700 dark:bg-slate-900'
                                         }`}
                                     >
                                         <div
@@ -174,7 +174,7 @@ export function TemplatePicker({ open, onClose, onSelect }: TemplatePickerProps)
                                                 onClick={() => setPreviewMode('desktop')}
                                                 className={`rounded-md px-2.5 py-1 text-xs font-semibold transition ${
                                                     previewMode === 'desktop'
-                                                        ? 'bg-[#5048e5] text-white'
+                                                        ? 'bg-[#2563eb] text-white'
                                                         : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
                                                 }`}
                                             >
@@ -185,7 +185,7 @@ export function TemplatePicker({ open, onClose, onSelect }: TemplatePickerProps)
                                                 onClick={() => setPreviewMode('mobile')}
                                                 className={`rounded-md px-2.5 py-1 text-xs font-semibold transition ${
                                                     previewMode === 'mobile'
-                                                        ? 'bg-[#5048e5] text-white'
+                                                        ? 'bg-[#2563eb] text-white'
                                                         : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
                                                 }`}
                                             >
@@ -223,7 +223,7 @@ export function TemplatePicker({ open, onClose, onSelect }: TemplatePickerProps)
 
                                             {iframeLoading && !iframeError && (
                                                 <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60 backdrop-blur-sm transition-opacity dark:bg-slate-900/60">
-                                                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-[#5048e5]" />
+                                                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-[#2563eb]" />
                                                 </div>
                                             )}
 
@@ -260,7 +260,7 @@ export function TemplatePicker({ open, onClose, onSelect }: TemplatePickerProps)
                                         <button
                                             type="button"
                                             onClick={() => onSelect(selectedTemplate.id)}
-                                            className="inline-flex items-center justify-center rounded-lg bg-[#5048e5] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#433bcf]"
+                                            className="inline-flex items-center justify-center rounded-lg bg-[#2563eb] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#1d4ed8]"
                                         >
                                             Apply This Template
                                         </button>

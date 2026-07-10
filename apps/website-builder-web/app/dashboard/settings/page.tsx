@@ -20,7 +20,7 @@ export default function SettingsPage() {
             <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
                 <section className="be-card p-6">
                     <div className="mb-4 flex items-center gap-2">
-                        <Building2 className="h-5 w-5 text-[#5048e5]" />
+                        <Building2 className="h-5 w-5 text-[#2563eb]" />
                         <h2 className="text-lg font-bold text-slate-900 dark:text-white">Organization</h2>
                     </div>
                     <dl className="space-y-3 text-sm">
@@ -67,7 +67,7 @@ export default function SettingsPage() {
 
                 <section className="be-card p-6">
                     <div className="mb-4 flex items-center gap-2">
-                        <Globe2 className="h-5 w-5 text-[#5048e5]" />
+                        <Globe2 className="h-5 w-5 text-[#2563eb]" />
                         <h2 className="text-lg font-bold text-slate-900 dark:text-white">Website</h2>
                     </div>
                     <dl className="space-y-3 text-sm">
@@ -95,7 +95,7 @@ export default function SettingsPage() {
 
             <section className="be-card p-6">
                 <div className="mb-5 flex items-center gap-2">
-                    <Palette className="h-5 w-5 text-[#5048e5]" />
+                    <Palette className="h-5 w-5 text-[#2563eb]" />
                     <h2 className="text-lg font-bold text-slate-900 dark:text-white">Website Customization</h2>
                 </div>
                 <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
@@ -103,7 +103,7 @@ export default function SettingsPage() {
                 </p>
                 <Link
                     href="/dashboard/website-settings"
-                    className="inline-flex items-center gap-2 rounded-lg bg-[#5048e5] px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-[#5048e5]/25 transition hover:bg-[#433bcf]"
+                    className="inline-flex items-center gap-2 rounded-lg bg-[#2563eb] px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-[#2563eb]/25 transition hover:bg-[#1d4ed8]"
                 >
                     Open Website Settings
                     <ArrowUpRight className="h-4 w-4" />
@@ -112,7 +112,7 @@ export default function SettingsPage() {
 
             <section className="be-card p-6">
                 <div className="mb-4 flex items-center gap-2">
-                    <ShieldCheck className="h-5 w-5 text-[#5048e5]" />
+                    <ShieldCheck className="h-5 w-5 text-[#2563eb]" />
                     <h2 className="text-lg font-bold text-slate-900 dark:text-white">Security Notice</h2>
                 </div>
                 <p className="text-sm text-slate-500 dark:text-slate-400">

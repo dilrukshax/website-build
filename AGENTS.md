@@ -742,10 +742,34 @@ Published pages call `/web/*` through CMS web proxy route handlers.
 
 ## 17) Environment Variables Reference (Operational)
 
+### 17.0 Single Source of Truth (canonical variable names)
+
+Every concern has ONE canonical variable name. Set it once per service. Legacy
+alias names are still read by the runtime as silent fallbacks, but new
+deployments should set only the canonical name. Central resolvers live in
+`apps/website-builder-web/lib/env.ts` and `apps/website-builder-api/src/lib/env.ts`.
+
+| Concern | Canonical var | Legacy aliases (fallbacks only) |
+| --- | --- | --- |
+| API origin | `WEBSITE_BUILDER_API_URL` | `NEXT_PUBLIC_WEBSITE_BUILDER_API_URL`, `NEXT_PUBLIC_API_URL`, `API_BASE_URL` |
+| CMS/web origin | `WEBSITE_BUILDER_WEB_URL` | `CMS_URL`, `NEXT_PUBLIC_CMS_URL` |
+| Root domain | `SITE_DOMAIN` | `NEXT_PUBLIC_SITE_DOMAIN` (auto-derived for client) |
+| Published-sites base | `PUBLISHED_SITES_BASE_URL` | `NEXT_PUBLIC_PUBLISHED_SITES_BASE_URL` |
+| Routing-index URL | `ROUTING_INDEX_CURRENT_URL` | `NEXT_PUBLIC_ROUTING_INDEX_CURRENT_URL` |
+| Routing-index TTL | `ROUTING_INDEX_CACHE_TTL_MS` | `NEXT_PUBLIC_ROUTING_INDEX_CACHE_TTL_MS` |
+| Platform host bypass | `PLATFORM_HOST_BYPASS` | `NEXT_PUBLIC_PLATFORM_HOST_BYPASS` |
+| Web proxy secret | `WEB_PROXY_SHARED_SECRET` | — |
+
+Note: `NEXT_PUBLIC_SITE_DOMAIN` is generated at build time from `SITE_DOMAIN`
+(see `apps/website-builder-web/next.config.mjs`), so operators set `SITE_DOMAIN`
+once and the browser receives it automatically. All other `NEXT_PUBLIC_*` twins
+for server-only values have been removed from code — they are no longer needed.
+
 ### 17.1 Core runtime
 
-- `NODE_ENV`, `PORT`, `API_BASE_URL`, `CMS_URL`
-- `CORS_ORIGIN`, `SITE_DOMAIN`, `NEXT_PUBLIC_SITE_DOMAIN`
+- `NODE_ENV`, `PORT`
+- `WEBSITE_BUILDER_API_URL` (API origin), `WEBSITE_BUILDER_WEB_URL` (CMS origin)
+- `CORS_ORIGIN`, `SITE_DOMAIN`
 
 ### 17.2 Auth and cookies
 
@@ -758,7 +782,7 @@ Published pages call `/web/*` through CMS web proxy route handlers.
 - `R2_ENDPOINT`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`
 - `R2_PUBLIC_URL`, `PUBLISHED_SITES_BASE_URL`
 - `ROUTING_INDEX_CURRENT_URL`, `ROUTING_INDEX_CACHE_TTL_MS`, `ROUTING_INDEX_REBUILD_TIMEOUT_MS`
-- `NEXT_PUBLIC_PUBLISHED_SITES_BASE_URL`, `NEXT_PUBLIC_ROUTING_INDEX_CURRENT_URL`, `NEXT_PUBLIC_ROUTING_INDEX_CACHE_TTL_MS`, `NEXT_PUBLIC_MANIFEST_CACHE_TTL_MS`
+- `NEXT_PUBLIC_MANIFEST_CACHE_TTL_MS`
 
 ### 17.4 Domain and proxy trust
 
@@ -924,6 +948,32 @@ If tests are skipped, explicitly record why and residual risk.
 ---
 
 ## 23) Change Log
+
+### 2026-07-10 (Global Purple → Blue Rebrand)
+
+- Replaced the global purple brand/primary color with blue across the entire codebase.
+- Brand primary `--be-primary` changed from `#5048e5` to `#2563eb` in:
+  - `apps/website-builder-web/app/globals.css`
+  - `apps/website-builder-web/app/layout.tsx`
+  - `apps/website-builder-web/contexts/theme-context.tsx`
+- Updated all CMS UI chrome purple hex values (`#5048e5`, `#433bcf`, `#4b43d8`, `#2f2a8c`, `#6366f1`) to blue equivalents (`#2563eb`, `#1d4ed8`, `#1e3a8a`, `#3b82f6`) across dashboard/onboarding/builder components.
+- Updated auth UI brand color `--brand-primary` from `#6366f1` to `#3b82f6` in `packages/auth-ui/styles.css`.
+- Updated theme template seed defaults and component-level purple fallbacks (`#6f39f6`, `#8b5cf6`, `#7c3aed`, `tone: purple`) to blue in theme components and Prisma seed migrations.
+- Renamed purple utility/Webflow classes (`text-color-purple`, `background-color-purple`) and Tailwind `purple-*` classes to blue in Harmozi VSL theme components and dashboard staff/bookings pages.
+- Impacted modules/files:
+  - `apps/website-builder-web/app/globals.css`
+  - `apps/website-builder-web/app/layout.tsx`
+  - `apps/website-builder-web/contexts/theme-context.tsx`
+  - `packages/auth-ui/styles.css`
+  - `packages/themes/src/components/harmozi-vsl-v1/*`
+  - `apps/website-builder-web/app/dashboard/staff/page.tsx`
+  - `apps/website-builder-web/app/dashboard/bookings/[id]/page.tsx`
+  - `packages/database/prisma/migrations/*` (template seed color defaults)
+  - `apps/website-builder-api/src/services/discord-webhook.service.ts`
+- Migration/rollout implications:
+  - No schema migration required.
+  - Existing published sites keep their stored `tokens.primary`; only default/fallback values and new installs now use blue.
+  - Restart/redeploy CMS and API runtimes so updated brand colors and compiled CSS take effect.
 
 ### 2026-04-30 (Dedicated Website Settings Page + Root Custom Body Slots)
 
@@ -2839,3 +2889,47 @@ If tests are skipped, explicitly record why and residual risk.
 - Rewrote handbook to align with actual runtime architecture.
 - Replaced outdated assumptions with current JWT + refresh-cookie auth model.
 - Added password/token back-and-forth flow and baseline guardrails.
+
+### 2026-07-10 (Environment Variable Consolidation: Single Source of Truth)
+
+- Eliminated the need to set the same value under many variable names. Each concern now has ONE canonical variable name; legacy aliases remain as silent fallbacks so existing deploys keep working.
+- Canonical names:
+  - `WEBSITE_BUILDER_API_URL` (replaces `NEXT_PUBLIC_WEBSITE_BUILDER_API_URL`, `NEXT_PUBLIC_API_URL`, `API_BASE_URL`)
+  - `WEBSITE_BUILDER_WEB_URL` (replaces `CMS_URL`, `NEXT_PUBLIC_CMS_URL`)
+  - `SITE_DOMAIN` (auto-exposes `NEXT_PUBLIC_SITE_DOMAIN` via `next.config.mjs`)
+  - `PUBLISHED_SITES_BASE_URL`, `ROUTING_INDEX_CURRENT_URL`, `ROUTING_INDEX_CACHE_TTL_MS`, `PLATFORM_HOST_BYPASS`, `WEB_PROXY_SHARED_SECRET`
+- Added central resolvers:
+  - `apps/website-builder-web/lib/env.ts`
+  - `apps/website-builder-api/src/lib/env.ts`
+- Updated all env reads to use these resolvers (canonical first, legacy fallback):
+  - CMS: `middleware.ts`, `lib/api-proxy.ts`, `lib/web-proxy.ts`, `lib/published-site.ts`, `lib/routing-index.ts`, `lib/cache-policy.ts`, `lib/domain.ts`, `lib/published-proxy.ts`, `app/dashboard/builder/page.tsx` (already used `NEXT_PUBLIC_SITE_DOMAIN`)
+  - API: `src/middleware/public-web-context.ts`, `src/server.ts`, `src/services/publish-cache-invalidation.service.ts`, `src/services/referrals.service.ts`
+- Confirmed only `NEXT_PUBLIC_SITE_DOMAIN` is read in client code; all other public twins were server-only and are no longer needed.
+- Consolidated `.env.example` (root) and `apps/website-builder-api/.env.example` to canonical names only, with a documented list of removed legacy aliases.
+- Updated `docker-compose.prod.yml` and the web `Dockerfile`/`Dockerfile.coolify` to pass only canonical vars; the CMS build now bakes only `SITE_DOMAIN` (which drives `NEXT_PUBLIC_SITE_DOMAIN`).
+- Impacted modules/files:
+  - `apps/website-builder-web/lib/env.ts` (new)
+  - `apps/website-builder-api/src/lib/env.ts` (new)
+  - `apps/website-builder-web/middleware.ts`
+  - `apps/website-builder-web/lib/api-proxy.ts`
+  - `apps/website-builder-web/lib/web-proxy.ts`
+  - `apps/website-builder-web/lib/published-site.ts`
+  - `apps/website-builder-web/lib/routing-index.ts`
+  - `apps/website-builder-web/lib/cache-policy.ts`
+  - `apps/website-builder-web/lib/domain.ts`
+  - `apps/website-builder-web/lib/published-proxy.ts`
+  - `apps/website-builder-api/src/middleware/public-web-context.ts`
+  - `apps/website-builder-api/src/server.ts`
+  - `apps/website-builder-api/src/services/publish-cache-invalidation.service.ts`
+  - `apps/website-builder-api/src/services/referrals.service.ts`
+  - `.env.example`
+  - `apps/website-builder-api/.env.example`
+  - `docker-compose.prod.yml`
+  - `apps/website-builder-web/Dockerfile`
+  - `apps/website-builder-web/Dockerfile.coolify`
+  - `AGENTS.md`
+- Migration/rollout implications:
+  - No database migration required.
+  - Operators can now delete the redundant legacy alias lines from their deployment env (Coolify/compose): `API_BASE_URL`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_WEBSITE_BUILDER_API_URL`, `CMS_URL`, `NEXT_PUBLIC_CMS_URL`, `NEXT_PUBLIC_SITE_DOMAIN` (derived from `SITE_DOMAIN`), and the `NEXT_PUBLIC_*` twins of routing-index/published-sites/platform-bypass. Setting the canonical name is sufficient.
+  - Existing deploys that still set the legacy names continue to work unchanged because the resolvers read them as fallbacks.
+  - Redeploy CMS (rebuild standalone) and API so the consolidated resolvers and Dockerfile changes take effect.

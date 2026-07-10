@@ -1,3 +1,5 @@
+import { env } from './env';
+
 export interface RoutingIndexPointer {
     version: string;
     generatedAt: string;
@@ -19,10 +21,7 @@ function parsePositiveInteger(input: string | undefined, fallback: number): numb
     return Math.floor(value);
 }
 
-const ROUTING_INDEX_CACHE_TTL_MS = parsePositiveInteger(
-    process.env.ROUTING_INDEX_CACHE_TTL_MS || process.env.NEXT_PUBLIC_ROUTING_INDEX_CACHE_TTL_MS,
-    30_000,
-);
+const ROUTING_INDEX_CACHE_TTL_MS = env.routingIndexCacheTtlMs();
 const SHOULD_CACHE_POINTER = process.env.NODE_ENV !== 'test';
 
 let cachedPointer: CachedRoutingIndexPointer | null = null;
@@ -44,15 +43,14 @@ function normalizeBaseUrl(input: string | null | undefined): string {
 
 function resolvePublishedBaseUrl(): string {
     return normalizeBaseUrl(
-        process.env.NEXT_PUBLIC_PUBLISHED_SITES_BASE_URL
-        || process.env.PUBLISHED_SITES_BASE_URL
+        env.publishedSitesBaseUrl()
         || process.env.R2_PUBLIC_URL
         || '',
     );
 }
 
 function resolveCurrentIndexUrl(): string {
-    const explicit = (process.env.NEXT_PUBLIC_ROUTING_INDEX_CURRENT_URL || process.env.ROUTING_INDEX_CURRENT_URL || '').trim();
+    const explicit = env.routingIndexCurrentUrl();
     if (explicit) {
         return explicit;
     }

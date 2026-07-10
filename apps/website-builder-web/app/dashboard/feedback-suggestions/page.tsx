@@ -104,7 +104,7 @@ export default function FeedbackSuggestionsPage() {
                         required
                         maxLength={255}
                         placeholder="Example: Better booking filters"
-                        className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition focus:border-[#5048e5] focus:ring-2 focus:ring-[#5048e5]/20 dark:border-slate-700 dark:bg-slate-900"
+                        className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:border-slate-700 dark:bg-slate-900"
                     />
                 </div>
 
@@ -120,7 +120,7 @@ export default function FeedbackSuggestionsPage() {
                         rows={5}
                         maxLength={5000}
                         placeholder="Describe the change and why it would help your workflow."
-                        className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition focus:border-[#5048e5] focus:ring-2 focus:ring-[#5048e5]/20 dark:border-slate-700 dark:bg-slate-900"
+                        className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:border-slate-700 dark:bg-slate-900"
                     />
                 </div>
 
@@ -140,7 +140,7 @@ export default function FeedbackSuggestionsPage() {
                     <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="rounded-lg bg-[#5048e5] px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-[#5048e5]/25 transition hover:bg-[#433bcf] disabled:cursor-not-allowed disabled:opacity-60"
+                        className="rounded-lg bg-[#2563eb] px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-[#2563eb]/25 transition hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         {isSubmitting ? 'Submitting...' : 'Submit Suggestion'}
                     </button>

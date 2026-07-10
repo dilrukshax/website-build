@@ -284,7 +284,7 @@ function StaffRow({
                         <p className="font-medium text-gray-900">
                             {member.fullName}
                             {member.isOwner && (
-                                <span className="ml-2 px-1.5 py-0.5 bg-purple-100 text-purple-700 text-xs rounded">Owner</span>
+                                <span className="ml-2 px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">Owner</span>
                             )}
                         </p>
                         <p className="text-sm text-gray-500">{member.email}</p>

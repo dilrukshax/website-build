@@ -65,7 +65,7 @@ export default function ProductV14({ content }: ThemeComponentProps) {
                             <div className="margin-bottom margin-xxlarge align-center text-align-center">
                                 <div className={`${variant === 'series' ? 'max-width-full' : 'max-width-large align-center text-align-center'}`}>
                                     {eyebrow ? (
-                                        <div className="badge background-color-purple">
+                                        <div className="badge background-color-blue">
                                             <img src={asset('cdn/shop/t/15/assets/icon-white-1hbf07.svg?v=96165811441556886041762187167')} loading="lazy" alt="" className="icon-1x1-xsmall" />
                                             <p className="text-size-medium text-style-allcaps">
                                                 <strong className="text-color-white">{eyebrow}</strong>
@@ -79,7 +79,7 @@ export default function ProductV14({ content }: ThemeComponentProps) {
                                 {items.map((item, index) => (
                                     <div key={`${item.title}-${index}`} className={`layout242_item ${item.featured ? 'featured' : ''}`}>
                                         {item.badge ? (
-                                            <div className="badge background-color-purple badge_card">
+                                            <div className="badge background-color-blue badge_card">
                                                 <p className="text-size-medium text-style-allcaps text-weight-semibold text-color-white">{item.badge}</p>
                                             </div>
                                         ) : null}
@@ -97,7 +97,7 @@ export default function ProductV14({ content }: ThemeComponentProps) {
                                             ) : null}
                                             <h3 className={variant === 'series' ? 'text-size-regular text-align-center margin-bottom margin-xsmall' : 'heading-style-h6 text-align-center'}>{item.title}</h3>
                                         </div>
-                                        {item.price ? <h3 className="text-size-regular text-color-purple text-align-center">{item.price}</h3> : null}
+                                        {item.price ? <h3 className="text-size-regular text-color-blue text-align-center">{item.price}</h3> : null}
                                         {!item.price ? <p className="text-size-regular text-align-center">{item.description}</p> : null}
                                         {item.price ? null : <div className="text-size-regular text-align-center">{item.description}</div>}
                                         <div className="margin-top margin-medium max-width-full">

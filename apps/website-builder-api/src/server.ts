@@ -16,6 +16,7 @@ import { swaggerSpec } from './swagger';
 import { createDynamicCorsOptionsDelegate } from './middleware/cors';
 import { normalizeDomainHost } from './utils/domain';
 import { RoutingIndexService } from './services/routing-index.service';
+import { env } from './lib/env';
 
 // Load .env from monorepo root in all environments as a best-effort fallback.
 // Runtime-provided environment variables still take precedence.
@@ -35,13 +36,12 @@ function buildStaticCorsOrigins(): string {
         }
     }
 
-    const cmsUrl = (process.env.CMS_URL || '').trim();
+    const cmsUrl = env.cmsUrl();
     if (cmsUrl) {
         values.add(cmsUrl);
     }
 
-    const siteDomain = normalizeDomainHost(process.env.SITE_DOMAIN || '')
-        || normalizeDomainHost(process.env.NEXT_PUBLIC_SITE_DOMAIN || '');
+    const siteDomain = normalizeDomainHost(env.siteDomain());
     if (siteDomain) {
         values.add(`https://${siteDomain}`);
         values.add(`https://www.${siteDomain}`);

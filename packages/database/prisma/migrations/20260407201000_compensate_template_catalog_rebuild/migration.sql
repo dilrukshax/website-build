@@ -866,7 +866,7 @@ VALUES (
           "proofItems": [
             { "label": "Response time", "value": "< 2 min", "tone": "cyan" },
             { "label": "Completion rate", "value": "98%", "tone": "green" },
-            { "label": "Team coverage", "value": "24/7", "tone": "purple" }
+            { "label": "Team coverage", "value": "24/7", "tone": "blue" }
           ]
         },
         "defaultStyles": {}
@@ -2366,7 +2366,7 @@ SET
         '{
           "background": "#111827",
           "text": "#f9fafb",
-          "primary": "#6366f1",
+          "primary": "#3b82f6",
           "secondary": "#1f2937",
           "accent": "#10b981",
           "font": "\"Roboto\", sans-serif"
@@ -2478,7 +2478,7 @@ SET
         '{
           "background": "#faf5ff",
           "text": "#312e81",
-          "primary": "#7c3aed",
+          "primary": "#3b82f6",
           "secondary": "#ede9fe",
           "accent": "#f97316",
           "font": "\"Outfit\", sans-serif"
