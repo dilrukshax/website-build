@@ -1,4 +1,4 @@
-# buildmyonlineweb CMS
+# Project Aurora
 
 Multi-tenant SaaS booking and website management platform for service-based businesses.
 
@@ -93,7 +93,7 @@ DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@localhost:5432/booking_engine
 Next.js loads environment variables from its own directory:
 
 ```bash
-# Create file: apps/cms/.env.local
+# Create file: apps/website-builder-web/.env.local
 ```
 
 ```env
@@ -166,9 +166,9 @@ Optional: preserve additional users with `DB_CLEANUP_KEEP_EMAILS` in `.env`
 Packages must be built in dependency order:
 
 ```bash
-pnpm --filter @booking-engine/core build
-pnpm --filter @booking-engine/database build
-pnpm --filter @booking-engine/auth build
+pnpm --filter @project-aurora/core build
+pnpm --filter @project-aurora/database build
+pnpm --filter @project-aurora/auth build
 ```
 
 ---
@@ -178,13 +178,13 @@ pnpm --filter @booking-engine/auth build
 ### Start API server
 
 ```bash
-pnpm --filter @booking-engine/api dev
+pnpm --filter @project-aurora/website-builder-api dev
 ```
 
 ### Start CMS frontend
 
 ```bash
-pnpm --filter @booking-engine/cms dev
+pnpm --filter @project-aurora/website-builder-web dev
 ```
 
 > Run each command in a separate terminal window.
@@ -217,13 +217,13 @@ cd packages/database && npx prisma db push && cd ../..
 pnpm db:seed
 
 # 4. Build packages
-pnpm --filter @booking-engine/core build
-pnpm --filter @booking-engine/database build
-pnpm --filter @booking-engine/auth build
+pnpm --filter @project-aurora/core build
+pnpm --filter @project-aurora/database build
+pnpm --filter @project-aurora/auth build
 
 # 5. Start servers (each in separate terminal)
-pnpm --filter @booking-engine/api dev       # API  → http://localhost:3002
-pnpm --filter @booking-engine/cms dev       # CMS  → http://localhost:3001
+pnpm --filter @project-aurora/website-builder-api dev       # API  → http://localhost:3002
+pnpm --filter @project-aurora/website-builder-web dev       # CMS  → http://localhost:3001
 ```
 
 ---
@@ -398,7 +398,7 @@ CORS_ORIGIN=http://localhost:3001,http://localhost:3002
 
 ### Tailwind styles not loading
 
-Ensure `apps/cms/postcss.config.js` uses `@tailwindcss/postcss` (not `tailwindcss` directly):
+Ensure `apps/website-builder-web/postcss.config.js` uses `@tailwindcss/postcss` (not `tailwindcss` directly):
 
 ```js
 module.exports = {
@@ -410,7 +410,7 @@ module.exports = {
 
 ### CMS can't reach the API
 
-Ensure `apps/cms/.env.local` has:
+Ensure `apps/website-builder-web/.env.local` has:
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3002

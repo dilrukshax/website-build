@@ -1,6 +1,6 @@
 import jwt, { SignOptions } from 'jsonwebtoken';
 import crypto from 'crypto';
-import { JWTPayload } from '@booking-engine/core';
+import { JWTPayload } from '@project-aurora/core';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'default-secret-change-me';
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'default-refresh-secret-change-me';

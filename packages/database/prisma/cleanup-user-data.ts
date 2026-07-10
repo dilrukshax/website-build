@@ -239,7 +239,7 @@ function printUsage(): void {
     console.log('Cleanup non-admin user data while preserving admin and system template data.');
     console.log('');
     console.log('Usage:');
-    console.log('  pnpm --filter @booking-engine/database run db:cleanup-users [--execute] [--keep-email=email]');
+    console.log('  pnpm --filter @project-aurora/database run db:cleanup-users [--execute] [--keep-email=email]');
     console.log('');
     console.log('Options:');
     console.log('  --execute                Apply destructive changes (default is dry-run).');

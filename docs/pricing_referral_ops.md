@@ -3,7 +3,7 @@
 ## Daily Points Expiry Sweep
 
 - Command:
-  - `npm --workspace=@booking-engine/api run referrals:sweep-expired-points`
+  - `npm --workspace=@project-aurora/website-builder-api run referrals:sweep-expired-points`
 - Expected output:
   - JSON payload with `{ accounts, expiredPoints }`.
 - Recommended cadence:

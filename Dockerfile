@@ -1,7 +1,7 @@
 # ============================================================
-# Unified Dockerfile — Booking Engine Monorepo
-# Builds BOTH @booking-engine/api (Express) and
-# @booking-engine/cms (Next.js standalone) into one image.
+# Unified Dockerfile — Project Aurora Monorepo
+# Builds BOTH @project-aurora/website-builder-api (Express) and
+# @project-aurora/website-builder-web (Next.js standalone) into one image.
 #
 # Ports: API → 3002 | CMS → 3001
 # Startup: entrypoint.sh (prisma migrate + api + cms)
@@ -18,20 +18,20 @@ RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
 # ----------------------------------------------------------
-# Stage 1a: prune-api — Turborepo prune for @booking-engine/api
+# Stage 1a: prune-api — Turborepo prune for @project-aurora/website-builder-api
 # ----------------------------------------------------------
 FROM base AS prune-api
 
 COPY . .
-RUN npx turbo prune @booking-engine/api --docker
+RUN npx turbo prune @project-aurora/website-builder-api --docker
 
 # ----------------------------------------------------------
-# Stage 1b: prune-cms — Turborepo prune for @booking-engine/cms
+# Stage 1b: prune-cms — Turborepo prune for @project-aurora/website-builder-web
 # ----------------------------------------------------------
 FROM base AS prune-cms
 
 COPY . .
-RUN npx turbo prune @booking-engine/cms --docker
+RUN npx turbo prune @project-aurora/website-builder-web --docker
 
 # ----------------------------------------------------------
 # Stage 2a: builder-api — Install deps + build API
@@ -53,13 +53,13 @@ COPY --from=prune-api /app/out/full/ .
 COPY --from=prune-api /app/out/full/packages/database/prisma ./packages/database/prisma
 
 # Generate Prisma client
-RUN pnpm --filter @booking-engine/database run db:generate
+RUN pnpm --filter @project-aurora/database run db:generate
 
 # Copy root configs needed by build
 COPY turbo.json tsconfig.json ./
 
 # Build API (and its internal dependencies)
-RUN pnpm turbo build --filter=@booking-engine/api...
+RUN pnpm turbo build --filter=@project-aurora/website-builder-api...
 
 # ----------------------------------------------------------
 # Stage 2b: builder-cms — Install deps + build CMS (Next.js)
@@ -78,18 +78,20 @@ RUN pnpm install --frozen-lockfile --prefer-offline
 COPY --from=prune-cms /app/out/full/ .
 
 # Build args for Next.js (baked at build time)
+ARG NEXT_PUBLIC_WEBSITE_BUILDER_API_URL=http://localhost:3002
 ARG NEXT_PUBLIC_API_URL=http://localhost:3002
+ENV NEXT_PUBLIC_WEBSITE_BUILDER_API_URL=${NEXT_PUBLIC_WEBSITE_BUILDER_API_URL}
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Ensure public dir exists
-RUN mkdir -p apps/cms/public
+RUN mkdir -p apps/website-builder-web/public
 
 # Copy root configs needed by build
 COPY turbo.json tsconfig.json ./
 
 # Build CMS (and its internal dependencies)
-RUN pnpm turbo build --filter=@booking-engine/cms...
+RUN pnpm turbo build --filter=@project-aurora/website-builder-web...
 
 # ----------------------------------------------------------
 # Stage 3: runner — minimal final image with both apps
@@ -111,10 +113,10 @@ COPY --from=builder-api --chown=appuser:nodejs /app /app
 
 # ── CMS artifacts ─────────────────────────────────────────
 # Copy Next.js standalone output on top of the workspace
-COPY --from=builder-cms --chown=appuser:nodejs /app/apps/cms/.next/standalone/apps/cms ./apps/cms
-COPY --from=builder-cms --chown=appuser:nodejs /app/apps/cms/.next/standalone/node_modules ./node_modules_cms_standalone
-COPY --from=builder-cms --chown=appuser:nodejs /app/apps/cms/.next/static ./apps/cms/.next/static
-COPY --from=builder-cms --chown=appuser:nodejs /app/apps/cms/public ./apps/cms/public
+COPY --from=builder-cms --chown=appuser:nodejs /app/apps/website-builder-web/.next/standalone/apps/website-builder-web ./apps/website-builder-web
+COPY --from=builder-cms --chown=appuser:nodejs /app/apps/website-builder-web/.next/standalone/node_modules ./node_modules_cms_standalone
+COPY --from=builder-cms --chown=appuser:nodejs /app/apps/website-builder-web/.next/static ./apps/website-builder-web/.next/static
+COPY --from=builder-cms --chown=appuser:nodejs /app/apps/website-builder-web/public ./apps/website-builder-web/public
 
 # ── Entrypoint ───────────────────────────────────────────
 COPY --chown=appuser:nodejs entrypoint.sh ./entrypoint.sh

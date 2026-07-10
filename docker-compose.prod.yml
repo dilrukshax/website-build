@@ -17,7 +17,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: be-redis
+    container_name: project-aurora-redis
     restart: unless-stopped
     command: >
       redis-server
@@ -39,9 +39,9 @@ services:
   api-migrate:
     build:
       context: .
-      dockerfile: apps/api/Dockerfile
+      dockerfile: apps/website-builder-api/Dockerfile
       target: installer
-    container_name: be-api-migrate
+    container_name: project-aurora-api-migrate
     command: >
       sh -c "
         cd packages/database &&
@@ -60,14 +60,15 @@ services:
   api:
     build:
       context: .
-      dockerfile: apps/api/Dockerfile
-    container_name: be-api
+      dockerfile: apps/website-builder-api/Dockerfile
+    container_name: project-aurora-website-builder-api
     restart: unless-stopped
     ports:
       - "${API_PORT:-3002}:3002"
     environment:
       NODE_ENV: production
       PORT: 3002
+      WEBSITE_BUILDER_API_URL: ${WEBSITE_BUILDER_API_URL:-${API_BASE_URL:-http://api:3002}}
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env (Neon DB connection string)}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?Set JWT_REFRESH_SECRET in .env}
@@ -117,15 +118,18 @@ services:
   cms:
     build:
       context: .
-      dockerfile: apps/cms/Dockerfile
+      dockerfile: apps/website-builder-web/Dockerfile
       args:
+        NEXT_PUBLIC_WEBSITE_BUILDER_API_URL: ${NEXT_PUBLIC_WEBSITE_BUILDER_API_URL:-${NEXT_PUBLIC_API_URL:-http://localhost:3002}}
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3002}
-    container_name: be-cms
+    container_name: project-aurora-website-builder-web
     restart: unless-stopped
     ports:
       - "${CMS_PORT:-3001}:3001"
     environment:
       NODE_ENV: production
+      WEBSITE_BUILDER_API_URL: ${WEBSITE_BUILDER_API_URL:-${API_BASE_URL:-http://api:3002}}
+      NEXT_PUBLIC_WEBSITE_BUILDER_API_URL: ${NEXT_PUBLIC_WEBSITE_BUILDER_API_URL:-${NEXT_PUBLIC_API_URL:-http://localhost:3002}}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3002}
       SITE_DOMAIN: ${SITE_DOMAIN:-buildmyonlineweb.site}
       NEXT_PUBLIC_SITE_DOMAIN: ${SITE_DOMAIN:-buildmyonlineweb.site}

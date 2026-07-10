@@ -107,7 +107,7 @@ tsc-errors.log
 tsc_output.txt
 build_output.txt
 complete-errors.log
-booking-engine-errors.log
+project-aurora-errors.log
 test-api.ts
 test-api-local.ts
 final_architecture*.md
@@ -124,6 +124,14 @@ final_architecture*.md
 .npm/
 .yarn/cache
 .pnpm-store/
+
+# =============================================================
+# GENERATED SCRATCH / OUTPUT (cleanup plan, Phase 1)
+# =============================================================
+/mock-builder/
+/.scratch/
+/output/
+apps/website-builder-web/scratch*
 
 # =============================================================
 # MISC

@@ -1,4 +1,4 @@
-# buildmyonlineweb CMS - CDN Routing Index Runbook
+# Project Aurora - CDN Routing Index Runbook
 
 This runbook documents the provider-agnostic domain routing model for manual DNS and CDN index routing.
 

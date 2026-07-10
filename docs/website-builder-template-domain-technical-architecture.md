@@ -1,4 +1,4 @@
-# Booking Engine CMS Website Builder Technical Architecture
+# Project Aurora Website Builder Technical Architecture
 
 ## 1. Purpose and Scope
 
@@ -14,8 +14,8 @@ This document explains, end-to-end, how this project handles:
 
 This is based on the current implementation in:
 
-- `apps/api`
-- `apps/cms`
+- `apps/website-builder-api`
+- `apps/website-builder-web`
 - `packages/database`
 - `packages/themes`
 
@@ -26,8 +26,8 @@ This is based on the current implementation in:
 ```mermaid
 flowchart LR
     U[CMS User]
-    C[apps/cms Next.js]
-    A[apps/api Express]
+    C[apps/website-builder-web Next.js]
+    A[apps/website-builder-api Express]
     D[(PostgreSQL / Prisma)]
     R2[(Cloudflare R2)]
     CF[Cloudflare Cache/DNS]

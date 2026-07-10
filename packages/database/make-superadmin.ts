@@ -16,7 +16,8 @@ async function main() {
     });
 
     if (existingUser) {
-        const superadminEmail = 'superadmin@booking-engine.com';
+        const superadminEmail =
+            process.env.SUPERADMIN_EMAIL || 'admin@buildmyonlineweb.site';
         
         await prisma.user.upsert({
             where: { email: superadminEmail },

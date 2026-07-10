@@ -4,7 +4,7 @@
 # ============================================================
 set -e
 
-echo "[startup] === Booking Engine unified container starting ==="
+echo "[startup] === Project Aurora unified container starting ==="
 
 # ─── 1. Prisma Migrations ──────────────────────────────────
 echo "[startup] Running Prisma migrations..."
@@ -26,7 +26,7 @@ done
 
 # ─── 2. Start API (background) ────────────────────────────
 echo "[startup] Starting API on port ${PORT:-3002}..."
-cd /app/apps/api
+cd /app/apps/website-builder-api
 node dist/server.js &
 API_PID=$!
 echo "[startup] API started (PID: ${API_PID})"
@@ -34,7 +34,7 @@ echo "[startup] API started (PID: ${API_PID})"
 # ─── 3. Start CMS (foreground) ────────────────────────────
 echo "[startup] Starting CMS on port ${CMS_PORT:-3001}..."
 cd /app
-PORT=${CMS_PORT:-3001} node apps/cms/server.js &
+PORT=${CMS_PORT:-3001} node apps/website-builder-web/server.js &
 CMS_PID=$!
 echo "[startup] CMS started (PID: ${CMS_PID})"
 

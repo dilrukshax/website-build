@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from 'async_hooks';
 import { PrismaClient } from '@prisma/client';
-import { logger } from '@booking-engine/core';
+import { logger } from '@project-aurora/core';
 
 // ============================================================
 // Tenant + Instance context storage

@@ -1,6 +1,6 @@
 // ============================================================
-// Shared TypeScript types for @booking-engine platform
-// Used across: apps/api, apps/cms, apps/themes/*
+// Shared TypeScript types for the Project Aurora platform
+// Used across: apps/website-builder-api, apps/website-builder-web, apps/themes/*
 // ============================================================
 
 // --- API Response shapes ---
