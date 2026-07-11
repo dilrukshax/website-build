@@ -1,7 +1,8 @@
 /**
  * Auth UI — Shared JavaScript
  * Handles API calls, token storage, form validation, and page routing
- * for the Multi-Tenant buildmyonlineweb auth flow.
+ *
+ * Authentication helpers for the Project Aurora auth flow.
  */
 
 // ── Config ──────────────────────────────────────────────────────────────

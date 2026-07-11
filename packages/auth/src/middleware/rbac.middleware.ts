@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { UserRole, ERROR_CODES } from '@booking-engine/core';
+import { UserRole, ERROR_CODES } from '@project-aurora/core';
 
 /**
  * Role hierarchy - higher index = more permissions

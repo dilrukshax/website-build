@@ -1,14 +1,14 @@
 # Sevalla Production Deployment Guide (Docker)
-## buildmyonlineweb CMS — Multi-Tenant
+## Project Aurora — Multi-Tenant
 
-This guide covers deploying your buildmyonlineweb CMS on **Sevalla** using its **Docker Image** build strategy. Since this project already has production-ready Dockerfiles for both the API backend and the CMS frontend, Sevalla can build and serve them directly without us needing to manually configure Node.js build commands!
+This guide covers deploying your Project Aurora on **Sevalla** using its **Docker Image** build strategy. Since this project already has production-ready Dockerfiles for both the API backend and the CMS frontend, Sevalla can build and serve them directly without us needing to manually configure Node.js build commands!
 
 ---
 
 ## What You Need ✅
 
 1. **Sevalla Account**: Logged into your dashboard.
-2. **GitHub Connection**: Your Sevalla account connected to GitHub to access the `any-booking-system/Booking-Engine-CMS` repo.
+2. **GitHub Connection**: Your Sevalla account connected to GitHub to access the `your-project-aurora-repository` repo.
 3. **Neon DB**: Your existing Neon Postgres DB URL.
 4. **Cloudflare R2**: Your R2 credentials for media storage.
 
@@ -21,7 +21,7 @@ The API uses Redis for caching and rate limiting.
 1. In Sevalla, go to **Databases** → **Add Database**.
 2. **Database Type**: Select **Redis**.
 3. **Version**: Choose 7.x.
-4. **Name**: `booking-engine-redis`
+4. **Name**: `project-aurora-redis`
 5. **Region**: Choose the region closest to your users.
 6. Click **Create Database**.
 7. Once created, click on it and copy the **Internal Connection String** (it will look like `redis://...`). Save this for Step 2.
@@ -30,14 +30,14 @@ The API uses Redis for caching and rate limiting.
 
 ## Step 2 — Deploy the API (Backend) using Docker
 
-We will tell Sevalla to build the API from the `apps/api/Dockerfile`.
+We will tell Sevalla to build the API from the `apps/website-builder-api/Dockerfile`.
 
 1. Go to **Applications** → **Add Application** in Sevalla.
-2. Select your GitHub repository: `any-booking-system/Booking-Engine-CMS`.
-3. **Application Name**: `booking-engine-api`
+2. Select your GitHub repository: `your-project-aurora-repository`.
+3. **Application Name**: `project-aurora-website-builder-api`
 4. **Build Strategy**: Expand the **Build** section and click **Update Build Strategy**.
 5. Select **Dockerfile** as the builder.
-   - **Dockerfile path**: `apps/api/Dockerfile`
+   - **Dockerfile path**: `apps/website-builder-api/Dockerfile`
    - **Dockerfile context**: `.`  *(This is extremely important for a monorepo, it must be just a period!)*
 6. **Environment Variables**: Add all the API secrets here.
    *Note: Generating strong random secrets (e.g., use an online UUID generator).*
@@ -84,11 +84,11 @@ We will tell Sevalla to build the API from the `apps/api/Dockerfile`.
    - `Zone.Cache Purge:Edit`
    - `Zone.Zone:Read`
 
-7. **Deploy the Application**. Note the generated Sevalla URL for the API (e.g., `booking-engine-api-abc.sevalla.app`).
+7. **Deploy the Application**. Note the generated Sevalla URL for the API (e.g., `project-aurora-website-builder-api-abc.sevalla.app`).
 
 ### Run Database Migrations
 Before the API can work, the database schema needs to be initialized.
-1. In the Sevalla dashboard for `booking-engine-api`, go to the **Console** or **Terminal** tab.
+1. In the Sevalla dashboard for `project-aurora-website-builder-api`, go to the **Console** or **Terminal** tab.
 2. Run this command to apply migrations to your Neon database:
    ```bash
    cd packages/database && npx prisma migrate deploy
@@ -101,11 +101,11 @@ Before the API can work, the database schema needs to be initialized.
 We will now do the exact same thing for the frontend, pointing it to the CMS Dockerfile.
 
 1. Go to **Applications** → **Add Application** again.
-2. Select your repository: `any-booking-system/Booking-Engine-CMS`.
-3. **Application Name**: `booking-engine-cms`
+2. Select your repository: `your-project-aurora-repository`.
+3. **Application Name**: `project-aurora-website-builder-web`
 4. **Build Strategy**: Expand the **Build** section and click **Update Build Strategy**.
 5. Select **Dockerfile** as the builder.
-   - **Dockerfile path**: `apps/cms/Dockerfile`
+   - **Dockerfile path**: `apps/website-builder-web/Dockerfile`
    - **Dockerfile context**: `.`  *(Must be a single period!)*
 6. **Environment Variables**:
    ```env
@@ -113,7 +113,7 @@ We will now do the exact same thing for the frontend, pointing it to the CMS Doc
    PORT=3001   # The Docker container listens on 3001
    
    # Point this to the API URL Sevalla generated in Step 2:
-   NEXT_PUBLIC_API_URL=https://booking-engine-api-abc.sevalla.app
+   NEXT_PUBLIC_API_URL=https://project-aurora-website-builder-api-abc.sevalla.app
    WEB_PROXY_SHARED_SECRET=<same-random-secret-used-in-api>
    ```
 7. **Deploy the Application**. Note the generated Sevalla URL for the CMS.
@@ -125,9 +125,9 @@ We will now do the exact same thing for the frontend, pointing it to the CMS Doc
 Now that you have both the API and the CMS running from their Docker containers and you know their Sevalla URLs, go back to the **API Application's Environment Variables** in Sevalla and ensure `CORS_ORIGIN` and `CMS_URL` whitelist the new CMS URL:
 
 ```env
-CMS_URL=https://booking-engine-cms-xyz.sevalla.app
-CORS_ORIGIN=https://booking-engine-cms-xyz.sevalla.app
-API_BASE_URL=https://booking-engine-api-abc.sevalla.app
+CMS_URL=https://project-aurora-website-builder-web-xyz.sevalla.app
+CORS_ORIGIN=https://project-aurora-website-builder-web-xyz.sevalla.app
+API_BASE_URL=https://project-aurora-website-builder-api-abc.sevalla.app
 SITE_DOMAIN=yourdomain.com
 WEB_PROXY_SHARED_SECRET=<same-random-secret-used-in-cms>
 ```
@@ -151,7 +151,7 @@ If you want to use custom domains (like `app.yourdomain.com` and `api.yourdomain
 Your webites will use the `/preview/` route to test what you published.
 
 Visit:
-`https://booking-engine-cms-xyz.sevalla.app/preview/mysalon` 
+`https://project-aurora-website-builder-web-xyz.sevalla.app/preview/mysalon` 
 *(or whatever URL Sevalla gave your frontend CMS app)*. It resolves host mappings from CDN routing index and loads manifests from R2/CDN artifacts.
 
 ---

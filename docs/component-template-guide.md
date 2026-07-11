@@ -1,6 +1,6 @@
 # Component Template Creation Guide
 
-This guide explains how to create new component-based templates (sections) for the buildmyonlineweb CMS. Components are the building blocks of pages in this system, allowing for a modular and flexible design.
+This guide explains how to create new component-based templates (sections) for the Project Aurora. Components are the building blocks of pages in this system, allowing for a modular and flexible design.
 
 ---
 

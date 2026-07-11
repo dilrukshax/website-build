@@ -1,5 +1,5 @@
 {
-    "name": "booking-engine-monorepo",
+    "name": "project-aurora",
     "version": "1.0.0",
     "private": true,
     "packageManager": "pnpm@10.30.3",
@@ -7,16 +7,17 @@
         "apps/*",
         "packages/*"
     ],
-    "description": "Multi-tenant SaaS buildmyonlineweb backend",
+    "description": "Project Aurora multi-tenant website builder platform",
     "scripts": {
         "dev": "turbo run dev",
         "build": "turbo run build",
         "lint": "turbo run lint",
         "clean": "turbo run clean",
-        "db:migrate": "pnpm --filter @booking-engine/database run migrate",
-        "db:seed": "pnpm --filter @booking-engine/database run db:seed",
-        "db:cleanup-users": "pnpm --filter @booking-engine/database run db:cleanup-users",
-        "start:api": "pnpm --filter @booking-engine/api run start"
+        "db:migrate": "pnpm --filter @project-aurora/database run db:migrate",
+        "db:seed": "pnpm --filter @project-aurora/database run db:seed",
+        "db:cleanup-users": "pnpm --filter @project-aurora/database run db:cleanup-users",
+        "start:api": "pnpm --filter @project-aurora/website-builder-api run start",
+        "start:web": "pnpm --filter @project-aurora/website-builder-web run start"
     },
     "devDependencies": {
         "turbo": "^2.0.0",

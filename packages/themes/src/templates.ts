@@ -6,7 +6,7 @@ export const TEMPLATES: ThemeTemplate[] = [
         name: 'Clean Appointments',
         description: 'Clean and direct booking layout with practical trust-building sections.',
         tokens: {
-            primary: '#2563eb',
+            primary: '#dc2626',
             secondary: '#e2e8f0',
             accent: '#f59e0b',
             text: '#0f172a',
@@ -33,7 +33,7 @@ export const TEMPLATES: ThemeTemplate[] = [
         name: 'Neon Grid Lab',
         description: 'Dark cyber-modern lane tuned for high-contrast booking funnels.',
         tokens: {
-            primary: '#6366f1',
+            primary: '#ef4444',
             secondary: '#1f2937',
             accent: '#10b981',
             text: '#f8fafc',
@@ -60,8 +60,8 @@ export const TEMPLATES: ThemeTemplate[] = [
         name: 'Motion Studio',
         description: 'Energetic storytelling lane that pairs product and gallery proof blocks.',
         tokens: {
-            primary: '#0ea5e9',
-            secondary: '#e0f2fe',
+            primary: '#ef4444',
+            secondary: '#fee2e2',
             accent: '#22d3ee',
             text: '#0f172a',
             background: '#f8fbff',
@@ -170,7 +170,7 @@ export const TEMPLATES: ThemeTemplate[] = [
         tokens: {
             primary: '#f97316',
             secondary: '#1e293b',
-            accent: '#38bdf8',
+            accent: '#f87171',
             text: '#ffffff',
             background: '#0f172a',
             font: 'Inter, sans-serif',
@@ -195,7 +195,7 @@ export const TEMPLATES: ThemeTemplate[] = [
         name: 'Salesforce Pipeline',
         description: 'Pipeline-oriented lane with logo validation, pricing depth, and offer clarity.',
         tokens: {
-            primary: '#0ea5e9',
+            primary: '#ef4444',
             secondary: '#e2e8f0',
             accent: '#16a34a',
             text: '#0f172a',
@@ -224,7 +224,7 @@ export const TEMPLATES: ThemeTemplate[] = [
         tokens: {
             primary: '#f97316',
             secondary: '#1e293b',
-            accent: '#38bdf8',
+            accent: '#f87171',
             text: '#f8fafc',
             background: '#020617',
             font: 'Outfit, sans-serif',
@@ -321,7 +321,7 @@ export const TEMPLATES: ThemeTemplate[] = [
         name: 'Harmozi VSL',
         description: 'Storefront-style VSL lane rebuilt from the Acquisition shop long-form book sales page.',
         tokens: {
-            primary: '#6f39f6',
+            primary: '#ef4444',
             secondary: '#f4f4f4',
             accent: '#ff8d3b',
             text: '#151515',
@@ -345,7 +345,7 @@ export const TEMPLATES: ThemeTemplate[] = [
         name: 'Spectrum Prime',
         description: 'Balanced all-purpose lane with logos, pricing, and a conversion-safe section flow.',
         tokens: {
-            primary: '#2563eb',
+            primary: '#dc2626',
             secondary: '#e2e8f0',
             accent: '#ea580c',
             text: '#0f172a',

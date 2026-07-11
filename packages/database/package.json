@@ -1,5 +1,5 @@
 {
-    "name": "@booking-engine/database",
+    "name": "@project-aurora/database",
     "version": "1.0.0",
     "private": true,
     "main": "dist/index.js",
@@ -20,7 +20,7 @@
         "seed": "ts-node --project tsconfig.seed.json prisma/seed.ts"
     },
     "dependencies": {
-        "@booking-engine/core": "workspace:*",
+        "@project-aurora/core": "workspace:*",
         "@prisma/client": "^5.22.0",
         "bcryptjs": "^2.4.3"
     },

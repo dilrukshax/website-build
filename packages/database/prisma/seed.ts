@@ -1,5 +1,56 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import fs from 'fs';
+import path from 'path';
+
+/**
+ * Minimal zero-dependency .env loader.
+ * Loads variables from candidate .env files without overriding values
+ * already present in the process environment (real env wins).
+ */
+function loadEnvFiles(): void {
+    const candidates = [
+        path.resolve(__dirname, '../../../apps/website-builder-api/.env'),
+        path.resolve(__dirname, '../../../.env'),
+        path.resolve(process.cwd(), '.env'),
+    ];
+
+    for (const filePath of candidates) {
+        if (!fs.existsSync(filePath)) {
+            continue;
+        }
+
+        const content = fs.readFileSync(filePath, 'utf8');
+        for (const rawLine of content.split(/\r?\n/)) {
+            const line = rawLine.trim();
+            if (!line || line.startsWith('#')) {
+                continue;
+            }
+
+            const eqIndex = line.indexOf('=');
+            if (eqIndex === -1) {
+                continue;
+            }
+
+            const key = line.slice(0, eqIndex).trim();
+            if (!key || process.env[key] !== undefined) {
+                continue;
+            }
+
+            let value = line.slice(eqIndex + 1).trim();
+            if (
+                (value.startsWith('"') && value.endsWith('"')) ||
+                (value.startsWith("'") && value.endsWith("'"))
+            ) {
+                value = value.slice(1, -1);
+            }
+
+            process.env[key] = value;
+        }
+    }
+}
+
+loadEnvFiles();
 
 const prisma = new PrismaClient();
 

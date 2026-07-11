@@ -1,0 +1,53 @@
+{
+    "name": "@project-aurora/website-builder-web",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "dev": "next dev --port 3001",
+        "dev:logs": "next dev --port 3001 2>&1 | tee combined.log",
+        "build": "next build --no-lint",
+        "start": "next start --port 3001",
+        "start:logs": "next start --port 3001 2>&1 | tee combined.log",
+        "lint": "next lint",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "clean": "rimraf .next"
+    },
+    "dependencies": {
+        "@project-aurora/themes": "workspace:*",
+        "@project-aurora/types": "workspace:*",
+        "@project-aurora/ui": "workspace:*",
+        "@tiptap/core": "^3.22.3",
+        "@tiptap/extension-font-family": "^3.22.3",
+        "@tiptap/extension-highlight": "^3.22.3",
+        "@tiptap/extension-image": "^3.22.3",
+        "@tiptap/extension-link": "^3.22.3",
+        "@tiptap/extension-placeholder": "^3.22.3",
+        "@tiptap/extension-text-style": "^3.22.3",
+        "@tiptap/extension-underline": "^3.22.3",
+        "@tiptap/react": "^3.22.3",
+        "@tiptap/starter-kit": "^3.22.3",
+        "dompurify": "^3.4.0",
+        "html-react-parser": "^6.0.1",
+        "lucide-react": "^0.575.0",
+        "next": "14.2.25",
+        "react": "^18.3.0",
+        "react-dom": "^18.3.0",
+        "recharts": "^2.15.0"
+    },
+    "devDependencies": {
+        "@project-aurora/config": "workspace:*",
+        "@tailwindcss/postcss": "^4.2.1",
+        "@types/node": "^20.0.0",
+        "@types/react": "^18.3.0",
+        "@types/react-dom": "^18.3.0",
+        "autoprefixer": "^10.4.27",
+        "eslint": "^8.57.0",
+        "eslint-config-next": "14.2.25",
+        "postcss": "^8.5.6",
+        "rimraf": "^5.0.0",
+        "tailwindcss": "^4.2.1",
+        "typescript": "^5.3.0",
+        "vitest": "^4.0.18"
+    }
+}

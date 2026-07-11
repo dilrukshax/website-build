@@ -866,7 +866,7 @@ VALUES (
           "proofItems": [
             { "label": "Response time", "value": "< 2 min", "tone": "cyan" },
             { "label": "Completion rate", "value": "98%", "tone": "green" },
-            { "label": "Team coverage", "value": "24/7", "tone": "purple" }
+            { "label": "Team coverage", "value": "24/7", "tone": "red" }
           ]
         },
         "defaultStyles": {}
@@ -1642,7 +1642,7 @@ VALUES
             "text": "#ffffff",
             "primary": "#f97316",
             "secondary": "#1e293b",
-            "accent": "#38bdf8",
+            "accent": "#f87171",
             "font": "\"Inter\", sans-serif"
           }
         }
@@ -1769,7 +1769,7 @@ VALUES
           "themeTokens": {
             "background": "#ffffff",
             "text": "#0f172a",
-            "primary": "#0ea5e9",
+            "primary": "#ef4444",
             "secondary": "#e2e8f0",
             "accent": "#16a34a",
             "font": "\"Inter\", sans-serif"
@@ -2193,7 +2193,7 @@ VALUES (
           "themeTokens": {
             "background": "#f8fafc",
             "text": "#0f172a",
-            "primary": "#2563eb",
+            "primary": "#dc2626",
             "secondary": "#e2e8f0",
             "accent": "#ea580c",
             "font": "\"Inter\", sans-serif"
@@ -2337,8 +2337,8 @@ SET
         '{
           "background": "#f8fbff",
           "text": "#0f172a",
-          "primary": "#0ea5e9",
-          "secondary": "#e0f2fe",
+          "primary": "#ef4444",
+          "secondary": "#fee2e2",
           "accent": "#22d3ee",
           "font": "\"Outfit\", sans-serif"
         }'::jsonb,
@@ -2366,7 +2366,7 @@ SET
         '{
           "background": "#111827",
           "text": "#f9fafb",
-          "primary": "#6366f1",
+          "primary": "#ef4444",
           "secondary": "#1f2937",
           "accent": "#10b981",
           "font": "\"Roboto\", sans-serif"
@@ -2414,7 +2414,7 @@ SET
         '{
           "background": "#ffffff",
           "text": "#0f172a",
-          "primary": "#2563eb",
+          "primary": "#dc2626",
           "secondary": "#e2e8f0",
           "accent": "#f59e0b",
           "font": "\"Inter\", sans-serif"
@@ -2477,8 +2477,8 @@ SET
         '{0,defaultStyles,themeTokens}',
         '{
           "background": "#faf5ff",
-          "text": "#312e81",
-          "primary": "#7c3aed",
+          "text": "#7f1d1d",
+          "primary": "#ef4444",
           "secondary": "#ede9fe",
           "accent": "#f97316",
           "font": "\"Outfit\", sans-serif"
@@ -2560,7 +2560,7 @@ SET
           "text": "#f8fafc",
           "primary": "#f97316",
           "secondary": "#1e293b",
-          "accent": "#38bdf8",
+          "accent": "#f87171",
           "font": "\"Outfit\", sans-serif"
         }'::jsonb,
         true

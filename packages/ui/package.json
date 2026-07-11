@@ -1,5 +1,5 @@
 {
-    "name": "@booking-engine/ui",
+    "name": "@project-aurora/ui",
     "version": "1.0.0",
     "private": true,
     "main": "dist/index.js",
@@ -11,10 +11,10 @@
         "lint": "eslint src/"
     },
     "dependencies": {
-        "@booking-engine/types": "workspace:*"
+        "@project-aurora/types": "workspace:*"
     },
     "devDependencies": {
-        "@booking-engine/config": "workspace:*",
+        "@project-aurora/config": "workspace:*",
         "typescript": "^5.3.0",
         "rimraf": "^5.0.0"
     }

@@ -10,7 +10,7 @@ export const logger = winston.createLogger({
         winston.format.json()
     ),
     defaultMeta: {
-        service: 'booking-engine',
+        service: process.env.SERVICE_NAME || 'project-aurora',
         environment: process.env.NODE_ENV || 'development',
     },
     transports: [

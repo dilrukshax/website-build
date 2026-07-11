@@ -4,7 +4,7 @@ Last updated: 2026-04-03
 
 ## 1. Purpose
 
-This document defines how external teams can submit and publish website templates/themes safely in Booking Engine CMS without breaking:
+This document defines how external teams can submit and publish website templates/themes safely in Project Aurora without breaking:
 
 - builder editing flows
 - publish/preview/runtime flows
@@ -246,8 +246,8 @@ Use one of:
 
 - `pnpm lint`
 - `pnpm build`
-- `pnpm --filter @booking-engine/api test`
-- `pnpm --filter @booking-engine/cms test`
+- `pnpm --filter @project-aurora/website-builder-api test`
+- `pnpm --filter @project-aurora/website-builder-web test`
 
 ### 10.2 Template-specific functional checks
 

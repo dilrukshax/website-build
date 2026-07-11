@@ -34,8 +34,8 @@ VALUES
           "themeTokens": {
             "background": "#f8fafc",
             "text": "#0f172a",
-            "primary": "#0ea5e9",
-            "secondary": "#dbeafe",
+            "primary": "#ef4444",
+            "secondary": "#fee2e2",
             "accent": "#14b8a6",
             "font": "Space Grotesk, sans-serif"
           }
@@ -186,7 +186,7 @@ VALUES
             "text": "#1f2937",
             "primary": "#f97316",
             "secondary": "#ffedd5",
-            "accent": "#7c3aed",
+            "accent": "#ef4444",
             "font": "Outfit, sans-serif"
           }
         }

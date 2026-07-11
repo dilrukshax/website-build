@@ -20,7 +20,7 @@ export default function HeroV14({ content }: ThemeComponentProps) {
                     <div className="badge background-color-white">
                         <img src={asset('cdn/shop/t/15/assets/FireSimplehc89d.svg?v=147789248826584920361762187164')} loading="lazy" alt="" className="icon-1x1-xsmall" />
                         <p className="text-size-medium text-style-allcaps">
-                            <strong className="text-color-purple">{badgePrefix}</strong>
+                            <strong className="text-color-red">{badgePrefix}</strong>
                             <span>{badgeText}</span>
                         </p>
                     </div>

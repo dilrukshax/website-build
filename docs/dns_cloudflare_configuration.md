@@ -1,4 +1,4 @@
-# buildmyonlineweb CMS - Cloudflare DNS Baseline (No Worker Flow)
+# Project Aurora - Cloudflare DNS Baseline (No Worker Flow)
 
 This guide covers base DNS/SSL setup for API + CMS when hosted on Sevalla.
 

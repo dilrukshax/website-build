@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { JWTService } from '../services/jwt.service';
-import { JWTPayload, ERROR_CODES } from '@booking-engine/core';
+import { JWTPayload, ERROR_CODES } from '@project-aurora/core';
 
 // Extend Express Request type for auth middleware
 declare global {

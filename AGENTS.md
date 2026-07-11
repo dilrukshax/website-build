@@ -1,5 +1,5 @@
 # AGENTS.md — Comprehensive Agent + Technical Architecture Handbook
-# Booking Engine CMS Monorepo
+# Project Aurora Monorepo
 
 This file is the primary technical source-of-truth for AI agents and contributors working in this repository.
 
@@ -76,9 +76,9 @@ A code change without required doc updates is incomplete.
 
 ```mermaid
 flowchart LR
-    U["CMS User"] --> CMS["apps/cms (Next.js)"]
+    U["CMS User"] --> CMS["apps/website-builder-web (Next.js)"]
     P["Public Visitor"] --> CMS
-    CMS --> API["apps/api (Express)"]
+    CMS --> API["apps/website-builder-api (Express)"]
     API --> DB["PostgreSQL via Prisma"]
     API --> R2["Cloudflare R2 / S3-compatible storage"]
     API --> CF["Cloudflare cache purge APIs"]
@@ -99,9 +99,8 @@ Core idea:
 
 ### 5.1 Active apps
 
-- `apps/api`: primary Express API runtime.
-- `apps/cms`: primary Next.js CMS app + API/web/published proxy layer.
-- `apps/themes/theme-default`: theme app scaffold.
+- `apps/website-builder-api`: primary Express API runtime.
+- `apps/website-builder-web`: primary Next.js CMS app + API/web/published proxy layer.
 
 ### 5.2 Core packages
 
@@ -113,9 +112,7 @@ Core idea:
 
 ### 5.3 Auxiliary/legacy
 
-- `packages/api`: legacy API package (`@booking-engine/api-legacy`), not the primary runtime path.
-- `mock-builder/`: parallel sandbox copy.
-- `apps/super-admin`: reserved placeholder.
+- (Removed) `packages/api` (`@project-aurora/api-legacy`), `packages/booking`, `packages/auth-ui`, `mock-builder/`, `apps/themes/theme-default`, and `apps/super-admin` were deleted as obsolete/legacy scaffolding. The live API/booking/auth/theme logic lives in `apps/website-builder-api`, `packages/themes`, and `packages/auth`.
 
 Do not shift runtime behavior into legacy modules unless explicitly planned.
 
@@ -227,7 +224,7 @@ This section documents exact credential/token data flow.
 
 ### 8.1 Context objects on request
 
-`apps/api` augments request with:
+`apps/website-builder-api` augments request with:
 
 - `req.auth`: user/role/permission context
 - `req.tenant`: resolved tenant
@@ -242,7 +239,7 @@ This section documents exact credential/token data flow.
 
 ### 8.3 Important implementation detail
 
-`packages/database` includes AsyncLocalStorage scoping helpers (`setTenantContext`), but active `apps/api` runtime currently relies heavily on explicit `where: { tenantId, instanceId }` clauses in controllers/services.
+`packages/database` includes AsyncLocalStorage scoping helpers (`setTenantContext`), but active `apps/website-builder-api` runtime currently relies heavily on explicit `where: { tenantId, instanceId }` clauses in controllers/services.
 
 Until active middleware wraps all requests with tenant context, explicit scoping in queries remains mandatory.
 
@@ -551,7 +548,7 @@ When these sections are changed, sync propagates across instance pages and remov
 
 ### 12.5 Builder UI flow
 
-`apps/cms/app/dashboard/builder/page.tsx` orchestrates:
+`apps/website-builder-web/app/dashboard/builder/page.tsx` orchestrates:
 
 - page list selection
 - section selection and editor panel
@@ -745,10 +742,34 @@ Published pages call `/web/*` through CMS web proxy route handlers.
 
 ## 17) Environment Variables Reference (Operational)
 
+### 17.0 Single Source of Truth (canonical variable names)
+
+Every concern has ONE canonical variable name. Set it once per service. Legacy
+alias names are still read by the runtime as silent fallbacks, but new
+deployments should set only the canonical name. Central resolvers live in
+`apps/website-builder-web/lib/env.ts` and `apps/website-builder-api/src/lib/env.ts`.
+
+| Concern | Canonical var | Legacy aliases (fallbacks only) |
+| --- | --- | --- |
+| API origin | `WEBSITE_BUILDER_API_URL` | `NEXT_PUBLIC_WEBSITE_BUILDER_API_URL`, `NEXT_PUBLIC_API_URL`, `API_BASE_URL` |
+| CMS/web origin | `WEBSITE_BUILDER_WEB_URL` | `CMS_URL`, `NEXT_PUBLIC_CMS_URL` |
+| Root domain | `SITE_DOMAIN` | `NEXT_PUBLIC_SITE_DOMAIN` (auto-derived for client) |
+| Published-sites base | `PUBLISHED_SITES_BASE_URL` | `NEXT_PUBLIC_PUBLISHED_SITES_BASE_URL` |
+| Routing-index URL | `ROUTING_INDEX_CURRENT_URL` | `NEXT_PUBLIC_ROUTING_INDEX_CURRENT_URL` |
+| Routing-index TTL | `ROUTING_INDEX_CACHE_TTL_MS` | `NEXT_PUBLIC_ROUTING_INDEX_CACHE_TTL_MS` |
+| Platform host bypass | `PLATFORM_HOST_BYPASS` | `NEXT_PUBLIC_PLATFORM_HOST_BYPASS` |
+| Web proxy secret | `WEB_PROXY_SHARED_SECRET` | — |
+
+Note: `NEXT_PUBLIC_SITE_DOMAIN` is generated at build time from `SITE_DOMAIN`
+(see `apps/website-builder-web/next.config.mjs`), so operators set `SITE_DOMAIN`
+once and the browser receives it automatically. All other `NEXT_PUBLIC_*` twins
+for server-only values have been removed from code — they are no longer needed.
+
 ### 17.1 Core runtime
 
-- `NODE_ENV`, `PORT`, `API_BASE_URL`, `CMS_URL`
-- `CORS_ORIGIN`, `SITE_DOMAIN`, `NEXT_PUBLIC_SITE_DOMAIN`
+- `NODE_ENV`, `PORT`
+- `WEBSITE_BUILDER_API_URL` (API origin), `WEBSITE_BUILDER_WEB_URL` (CMS origin)
+- `CORS_ORIGIN`, `SITE_DOMAIN`
 
 ### 17.2 Auth and cookies
 
@@ -761,7 +782,7 @@ Published pages call `/web/*` through CMS web proxy route handlers.
 - `R2_ENDPOINT`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`
 - `R2_PUBLIC_URL`, `PUBLISHED_SITES_BASE_URL`
 - `ROUTING_INDEX_CURRENT_URL`, `ROUTING_INDEX_CACHE_TTL_MS`, `ROUTING_INDEX_REBUILD_TIMEOUT_MS`
-- `NEXT_PUBLIC_PUBLISHED_SITES_BASE_URL`, `NEXT_PUBLIC_ROUTING_INDEX_CURRENT_URL`, `NEXT_PUBLIC_ROUTING_INDEX_CACHE_TTL_MS`, `NEXT_PUBLIC_MANIFEST_CACHE_TTL_MS`
+- `NEXT_PUBLIC_MANIFEST_CACHE_TTL_MS`
 
 ### 17.4 Domain and proxy trust
 
@@ -781,13 +802,20 @@ Published pages call `/web/*` through CMS web proxy route handlers.
 - `DEVICE_CHECK_RATE_LIMIT_PER_MIN`, `IPINFO_TOKEN`
 - `REFERRAL_PROOF_TTL_MINUTES`
 
+### 17.7 Analytics (GA4)
+
+- `GA4_SERVICE_ACCOUNT_JSON` — server-side GA4 Data API service-account JSON (canonical, API runtime only). Read by `apps/website-builder-api/src/lib/env.ts` (`ga4ServiceAccountJson()`). The service account must be granted Viewer access to each GA4 property referenced by `settingsJsonb.analytics.ga4PropertyId`.
+- Per-site GA4 identifiers are stored in `Instance.settingsJsonb.analytics`:
+  - `ga4MeasurementId` (e.g. `G-XXXXXXX`) — injected as the gtag collection script on the published site (`app/layout.tsx`) and persisted into the published manifest `analytics.ga4MeasurementId`.
+  - `ga4PropertyId` (numeric) — used by the dashboard proxy (`GET /cms/analytics/summary`) to query the GA4 Data API.
+
 ---
 
 ## 18) Validation, Error Model, and Security Surfaces
 
 ### 18.1 Validation
 
-- Zod schemas in `apps/api/src/validators/*`
+- Zod schemas in `apps/website-builder-api/src/validators/*`
 - Request validation via `validate` middleware
 
 ### 18.2 Error model
@@ -838,8 +866,8 @@ Unified error shape:
 
 ### 19.3 Add new builder capability
 
-1. Add route + validator + controller logic in `apps/api`
-2. Integrate into `apps/cms/app/dashboard/builder/page.tsx`
+1. Add route + validator + controller logic in `apps/website-builder-api`
+2. Integrate into `apps/website-builder-web/app/dashboard/builder/page.tsx`
 3. Preserve tenant/instance header behavior from API client
 4. Add tests for permission and scoped data behavior
 5. Update this file + change log
@@ -854,7 +882,7 @@ Unified error shape:
 
 ### 19.5 Add new public `/web` endpoint
 
-1. Add route under `apps/api/src/routes/web/index.ts`
+1. Add route under `apps/website-builder-api/src/routes/web/index.ts`
 2. Keep endpoint public-safe and instance-scoped
 3. Ensure host-based context resolution still applies
 4. Do not introduce CMS auth requirements to public endpoints
@@ -878,8 +906,8 @@ Unified error shape:
 
 - `pnpm build`
 - `pnpm lint`
-- `pnpm --filter @booking-engine/api test`
-- `pnpm --filter @booking-engine/cms test`
+- `pnpm --filter @project-aurora/website-builder-api test`
+- `pnpm --filter @project-aurora/website-builder-web test`
 
 ### 20.2 Scope-specific verification
 
@@ -928,6 +956,94 @@ If tests are skipped, explicitly record why and residual risk.
 
 ## 23) Change Log
 
+### 2026-07-11 (Page Template Visibility & Database Scoping Fixes)
+
+- Added a self-healing check in `PageTemplatesController.list` (`apps/website-builder-api/src/controllers/page-templates.controller.ts`) that automatically updates curated template IDs to `isActive = true` in the database if they drift or are disabled during schema sync/seeding.
+- Added `PageTemplate` and `CustomDomainAccountHistory` to the `TENANT_EXEMPT_MODELS` set in Prisma client (`packages/database/src/client.ts`) to prevent Prisma middleware from incorrectly appending non-existent `tenantId` columns to database queries when executed under a tenant context (e.g. during `applyTemplate`).
+- Impacted modules/files:
+  - `apps/website-builder-api/src/controllers/page-templates.controller.ts`
+  - `packages/database/src/client.ts`
+- Verification:
+  - Built `@project-aurora/database` and `@project-aurora/website-builder-api` packages.
+  - Ran vitest template application tests: `pages.controller.apply-template.test.ts`.
+- Migration/rollout implications:
+  - No manual database migrations or schema upgrades required; the API automatically heals database template visibility on startup/list query.
+
+### 2026-07-11 (Landing Page: Animated Hero + Product Capability Section)
+
+- Replaced the static `HeroIllustration` SVG on the public landing page (`apps/website-builder-web/app/page.tsx`) with an animated `AnimatedHero` component: a floating browser/builder mockup with a live build progress bar, shimmering section placeholders, ambient morphing blobs, and floating "New booking" / "Blog published" / "Live" cards (including a pulsing confirmed-booking indicator).
+- Rewrote the hero eyebrow/headline/subcopy to describe what the product actually does (no-code website builder for booking businesses + SEO-ready blog + custom domains) instead of the previous internal billing/referrals framing.
+- Added a new `#build` section ("Everything you need to launch a booking-ready website") with a 6-card `BUILD_HIGHLIGHTS` grid covering: online booking system, SEO-ready blog, theme-driven builder, one-click publish, custom domains, and multi-site management. Added a matching `Build` header nav link.
+- Added reusable landing animation keyframes/utilities to `apps/website-builder-web/app/globals.css` (`be-float`, `be-float-slow`, `be-float-delayed`, `be-rise*`, `be-pulse-ring`, `be-shimmer`, `be-progress-bar`, `be-blob`) with a `prefers-reduced-motion` guard that disables them.
+- Impacted modules/files:
+  - `apps/website-builder-web/app/page.tsx`
+  - `apps/website-builder-web/app/globals.css`
+- Verification:
+  - `pnpm --filter @project-aurora/website-builder-web exec tsc -p tsconfig.json --noEmit --incremental false`
+- Migration/rollout implications:
+  - No database migration required.
+  - Visual/marketing-only change; redeploy the CMS runtime to see the updated landing hero and Build section.
+
+### 2026-07-10 (Landing Hero Redesign: Modern Minimal)
+
+- Redesigned the public landing hero (`apps/website-builder-web/app/page.tsx`) from a two-column split into a centered modern-minimal layout: eyebrow pill, large headline with red accent, supporting copy, primary/secondary CTAs, and a trust line, followed by a full-width product mockup.
+- Recolored the `HeroIllustration` SVG from leftover lavender/purple tones (`#f4f2ff`, `#ebe8ff`, `#d8d4ff`, `#d5d0ff`, `#bcb6ff`, `#d7d2ff`, `#ece9ff`, `#e5e1ff`, `#f2f0ff`, `#f1eeff`, `#6a63ff`) to the red family (`#fff5f5`, `#fee2e2`, `#fecaca`, `#fca5a5`, `#fef2f2`) so it matches the global red rebrand.
+- Kept dark-mode and red-accent behavior consistent with the rest of the landing page.
+- Impacted modules/files:
+  - `apps/website-builder-web/app/page.tsx`
+- Migration/rollout implications:
+  - No database migration required.
+  - Visual-only change; redeploy the CMS runtime to see the updated landing hero.
+
+### 2026-07-10 (Global Red Rebrand — Every Blue → Red)
+
+- Superseded the earlier purple→blue pass: the entire project color system is now red.
+- Replaced every blue value in the codebase with the red family, including the sky/cyan and indigo families, so the whole UI renders red.
+- Brand primary `--be-primary` is now `#dc2626` (red-600) in:
+  - `apps/website-builder-web/app/globals.css`
+  - `apps/website-builder-web/app/layout.tsx`
+  - `apps/website-builder-web/contexts/theme-context.tsx`
+- Hex mappings applied repo-wide (shade-for-shade onto the red palette), e.g.:
+  - `#2563eb` → `#dc2626`, `#1d4ed8` → `#b91c1c`, `#1e3a8a` → `#7f1d1d`
+  - `#3b82f6` → `#ef4444`, `#eff6ff` → `#fef2f2`, `#93c5fd` → `#fca5a5`
+  - `#0ea5e9` (sky) → `#ef4444`, `#0284c7` → `#b91c1c`, `#0369a1` → `#991b1b`
+  - `#6366f1`/`#4f46e5` (indigo) → `#ef4444`/`#dc2626`
+- Tailwind class prefixes `blue-*`, `sky-*`, `indigo-*` rewritten to `red-*` across all dashboard/onboarding/builder/theme components.
+- Auth UI brand `--brand-primary` is now `#ef4444` in `packages/auth-ui/styles.css`.
+- Theme template seed defaults and `tone`/`color` tokens previously set to blue were rewritten to red in theme components and Prisma seed migrations.
+- Webflow-style utility classes (`text-color-blue`, `background-color-blue`) rewritten to `text-color-red`/`background-color-red` in Harmozi VSL theme components.
+- Impacted modules/files: all CMS/API/theme source touched by the blue pass, plus Prisma seed migrations and `packages/auth-ui/styles.css`.
+- Migration/rollout implications:
+  - No schema migration required.
+  - Existing published sites keep their stored `tokens.primary`; only default/fallback values and new installs now use red.
+  - Restart/redeploy CMS and API runtimes so updated brand colors and compiled CSS take effect.
+
+### 2026-07-10 (Global Purple → Blue Rebrand)
+
+- Replaced the global purple brand/primary color with blue across the entire codebase.
+- Brand primary `--be-primary` changed from `#5048e5` to `#2563eb` in:
+  - `apps/website-builder-web/app/globals.css`
+  - `apps/website-builder-web/app/layout.tsx`
+  - `apps/website-builder-web/contexts/theme-context.tsx`
+- Updated all CMS UI chrome purple hex values (`#5048e5`, `#433bcf`, `#4b43d8`, `#2f2a8c`, `#6366f1`) to blue equivalents (`#2563eb`, `#1d4ed8`, `#1e3a8a`, `#3b82f6`) across dashboard/onboarding/builder components.
+- Updated auth UI brand color `--brand-primary` from `#6366f1` to `#3b82f6` in `packages/auth-ui/styles.css`.
+- Updated theme template seed defaults and component-level purple fallbacks (`#6f39f6`, `#8b5cf6`, `#7c3aed`, `tone: purple`) to blue in theme components and Prisma seed migrations.
+- Renamed purple utility/Webflow classes (`text-color-purple`, `background-color-purple`) and Tailwind `purple-*` classes to blue in Harmozi VSL theme components and dashboard staff/bookings pages.
+- Impacted modules/files:
+  - `apps/website-builder-web/app/globals.css`
+  - `apps/website-builder-web/app/layout.tsx`
+  - `apps/website-builder-web/contexts/theme-context.tsx`
+  - `packages/auth-ui/styles.css`
+  - `packages/themes/src/components/harmozi-vsl-v1/*`
+  - `apps/website-builder-web/app/dashboard/staff/page.tsx`
+  - `apps/website-builder-web/app/dashboard/bookings/[id]/page.tsx`
+  - `packages/database/prisma/migrations/*` (template seed color defaults)
+  - `apps/website-builder-api/src/services/discord-webhook.service.ts`
+- Migration/rollout implications:
+  - No schema migration required.
+  - Existing published sites keep their stored `tokens.primary`; only default/fallback values and new installs now use blue.
+  - Restart/redeploy CMS and API runtimes so updated brand colors and compiled CSS take effect.
+
 ### 2026-04-30 (Dedicated Website Settings Page + Root Custom Body Slots)
 
 - Moved the tenant-facing `Website Settings` sidebar destination from the builder query-panel shortcut to a real CMS route at `/dashboard/website-settings`.
@@ -936,22 +1052,22 @@ If tests are skipped, explicitly record why and residual risk.
   - `Body HTML` persists to `settingsJsonb.customCode.bodyTop`
   - `Footer HTML` persists to `settingsJsonb.customCode.bodyBottom`
   - Body/Footer fields warn when users place `<meta>` tags outside Head HTML.
-- Public-host rendering now injects custom `bodyTop` and `bodyBottom` snippets from `apps/cms/app/layout.tsx` root body slots, while CMS preview pages keep page-level fallback rendering and skip duplicates on public-host rewrites.
+- Public-host rendering now injects custom `bodyTop` and `bodyBottom` snippets from `apps/website-builder-web/app/layout.tsx` root body slots, while CMS preview pages keep page-level fallback rendering and skip duplicates on public-host rewrites.
 - CMS middleware now preserves the original published hostname in `X-Routed-Host`/`X-Forwarded-Host` when rewriting public hosts into `/preview/:subdomain`, and preview/page/SEO artifact routes resolve this routed host before falling back to `Host`.
 - CMS middleware also carries the original published hostname through an internal `__be_routed_host` rewrite query marker for Cloudflare Pages runtimes where rewritten request headers are not visible to App Router server components; preview page metadata uses this marker to render `customCode.head` named meta tags, including Google verification, in the document `<head>`.
 - Published-host resolution now accepts comma-separated forwarded host values before routing-index manifest lookup.
 - Impacted modules/files:
-  - `apps/cms/components/sidebar.tsx`
-  - `apps/cms/app/dashboard/website-settings/page.tsx`
-  - `apps/cms/app/dashboard/settings/page.tsx`
-  - `apps/cms/app/layout.tsx`
-  - `apps/cms/app/preview/[subdomain]/[[...slug]]/page.tsx`
-  - `apps/cms/app/preview/[subdomain]/blog/page.tsx`
-  - `apps/cms/app/preview/[subdomain]/blog/[slug]/page.tsx`
-  - `apps/cms/lib/custom-head-metadata.ts`
-  - `apps/cms/lib/published-request.ts`
-  - `apps/cms/lib/published-site.ts`
-  - `apps/cms/middleware.ts`
+  - `apps/website-builder-web/components/sidebar.tsx`
+  - `apps/website-builder-web/app/dashboard/website-settings/page.tsx`
+  - `apps/website-builder-web/app/dashboard/settings/page.tsx`
+  - `apps/website-builder-web/app/layout.tsx`
+  - `apps/website-builder-web/app/preview/[subdomain]/[[...slug]]/page.tsx`
+  - `apps/website-builder-web/app/preview/[subdomain]/blog/page.tsx`
+  - `apps/website-builder-web/app/preview/[subdomain]/blog/[slug]/page.tsx`
+  - `apps/website-builder-web/lib/custom-head-metadata.ts`
+  - `apps/website-builder-web/lib/published-request.ts`
+  - `apps/website-builder-web/lib/published-site.ts`
+  - `apps/website-builder-web/middleware.ts`
   - `AGENTS.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -970,9 +1086,9 @@ If tests are skipped, explicitly record why and residual risk.
   - `Body HTML`
   - `Footer HTML`
 - Impacted modules/files:
-  - `apps/cms/components/sidebar.tsx`
-  - `apps/cms/app/dashboard/builder/page.tsx`
-  - `apps/cms/app/layout.tsx`
+  - `apps/website-builder-web/components/sidebar.tsx`
+  - `apps/website-builder-web/app/dashboard/builder/page.tsx`
+  - `apps/website-builder-web/app/layout.tsx`
   - `AGENTS.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -995,20 +1111,20 @@ If tests are skipped, explicitly record why and residual risk.
   - expanded blog payload normalization to include `contentHtml`, `seoJsonb`, and `id`.
 - Expanded publish/blog cache invalidation file target set to include `/llms-full.txt`.
 - Impacted modules/files:
-  - `apps/cms/app/preview/[subdomain]/seo-artifacts.ts`
-  - `apps/cms/app/preview/[subdomain]/seo-markdown.ts`
-  - `apps/cms/app/preview/[subdomain]/llms.txt/route.ts`
-  - `apps/cms/app/preview/[subdomain]/llms-full.txt/route.ts`
-  - `apps/cms/app/preview/[subdomain]/blog/[slug].md/route.ts`
-  - `apps/cms/app/__tests__/preview-seo-files.route.test.ts`
-  - `apps/api/src/services/publish-cache-invalidation.service.ts`
-  - `apps/api/src/__tests__/services/publish-cache-invalidation.service.test.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/seo-artifacts.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/seo-markdown.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/llms.txt/route.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/llms-full.txt/route.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/blog/[slug].md/route.ts`
+  - `apps/website-builder-web/app/__tests__/preview-seo-files.route.test.ts`
+  - `apps/website-builder-api/src/services/publish-cache-invalidation.service.ts`
+  - `apps/website-builder-api/src/__tests__/services/publish-cache-invalidation.service.test.ts`
   - `AGENTS.md`
 - Verification:
-  - `pnpm --filter @booking-engine/cms test -- app/__tests__/preview-seo-files.route.test.ts`
-  - `pnpm --filter @booking-engine/api test -- src/__tests__/services/publish-cache-invalidation.service.test.ts`
-  - `pnpm --filter @booking-engine/cms exec tsc -p tsconfig.json --noEmit --incremental false`
-  - `pnpm --filter @booking-engine/api exec tsc -p tsconfig.json --noEmit --incremental false`
+  - `pnpm --filter @project-aurora/website-builder-web test -- app/__tests__/preview-seo-files.route.test.ts`
+  - `pnpm --filter @project-aurora/website-builder-api test -- src/__tests__/services/publish-cache-invalidation.service.test.ts`
+  - `pnpm --filter @project-aurora/website-builder-web exec tsc -p tsconfig.json --noEmit --incremental false`
+  - `pnpm --filter @project-aurora/website-builder-api exec tsc -p tsconfig.json --noEmit --incremental false`
 - Migration/rollout implications:
   - No database migration required.
   - Restart CMS and API runtimes so new AI artifact routes and cache purge target behavior are active in deployed environments.
@@ -1020,10 +1136,10 @@ If tests are skipped, explicitly record why and residual risk.
   - `blog: header/v15 -> blog/v15 -> footer/v15`
 - This guarantees a dedicated Blog page is created on template apply while preserving the same public URL (`/blog`) and ensures the page is included in published sitemap page coverage.
 - Impacted modules/files:
-  - `apps/cms/app/dashboard/builder/page.tsx`
+  - `apps/website-builder-web/app/dashboard/builder/page.tsx`
   - `AGENTS.md`
 - Verification:
-  - `pnpm --filter @booking-engine/cms exec tsc -p tsconfig.json --noEmit --incremental false`
+  - `pnpm --filter @project-aurora/website-builder-web exec tsc -p tsconfig.json --noEmit --incremental false`
 - Migration/rollout implications:
   - No database migration required for this behavior update.
   - Re-apply Train of Thought template and publish to provision `/blog` on existing sites that previously lacked a dedicated Blog page.
@@ -1041,16 +1157,16 @@ If tests are skipped, explicitly record why and residual risk.
 - Updated template picker guidance copy to reflect multi-page Train of Thought apply scope (`Home`, `/about`, `/contact`, `/blog`).
 - Added a template migration that rewires Train of Thought default header/footer links from in-page anchors (`#about`, `#contact`) to real routes (`/about`, `/contact`) so navigation matches dedicated pages.
 - Impacted modules/files:
-  - `apps/cms/app/dashboard/builder/page.tsx`
-  - `apps/cms/components/builder/template-picker.tsx`
+  - `apps/website-builder-web/app/dashboard/builder/page.tsx`
+  - `apps/website-builder-web/components/builder/template-picker.tsx`
   - `packages/database/prisma/migrations/20260421153000_train_of_thought_nav_links_about_contact_pages/migration.sql`
   - `AGENTS.md`
 - Verification:
-  - `pnpm --filter @booking-engine/cms test -- app/__tests__/preview-seo-files.route.test.ts`
-  - `pnpm --filter @booking-engine/cms exec tsc -p tsconfig.json --noEmit --incremental false`
+  - `pnpm --filter @project-aurora/website-builder-web test -- app/__tests__/preview-seo-files.route.test.ts`
+  - `pnpm --filter @project-aurora/website-builder-web exec tsc -p tsconfig.json --noEmit --incremental false`
 - Migration/rollout implications:
   - Prisma migration required to update template defaults:
-    - `pnpm --filter @booking-engine/database prisma migrate deploy`
+    - `pnpm --filter @project-aurora/database prisma migrate deploy`
   - Re-apply Train of Thought template and publish to propagate dedicated `/about` and `/contact` pages into existing sites that were previously Home-only.
 
 ### 2026-04-21 (Publisher Sitemap Tree: Index + Split Child Files)
@@ -1063,9 +1179,9 @@ If tests are skipped, explicitly record why and residual risk.
     - `/sitemap-posts.xml` (individual blog post URLs with image sitemap metadata when featured images exist and posts are published)
     - `/sitemap-misc.xml` (utility artifacts, currently `/blog-locations.kml`)
 - Added new preview SEO routes:
-  - `apps/cms/app/preview/[subdomain]/sitemap-blog.xml/route.ts`
-  - `apps/cms/app/preview/[subdomain]/sitemap-posts.xml/route.ts`
-  - `apps/cms/app/preview/[subdomain]/sitemap-misc.xml/route.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/sitemap-blog.xml/route.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/sitemap-posts.xml/route.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/sitemap-misc.xml/route.ts`
 - Extended shared SEO artifact fetch/parsing to support per-post sitemap metadata:
   - `fetchPublishedBlogs()` now returns slug/title/excerpt/featuredImage/timestamp fields used by sitemap child generators.
   - `fetchPublishedBlogSlugs()` remains as a compatibility wrapper.
@@ -1075,22 +1191,22 @@ If tests are skipped, explicitly record why and residual risk.
   - `/sitemap-posts.xml`
   - `/sitemap-misc.xml`
 - Impacted modules/files:
-  - `apps/cms/app/preview/[subdomain]/seo-artifacts.ts`
-  - `apps/cms/app/preview/[subdomain]/sitemap.xml/route.ts`
-  - `apps/cms/app/preview/[subdomain]/sitemap-pages.xml/route.ts`
-  - `apps/cms/app/preview/[subdomain]/sitemap-blog.xml/route.ts`
-  - `apps/cms/app/preview/[subdomain]/sitemap-posts.xml/route.ts`
-  - `apps/cms/app/preview/[subdomain]/sitemap-misc.xml/route.ts`
-  - `apps/cms/app/preview/[subdomain]/llms.txt/route.ts`
-  - `apps/cms/app/__tests__/preview-seo-files.route.test.ts`
-  - `apps/api/src/services/publish-cache-invalidation.service.ts`
-  - `apps/api/src/__tests__/services/publish-cache-invalidation.service.test.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/seo-artifacts.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/sitemap.xml/route.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/sitemap-pages.xml/route.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/sitemap-blog.xml/route.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/sitemap-posts.xml/route.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/sitemap-misc.xml/route.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/llms.txt/route.ts`
+  - `apps/website-builder-web/app/__tests__/preview-seo-files.route.test.ts`
+  - `apps/website-builder-api/src/services/publish-cache-invalidation.service.ts`
+  - `apps/website-builder-api/src/__tests__/services/publish-cache-invalidation.service.test.ts`
   - `AGENTS.md`
 - Verification:
-  - `pnpm --filter @booking-engine/cms test -- app/__tests__/preview-seo-files.route.test.ts`
-  - `pnpm --filter @booking-engine/api test -- src/__tests__/services/publish-cache-invalidation.service.test.ts`
-  - `pnpm --filter @booking-engine/cms exec tsc -p tsconfig.json --noEmit --incremental false`
-  - `pnpm --filter @booking-engine/api exec tsc -p tsconfig.json --noEmit --incremental false`
+  - `pnpm --filter @project-aurora/website-builder-web test -- app/__tests__/preview-seo-files.route.test.ts`
+  - `pnpm --filter @project-aurora/website-builder-api test -- src/__tests__/services/publish-cache-invalidation.service.test.ts`
+  - `pnpm --filter @project-aurora/website-builder-web exec tsc -p tsconfig.json --noEmit --incremental false`
+  - `pnpm --filter @project-aurora/website-builder-api exec tsc -p tsconfig.json --noEmit --incremental false`
 - Migration/rollout implications:
   - No database migration required.
   - Restart CMS and API runtimes so new split sitemap routes and purge targets are active in deployed environments.
@@ -1117,24 +1233,24 @@ If tests are skipped, explicitly record why and residual risk.
 - Preserved backward compatibility for existing published data:
   - blog detail runtime still resolves legacy detail layouts by detecting pages containing `blog-post-detail/vN` sections, with `/blog` preference and legacy `blog-layout` fallback.
 - Impacted modules/files:
-  - `apps/cms/app/preview/[subdomain]/seo-artifacts.ts`
-  - `apps/cms/app/preview/[subdomain]/sitemap.xml/route.ts`
-  - `apps/cms/app/preview/[subdomain]/sitemap-pages.xml/route.ts`
-  - `apps/cms/app/preview/[subdomain]/blog-sitemap.xml/route.ts`
-  - `apps/cms/app/preview/[subdomain]/blog-locations.kml/route.ts`
-  - `apps/cms/app/preview/[subdomain]/llms.txt/route.ts`
-  - `apps/cms/app/preview/[subdomain]/blog/page.tsx`
-  - `apps/cms/app/preview/[subdomain]/blog/[slug]/page.tsx`
-  - `apps/cms/lib/published-site.ts`
-  - `apps/cms/app/dashboard/builder/page.tsx`
-  - `apps/cms/components/builder/template-picker.tsx`
-  - `apps/cms/app/__tests__/preview-seo-files.route.test.ts`
-  - `apps/api/src/controllers/instances.controller.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/seo-artifacts.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/sitemap.xml/route.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/sitemap-pages.xml/route.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/blog-sitemap.xml/route.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/blog-locations.kml/route.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/llms.txt/route.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/blog/page.tsx`
+  - `apps/website-builder-web/app/preview/[subdomain]/blog/[slug]/page.tsx`
+  - `apps/website-builder-web/lib/published-site.ts`
+  - `apps/website-builder-web/app/dashboard/builder/page.tsx`
+  - `apps/website-builder-web/components/builder/template-picker.tsx`
+  - `apps/website-builder-web/app/__tests__/preview-seo-files.route.test.ts`
+  - `apps/website-builder-api/src/controllers/instances.controller.ts`
   - `AGENTS.md`
 - Verification:
-  - `pnpm --filter @booking-engine/cms test -- app/__tests__/preview-seo-files.route.test.ts`
-  - `pnpm --filter @booking-engine/cms exec tsc -p tsconfig.json --noEmit --incremental false`
-  - `pnpm --filter @booking-engine/api exec tsc -p tsconfig.json --noEmit --incremental false`
+  - `pnpm --filter @project-aurora/website-builder-web test -- app/__tests__/preview-seo-files.route.test.ts`
+  - `pnpm --filter @project-aurora/website-builder-web exec tsc -p tsconfig.json --noEmit --incremental false`
+  - `pnpm --filter @project-aurora/website-builder-api exec tsc -p tsconfig.json --noEmit --incremental false`
 - Migration/rollout implications:
   - No database migration required.
   - Restart CMS and API runtimes so new preview routing and instance bootstrap behavior are active in deployed environments.
@@ -1152,37 +1268,37 @@ If tests are skipped, explicitly record why and residual risk.
 - Updated `llms.txt` copy to reference `Sitemap` instead of `Sitemap index`.
 - Expanded preview SEO route tests to validate unified sitemap output includes page + blog URLs.
 - Impacted modules/files:
-  - `apps/cms/app/preview/[subdomain]/sitemap.xml/route.ts`
-  - `apps/cms/app/preview/[subdomain]/robots.txt/route.ts`
-  - `apps/cms/app/preview/[subdomain]/llms.txt/route.ts`
-  - `apps/cms/app/__tests__/preview-seo-files.route.test.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/sitemap.xml/route.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/robots.txt/route.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/llms.txt/route.ts`
+  - `apps/website-builder-web/app/__tests__/preview-seo-files.route.test.ts`
   - `AGENTS.md`
 - Verification:
-  - `pnpm --filter @booking-engine/cms test -- app/__tests__/preview-seo-files.route.test.ts`
-  - `pnpm --filter @booking-engine/cms exec tsc -p tsconfig.json --noEmit --incremental false`
+  - `pnpm --filter @project-aurora/website-builder-web test -- app/__tests__/preview-seo-files.route.test.ts`
+  - `pnpm --filter @project-aurora/website-builder-web exec tsc -p tsconfig.json --noEmit --incremental false`
 - Migration/rollout implications:
   - No database migration required.
   - Restart CMS runtime so unified sitemap response behavior is active in deployed environments.
 
 ### 2026-04-21 (Blog SEO Initial Auto-Fill on Editor Load)
 
-- Updated CMS blog editor SEO seeding behavior in `apps/cms/app/dashboard/blogs/[id]/page.tsx`:
+- Updated CMS blog editor SEO seeding behavior in `apps/website-builder-web/app/dashboard/blogs/[id]/page.tsx`:
   - initial editor load now auto-fills empty `metaTitle`, `metaDescription`, `ogTitle`, and `ogDescription` fields from blog title + first 100 characters of content body text
   - existing non-empty SEO values are preserved and are not overwritten on load
   - `Auto Fill SEO` button behavior remains available for manual re-fill/re-enable workflows
 - Updated SEO helper guidance copy in the editor to reflect page-open auto-fill behavior.
 - Impacted modules/files:
-  - `apps/cms/app/dashboard/blogs/[id]/page.tsx`
+  - `apps/website-builder-web/app/dashboard/blogs/[id]/page.tsx`
   - `AGENTS.md`
 - Verification:
-  - `pnpm --filter @booking-engine/cms exec tsc -p tsconfig.json --noEmit --incremental false`
+  - `pnpm --filter @project-aurora/website-builder-web exec tsc -p tsconfig.json --noEmit --incremental false`
 - Migration/rollout implications:
   - No database migration required.
   - CMS runtime deploy/restart required for updated blog editor auto-fill UX in deployed environments.
 
 ### 2026-04-20 (Blog SEO Live Sync + Change-Driven Autosave)
 
-- Enhanced CMS blog editor SEO behavior in `apps/cms/app/dashboard/blogs/[id]/page.tsx`:
+- Enhanced CMS blog editor SEO behavior in `apps/website-builder-web/app/dashboard/blogs/[id]/page.tsx`:
   - added optional `Auto-sync Meta/OG title + description` mode tied to blog title/body edits
   - title edits can auto-sync `metaTitle` and `ogTitle`
   - body edits can auto-sync `metaDescription` and `ogDescription` using first 100 characters of content body
@@ -1193,10 +1309,10 @@ If tests are skipped, explicitly record why and residual risk.
   - editor no longer keeps re-running autosave every 5 seconds when there are no new changes
 - Updated UI copy to reflect the new autosave and SEO sync behavior.
 - Impacted modules/files:
-  - `apps/cms/app/dashboard/blogs/[id]/page.tsx`
+  - `apps/website-builder-web/app/dashboard/blogs/[id]/page.tsx`
   - `AGENTS.md`
 - Verification:
-  - `pnpm --filter @booking-engine/cms exec tsc -p tsconfig.json --noEmit --incremental false`
+  - `pnpm --filter @project-aurora/website-builder-web exec tsc -p tsconfig.json --noEmit --incremental false`
 - Migration/rollout implications:
   - No database migration required.
   - CMS runtime deploy/restart required for updated blog editor UX behavior in deployed environments.
@@ -1216,13 +1332,13 @@ If tests are skipped, explicitly record why and residual risk.
   - `BlogsController.delete` (unpublish) now invalidates when the post was previously published.
 - Invalidation remains fail-open for blog and publish flows, preserving content save/publish success while logging purge failures.
 - Impacted modules/files:
-  - `apps/api/src/services/publish-cache-invalidation.service.ts`
-  - `apps/api/src/controllers/blogs.controller.ts`
-  - `apps/api/src/__tests__/services/publish-cache-invalidation.service.test.ts`
-  - `apps/api/src/__tests__/controllers/blogs.controller.test.ts`
+  - `apps/website-builder-api/src/services/publish-cache-invalidation.service.ts`
+  - `apps/website-builder-api/src/controllers/blogs.controller.ts`
+  - `apps/website-builder-api/src/__tests__/services/publish-cache-invalidation.service.test.ts`
+  - `apps/website-builder-api/src/__tests__/controllers/blogs.controller.test.ts`
   - `AGENTS.md`
 - Verification:
-  - `pnpm --filter @booking-engine/api test -- src/__tests__/services/publish-cache-invalidation.service.test.ts src/__tests__/controllers/blogs.controller.test.ts`
+  - `pnpm --filter @project-aurora/website-builder-api test -- src/__tests__/services/publish-cache-invalidation.service.test.ts src/__tests__/controllers/blogs.controller.test.ts`
 - Migration/rollout implications:
   - No database migration required.
   - API runtime deploy/restart required for immediate sitemap/LLMS purge-on-blog-publish behavior in deployed environments.
@@ -1233,10 +1349,10 @@ If tests are skipped, explicitly record why and residual risk.
 - Preview still targets `/preview/{subdomain}/blog/{slug}` but now keeps editors in context on the blogs list page.
 - Added popup controls for close, mobile/desktop frame width switching, loading overlay, and preview error fallback UI.
 - Impacted modules/files:
-  - `apps/cms/app/dashboard/blogs/page.tsx`
+  - `apps/website-builder-web/app/dashboard/blogs/page.tsx`
   - `AGENTS.md`
 - Verification:
-  - `pnpm --filter @booking-engine/cms exec tsc -p tsconfig.json --noEmit --incremental false`
+  - `pnpm --filter @project-aurora/website-builder-web exec tsc -p tsconfig.json --noEmit --incremental false`
 - Migration/rollout implications:
   - No database migration required.
   - UI-only behavior change; preview route contracts remain unchanged.
@@ -1248,10 +1364,10 @@ If tests are skipped, explicitly record why and residual risk.
   - Auto-fill no longer prefers excerpt for description generation.
 - Updated SEO helper UI guidance copy to reflect content-body sourcing.
 - Impacted modules/files:
-  - `apps/cms/app/dashboard/blogs/[id]/page.tsx`
+  - `apps/website-builder-web/app/dashboard/blogs/[id]/page.tsx`
   - `AGENTS.md`
 - Verification:
-  - `pnpm --filter @booking-engine/cms exec tsc -p tsconfig.json --noEmit --incremental false`
+  - `pnpm --filter @project-aurora/website-builder-web exec tsc -p tsconfig.json --noEmit --incremental false`
 - Migration/rollout implications:
   - No database migration required.
   - UI/editor helper behavior only; API contracts unchanged.
@@ -1268,13 +1384,13 @@ If tests are skipped, explicitly record why and residual risk.
   - blog index and blog post links when the site is blog-enabled
 - Updated CMS preview SEO route tests to cover sitemap index structure, page sitemap branch output, and `llms.txt` content.
 - Impacted modules/files:
-  - `apps/cms/app/preview/[subdomain]/sitemap.xml/route.ts`
-  - `apps/cms/app/preview/[subdomain]/sitemap-pages.xml/route.ts`
-  - `apps/cms/app/preview/[subdomain]/llms.txt/route.ts`
-  - `apps/cms/app/__tests__/preview-seo-files.route.test.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/sitemap.xml/route.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/sitemap-pages.xml/route.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/llms.txt/route.ts`
+  - `apps/website-builder-web/app/__tests__/preview-seo-files.route.test.ts`
   - `AGENTS.md`
 - Verification:
-  - `pnpm --filter @booking-engine/cms test -- app/__tests__/preview-seo-files.route.test.ts`
+  - `pnpm --filter @project-aurora/website-builder-web test -- app/__tests__/preview-seo-files.route.test.ts`
 - Migration/rollout implications:
   - No database migration required.
   - Restart CMS runtime so new preview sitemap/`llms.txt` routes are available in all environments.
@@ -1290,11 +1406,11 @@ If tests are skipped, explicitly record why and residual risk.
   - added optional autosave (5-second cadence) with visible save-state indicator while preserving manual save controls
   - autosave/save pipeline now avoids clobbering active typing by applying save normalization only when the local draft snapshot has not changed during in-flight save
 - Impacted modules/files:
-  - `apps/cms/lib/media-upload.ts`
-  - `apps/cms/app/dashboard/blogs/[id]/page.tsx`
+  - `apps/website-builder-web/lib/media-upload.ts`
+  - `apps/website-builder-web/app/dashboard/blogs/[id]/page.tsx`
   - `AGENTS.md`
 - Verification:
-  - `pnpm --filter @booking-engine/cms exec tsc -p tsconfig.json --noEmit --incremental false`
+  - `pnpm --filter @project-aurora/website-builder-web exec tsc -p tsconfig.json --noEmit --incremental false`
 - Migration/rollout implications:
   - No database migration required.
   - UI/runtime behavior update only; API endpoint contracts remain unchanged.
@@ -1311,10 +1427,10 @@ If tests are skipped, explicitly record why and residual risk.
   - added `Use Featured Image` quick action to set `ogImageUrl` from blog `featuredImageUrl`
 - Save action now stays disabled while OG image upload is in progress to avoid partial metadata submission.
 - Impacted modules/files:
-  - `apps/cms/app/dashboard/blogs/[id]/page.tsx`
+  - `apps/website-builder-web/app/dashboard/blogs/[id]/page.tsx`
   - `AGENTS.md`
 - Verification:
-  - `pnpm --filter @booking-engine/cms exec tsc -p tsconfig.json --noEmit --incremental false`
+  - `pnpm --filter @project-aurora/website-builder-web exec tsc -p tsconfig.json --noEmit --incremental false`
 - Migration/rollout implications:
   - No database migration required.
   - UI-only authoring enhancement; API contracts remain unchanged.
@@ -1327,10 +1443,10 @@ If tests are skipped, explicitly record why and residual risk.
   - no active instance/subdomain context exists
   - the post is not published (preview runtime serves published content)
 - Impacted modules/files:
-  - `apps/cms/app/dashboard/blogs/page.tsx`
+  - `apps/website-builder-web/app/dashboard/blogs/page.tsx`
   - `AGENTS.md`
 - Verification:
-  - `pnpm --filter @booking-engine/cms exec tsc -p tsconfig.json --noEmit --incremental false`
+  - `pnpm --filter @project-aurora/website-builder-web exec tsc -p tsconfig.json --noEmit --incremental false`
 - Migration/rollout implications:
   - No database migration required.
   - UI-only change; API contracts and publish artifact flows are unchanged.
@@ -1350,8 +1466,8 @@ If tests are skipped, explicitly record why and residual risk.
   - `packages/themes/src/components/blog/v15.tsx`
   - `AGENTS.md`
 - Verification:
-  - `pnpm --filter @booking-engine/themes exec tsc -p tsconfig.json --noEmit`
-  - `pnpm --filter @booking-engine/cms test -- app/__tests__/theme-components.smoke.test.ts`
+  - `pnpm --filter @project-aurora/themes exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-web test -- app/__tests__/theme-components.smoke.test.ts`
 - Migration/rollout implications:
   - No database migration required.
   - Restart/rebuild CMS frontend runtime and hard-refresh preview/live pages to clear cached bundles.
@@ -1364,10 +1480,10 @@ If tests are skipped, explicitly record why and residual risk.
 - This prevents the builder error:
   - `Set up the Home page with a template or at least one section before adding more pages.`
 - Impacted modules/files:
-  - `apps/cms/app/dashboard/builder/page.tsx`
+  - `apps/website-builder-web/app/dashboard/builder/page.tsx`
   - `AGENTS.md`
 - Verification:
-  - `pnpm --filter @booking-engine/cms exec tsc -p tsconfig.json --noEmit --incremental false`
+  - `pnpm --filter @project-aurora/website-builder-web exec tsc -p tsconfig.json --noEmit --incremental false`
 - Migration/rollout implications:
   - No database migration required for this fix.
   - Restart CMS runtime and hard-refresh builder tabs so the updated apply orchestration is active.
@@ -1402,20 +1518,20 @@ If tests are skipped, explicitly record why and residual risk.
   - `packages/themes/src/registry.ts`
   - `packages/themes/src/templates.ts`
   - `packages/database/prisma/migrations/20260418102000_redesign_train_of_thought_v15/migration.sql`
-  - `apps/api/src/validators/pages.validators.ts`
-  - `apps/api/src/controllers/pages.controller.ts`
-  - `apps/api/src/__tests__/validators/pages.validators.test.ts`
-  - `apps/api/src/__tests__/controllers/pages.controller.apply-template.test.ts`
-  - `apps/cms/app/dashboard/builder/page.tsx`
-  - `apps/cms/app/__tests__/theme-components.smoke.test.ts`
-  - `apps/cms/app/__tests__/fixtures/theme-component-fixtures.ts`
+  - `apps/website-builder-api/src/validators/pages.validators.ts`
+  - `apps/website-builder-api/src/controllers/pages.controller.ts`
+  - `apps/website-builder-api/src/__tests__/validators/pages.validators.test.ts`
+  - `apps/website-builder-api/src/__tests__/controllers/pages.controller.apply-template.test.ts`
+  - `apps/website-builder-web/app/dashboard/builder/page.tsx`
+  - `apps/website-builder-web/app/__tests__/theme-components.smoke.test.ts`
+  - `apps/website-builder-web/app/__tests__/fixtures/theme-component-fixtures.ts`
   - `AGENTS.md`
 - Verification:
-  - `pnpm --filter @booking-engine/themes exec tsc -p tsconfig.json --noEmit`
-  - `pnpm --filter @booking-engine/api exec tsc -p tsconfig.json --noEmit`
-  - `pnpm --filter @booking-engine/cms exec tsc -p tsconfig.json --noEmit --incremental false`
-  - `pnpm --filter @booking-engine/api test -- src/__tests__/controllers/pages.controller.apply-template.test.ts src/__tests__/validators/pages.validators.test.ts`
-  - `pnpm --filter @booking-engine/cms test -- app/__tests__/theme-components.smoke.test.ts`
+  - `pnpm --filter @project-aurora/themes exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-api exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-web exec tsc -p tsconfig.json --noEmit --incremental false`
+  - `pnpm --filter @project-aurora/website-builder-api test -- src/__tests__/controllers/pages.controller.apply-template.test.ts src/__tests__/validators/pages.validators.test.ts`
+  - `pnpm --filter @project-aurora/website-builder-web test -- app/__tests__/theme-components.smoke.test.ts`
 - Migration/rollout implications:
   - Apply migrations through `20260418102000_redesign_train_of_thought_v15` so v15/v2 keys exist in catalog and template payloads.
   - Restart API and CMS runtimes after migration and hard-refresh builder tabs to pick up updated orchestration + registry mappings.
@@ -1431,8 +1547,8 @@ If tests are skipped, explicitly record why and residual risk.
   - `packages/database/prisma/migrations/20260418081000_hide_legacy_blog_templates_from_catalog/migration.sql`
   - `AGENTS.md`
 - Verification:
-  - `pnpm --filter @booking-engine/database exec prisma db execute --schema prisma/schema.prisma --file prisma/migrations/20260417204000_add_full_blog_ready_templates/migration.sql`
-  - `pnpm --filter @booking-engine/api exec node -e "const { db } = require('@booking-engine/database'); db.pageTemplate.findMany({ where: { isActive: true }, select: { id: true, name: true }, orderBy: { name: 'asc' } }).then((rows) => { console.log(JSON.stringify(rows, null, 2)); process.exit(0); }).catch((error) => { console.error(error); process.exit(1); });"`
+  - `pnpm --filter @project-aurora/database exec prisma db execute --schema prisma/schema.prisma --file prisma/migrations/20260417204000_add_full_blog_ready_templates/migration.sql`
+  - `pnpm --filter @project-aurora/website-builder-api exec node -e "const { db } = require('@project-aurora/database'); db.pageTemplate.findMany({ where: { isActive: true }, select: { id: true, name: true }, orderBy: { name: 'asc' } }).then((rows) => { console.log(JSON.stringify(rows, null, 2)); process.exit(0); }).catch((error) => { console.error(error); process.exit(1); });"`
 - Migration/rollout implications:
   - Apply Prisma migrations through `20260418081000_hide_legacy_blog_templates_from_catalog` in target environments so old blog template IDs are hidden consistently.
   - Restart API/CMS runtimes and hard-refresh browser tabs to pick up updated picker filtering.
@@ -1447,15 +1563,15 @@ If tests are skipped, explicitly record why and residual risk.
 - Impacted modules/files:
   - `packages/database/prisma/migrations/20260417204000_add_full_blog_ready_templates/migration.sql`
   - `packages/themes/src/templates.ts`
-  - `apps/cms/components/builder/template-picker.tsx`
-  - `apps/cms/app/dashboard/builder/page.tsx`
+  - `apps/website-builder-web/components/builder/template-picker.tsx`
+  - `apps/website-builder-web/app/dashboard/builder/page.tsx`
   - `AGENTS.md`
 - Verification:
-  - `pnpm --filter @booking-engine/themes exec tsc -p tsconfig.json --noEmit`
-  - `pnpm --filter @booking-engine/api exec tsc -p tsconfig.json --noEmit`
-  - `pnpm --filter @booking-engine/cms exec tsc -p tsconfig.json --noEmit --incremental false`
-  - `pnpm --filter @booking-engine/api test -- src/__tests__/controllers/pages.controller.apply-template.test.ts src/__tests__/controllers/blogs.controller.test.ts src/__tests__/routes/web.blogs.routes.test.ts src/__tests__/validators/pages.validators.test.ts src/__tests__/validators/blogs.validators.test.ts`
-  - `pnpm --filter @booking-engine/cms test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/preview-blog.metadata.test.ts app/__tests__/preview-seo-files.route.test.ts`
+  - `pnpm --filter @project-aurora/themes exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-api exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-web exec tsc -p tsconfig.json --noEmit --incremental false`
+  - `pnpm --filter @project-aurora/website-builder-api test -- src/__tests__/controllers/pages.controller.apply-template.test.ts src/__tests__/controllers/blogs.controller.test.ts src/__tests__/routes/web.blogs.routes.test.ts src/__tests__/validators/pages.validators.test.ts src/__tests__/validators/blogs.validators.test.ts`
+  - `pnpm --filter @project-aurora/website-builder-web test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/preview-blog.metadata.test.ts app/__tests__/preview-seo-files.route.test.ts`
 - Migration/rollout implications:
   - Apply Prisma migrations on new environments so the `Train of Thought` template seed is available.
   - Existing environments that already contain `template-2026-authority-forge` remain backward-compatible; it is no longer surfaced in picker/orchestration.
@@ -1478,19 +1594,19 @@ If tests are skipped, explicitly record why and residual risk.
   - `packages/themes/src/registry.ts`
   - `packages/themes/src/types.ts`
   - `packages/themes/src/components/blog-post-detail/v1.tsx`
-  - `apps/cms/components/builder/template-picker.tsx`
-  - `apps/cms/components/builder/section-renderer.tsx`
-  - `apps/api/src/controllers/instances.controller.ts`
-  - `apps/cms/app/dashboard/builder/page.tsx`
-  - `apps/cms/app/preview/[subdomain]/blog/[slug]/page.tsx`
-  - `apps/cms/app/preview/[subdomain]/seo-artifacts.ts`
+  - `apps/website-builder-web/components/builder/template-picker.tsx`
+  - `apps/website-builder-web/components/builder/section-renderer.tsx`
+  - `apps/website-builder-api/src/controllers/instances.controller.ts`
+  - `apps/website-builder-web/app/dashboard/builder/page.tsx`
+  - `apps/website-builder-web/app/preview/[subdomain]/blog/[slug]/page.tsx`
+  - `apps/website-builder-web/app/preview/[subdomain]/seo-artifacts.ts`
   - `AGENTS.md`
 - Verification:
-  - `pnpm --filter @booking-engine/themes exec tsc -p tsconfig.json --noEmit`
-  - `pnpm --filter @booking-engine/api exec tsc -p tsconfig.json --noEmit`
-  - `pnpm --filter @booking-engine/cms exec tsc -p tsconfig.json --noEmit --incremental false`
-  - `pnpm --filter @booking-engine/api test -- src/__tests__/controllers/pages.controller.apply-template.test.ts src/__tests__/controllers/blogs.controller.test.ts src/__tests__/routes/web.blogs.routes.test.ts src/__tests__/validators/pages.validators.test.ts src/__tests__/validators/blogs.validators.test.ts`
-  - `pnpm --filter @booking-engine/cms test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/preview-blog.metadata.test.ts app/__tests__/preview-seo-files.route.test.ts`
+  - `pnpm --filter @project-aurora/themes exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-api exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-web exec tsc -p tsconfig.json --noEmit --incremental false`
+  - `pnpm --filter @project-aurora/website-builder-api test -- src/__tests__/controllers/pages.controller.apply-template.test.ts src/__tests__/controllers/blogs.controller.test.ts src/__tests__/routes/web.blogs.routes.test.ts src/__tests__/validators/pages.validators.test.ts src/__tests__/validators/blogs.validators.test.ts`
+  - `pnpm --filter @project-aurora/website-builder-web test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/preview-blog.metadata.test.ts app/__tests__/preview-seo-files.route.test.ts`
 - Migration/rollout implications:
   - Run Prisma migrations so `20260417204000_add_full_blog_ready_templates` is applied before using the new templates.
   - Restart API and CMS runtimes so template picker, builder orchestration, and preview blog-layout rendering changes are active.
@@ -1502,14 +1618,14 @@ If tests are skipped, explicitly record why and residual risk.
 - Added explicit request validation for `POST /cms/pages/:id/apply-template` so missing/invalid `templateId` requests consistently return structured validation details.
 - Updated CMS builder alert formatting to show detail messages cleanly even when a validation detail omits a field name.
 - Impacted modules/files:
-  - `apps/api/src/validators/pages.validators.ts`
-  - `apps/api/src/controllers/pages.controller.ts`
-  - `apps/api/src/routes/cms/index.ts`
-  - `apps/cms/app/dashboard/builder/page.tsx`
+  - `apps/website-builder-api/src/validators/pages.validators.ts`
+  - `apps/website-builder-api/src/controllers/pages.controller.ts`
+  - `apps/website-builder-api/src/routes/cms/index.ts`
+  - `apps/website-builder-web/app/dashboard/builder/page.tsx`
   - `AGENTS.md`
 - Verification:
-  - `pnpm --filter @booking-engine/api exec tsc -p tsconfig.json --noEmit`
-  - `pnpm --filter @booking-engine/cms exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-api exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-web exec tsc -p tsconfig.json --noEmit`
 - Migration/rollout implications:
   - No database migration required.
   - Restart API and CMS runtimes so route validation and slug normalization behavior are active.
@@ -1523,13 +1639,13 @@ If tests are skipped, explicitly record why and residual risk.
 - Added daily cache rollover semantics so generated XML/KML refresh automatically at 00:00 UTC (`Cache-Control` max-age to next UTC midnight).
 - Updated preview robots generation to advertise `Sitemap: /blog-sitemap.xml` only when selected blog-template eligibility is met.
 - Impacted modules/files:
-  - `apps/cms/app/preview/[subdomain]/seo-artifacts.ts`
-  - `apps/cms/app/preview/[subdomain]/blog-sitemap.xml/route.ts`
-  - `apps/cms/app/preview/[subdomain]/blog-locations.kml/route.ts`
-  - `apps/cms/app/preview/[subdomain]/robots.txt/route.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/seo-artifacts.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/blog-sitemap.xml/route.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/blog-locations.kml/route.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/robots.txt/route.ts`
   - `AGENTS.md`
 - Verification:
-  - `pnpm --filter @booking-engine/cms exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-web exec tsc -p tsconfig.json --noEmit`
 - Migration/rollout implications:
   - No database migration required.
   - Restart CMS runtime so the new preview routes and robots updates are active.
@@ -1540,10 +1656,10 @@ If tests are skipped, explicitly record why and residual risk.
 - Added compatibility lookup so existing legacy Blog pages with slug `/blog` are still reused when present.
 - This resolves the generic `Validation failed` alert that occurred while applying blog-focused templates when the Blog page had to be auto-created.
 - Impacted modules/files:
-  - `apps/cms/app/dashboard/builder/page.tsx`
+  - `apps/website-builder-web/app/dashboard/builder/page.tsx`
   - `AGENTS.md`
 - Verification:
-  - `pnpm --filter @booking-engine/cms exec tsc -p tsconfig.json --noEmit --incremental false`
+  - `pnpm --filter @project-aurora/website-builder-web exec tsc -p tsconfig.json --noEmit --incremental false`
 - Migration/rollout implications:
   - No database migration required.
   - Restart CMS runtime so the updated template-apply flow is active.
@@ -1559,17 +1675,17 @@ If tests are skipped, explicitly record why and residual risk.
   - post links resolve to `/preview/{subdomain}/blog/{slug}`
   - editor allows navigation only for explicitly opted-in links via `data-editor-nav="allow"`
 - Impacted modules/files:
-  - `apps/cms/app/dashboard/builder/page.tsx`
-  - `apps/cms/components/builder/section-renderer.tsx`
-  - `apps/cms/app/preview/[subdomain]/[[...slug]]/page.tsx`
+  - `apps/website-builder-web/app/dashboard/builder/page.tsx`
+  - `apps/website-builder-web/components/builder/section-renderer.tsx`
+  - `apps/website-builder-web/app/preview/[subdomain]/[[...slug]]/page.tsx`
   - `packages/themes/src/types.ts`
   - `packages/themes/src/components/blog/v1.tsx`
   - `packages/themes/src/components/blog/v2.tsx`
   - `packages/themes/src/components/blog/v3.tsx`
   - `CLAUDE.md`
 - Verification:
-  - `pnpm --filter @booking-engine/themes exec tsc -p tsconfig.json --noEmit`
-  - `pnpm --filter @booking-engine/cms exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/themes exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-web exec tsc -p tsconfig.json --noEmit`
 - Migration/rollout implications:
   - No database migration required for this behavior change.
   - Restart CMS runtime so template-apply workflow and editor link navigation updates are active.
@@ -1585,8 +1701,8 @@ If tests are skipped, explicitly record why and residual risk.
   - `packages/database/prisma/migrations/20260417173000_refocus_blog_templates_blog_only/migration.sql`
   - `CLAUDE.md`
 - Verification:
-  - `pnpm --filter @booking-engine/database exec prisma db execute --schema prisma/schema.prisma --file prisma/migrations/20260417173000_refocus_blog_templates_blog_only/migration.sql`
-  - `pnpm --filter @booking-engine/api exec node -e "const { db } = require('@booking-engine/database'); db.pageTemplate.findMany({ where: { id: { in: ['template-2026-blog-authority-hub','template-2026-editorial-conversion-desk'] } }, select: { id: true, sectionsJsonb: true } }).then(r => { console.log(JSON.stringify(r.map(t => ({ id: t.id, sections: Array.isArray(t.sectionsJsonb) ? t.sectionsJsonb.length : 0 })), null, 2)); process.exit(0); }).catch(e => { console.error(e); process.exit(1); });"`
+  - `pnpm --filter @project-aurora/database exec prisma db execute --schema prisma/schema.prisma --file prisma/migrations/20260417173000_refocus_blog_templates_blog_only/migration.sql`
+  - `pnpm --filter @project-aurora/website-builder-api exec node -e "const { db } = require('@project-aurora/database'); db.pageTemplate.findMany({ where: { id: { in: ['template-2026-blog-authority-hub','template-2026-editorial-conversion-desk'] } }, select: { id: true, sectionsJsonb: true } }).then(r => { console.log(JSON.stringify(r.map(t => ({ id: t.id, sections: Array.isArray(t.sectionsJsonb) ? t.sectionsJsonb.length : 0 })), null, 2)); process.exit(0); }).catch(e => { console.error(e); process.exit(1); });"`
 - Migration/rollout implications:
   - Run Prisma migrations (or execute the compensating SQL file directly) so existing databases are updated to the blog-only template composition.
   - Restart API and CMS runtimes so `/cms/catalog/page-templates` and picker previews reflect updated template payloads.
@@ -1604,12 +1720,12 @@ If tests are skipped, explicitly record why and residual risk.
   - `packages/themes/src/components/blog/v3.tsx`
   - `packages/themes/src/registry.ts`
   - `packages/database/prisma/migrations/20260417164000_add_blog_focused_page_templates/migration.sql`
-  - `apps/cms/components/builder/template-picker.tsx`
-  - `apps/cms/app/__tests__/theme-components.smoke.test.ts`
+  - `apps/website-builder-web/components/builder/template-picker.tsx`
+  - `apps/website-builder-web/app/__tests__/theme-components.smoke.test.ts`
   - `CLAUDE.md`
 - Verification:
-  - `pnpm --filter @booking-engine/themes exec tsc -p tsconfig.json --noEmit`
-  - `pnpm --filter @booking-engine/cms test -- app/__tests__/theme-components.smoke.test.ts`
+  - `pnpm --filter @project-aurora/themes exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-web test -- app/__tests__/theme-components.smoke.test.ts`
 - Migration/rollout implications:
   - Run Prisma migrations so new template rows are added to `page_templates`.
   - Restart API and CMS runtimes so template catalog and theme registry updates are active for builder/preview flows.
@@ -1620,10 +1736,10 @@ If tests are skipped, explicitly record why and residual risk.
 - Covered URL-bearing fields that can be hidden or stale in existing records (`featuredImageUrl`, `seoJsonb.ogImageUrl`, `seoJsonb.twitterImageUrl`) so legacy non-URL values no longer cause `PUT /api/cms/blogs/:id` `400 Validation failed` responses.
 - Improved CMS blog details error feedback to surface the first API validation detail (`field` + `message`) when the backend returns Zod validation details, instead of showing only the generic `Validation failed` banner.
 - Impacted modules/files:
-  - `apps/cms/app/dashboard/blogs/[id]/page.tsx`
+  - `apps/website-builder-web/app/dashboard/blogs/[id]/page.tsx`
   - `CLAUDE.md`
 - Verification:
-  - `pnpm --filter @booking-engine/cms exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-web exec tsc -p tsconfig.json --noEmit`
 - Migration/rollout implications:
   - No database migration required.
   - Restart CMS runtime (or refresh dev session) so updated blog-save payload normalization and error messaging are active.
@@ -1634,10 +1750,10 @@ If tests are skipped, explicitly record why and residual risk.
 - Blog details save flow now normalizes empty SEO fields to `null`, keeps booleans typed, and preserves canonical path fallback (`/blog/:slug`).
 - This resolves `PUT /api/cms/blogs/:id` `400 Validation failed` responses caused by empty optional SEO fields (for example `ogImageUrl`/`twitterImageUrl`).
 - Impacted modules/files:
-  - `apps/cms/app/dashboard/blogs/[id]/page.tsx`
+  - `apps/website-builder-web/app/dashboard/blogs/[id]/page.tsx`
   - `CLAUDE.md`
 - Verification:
-  - `pnpm --filter @booking-engine/cms exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-web exec tsc -p tsconfig.json --noEmit`
 - Migration/rollout implications:
   - No database migration required.
   - Restart CMS runtime (or refresh dev session) to load updated client payload normalization.
@@ -1649,14 +1765,14 @@ If tests are skipped, explicitly record why and residual risk.
 - Improved Word-style editor insertion flow to use explicit image node insertion with failure detection and clearer unsupported-file feedback.
 - Added publish-panel guidance in blog details clarifying that preview routes render published content only.
 - Impacted modules/files:
-  - `apps/cms/lib/media-upload.ts`
-  - `apps/api/src/controllers/media.controller.ts`
-  - `apps/cms/components/blog/word-editor-field.tsx`
-  - `apps/cms/app/dashboard/blogs/[id]/page.tsx`
+  - `apps/website-builder-web/lib/media-upload.ts`
+  - `apps/website-builder-api/src/controllers/media.controller.ts`
+  - `apps/website-builder-web/components/blog/word-editor-field.tsx`
+  - `apps/website-builder-web/app/dashboard/blogs/[id]/page.tsx`
   - `CLAUDE.md`
 - Verification:
-  - `pnpm --filter @booking-engine/cms exec tsc -p tsconfig.json --noEmit`
-  - `pnpm --filter @booking-engine/api exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-web exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-api exec tsc -p tsconfig.json --noEmit`
 - Migration/rollout implications:
   - No database migration required.
   - Restart API and CMS runtimes so upload MIME validation and editor behavior updates are active.
@@ -1668,13 +1784,13 @@ If tests are skipped, explicitly record why and residual risk.
 - Added in-editor upload state/error feedback and temporary drag-over overlay to clarify insertion behavior.
 - Kept the previous featured-image form uploader removed; this change reintroduces image support only inside body content editing.
 - Impacted modules/files:
-  - `apps/cms/components/blog/word-editor-field.tsx`
-  - `apps/cms/app/dashboard/blogs/[id]/page.tsx`
-  - `apps/cms/package.json`
+  - `apps/website-builder-web/components/blog/word-editor-field.tsx`
+  - `apps/website-builder-web/app/dashboard/blogs/[id]/page.tsx`
+  - `apps/website-builder-web/package.json`
   - `pnpm-lock.yaml`
 - Verification:
-  - `pnpm --filter @booking-engine/cms exec tsc -p tsconfig.json --noEmit`
-  - `pnpm --filter @booking-engine/cms test -- app/__tests__/preview-blog.metadata.test.ts app/__tests__/theme-components.smoke.test.ts`
+  - `pnpm --filter @project-aurora/website-builder-web exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-web test -- app/__tests__/preview-blog.metadata.test.ts app/__tests__/theme-components.smoke.test.ts`
 - Migration/rollout implications:
   - No database migration required.
   - Restart CMS runtime so the updated editor bundle is active.
@@ -1688,11 +1804,11 @@ If tests are skipped, explicitly record why and residual risk.
   - message: `Database is temporarily unavailable. Please try again in a moment.`
 - Added middleware test coverage for Prisma initialization errors (`P1001`/`PrismaClientInitializationError`) to prevent regressions in response shape and status code.
 - Impacted modules/files:
-  - `apps/api/src/middleware/error.ts`
-  - `apps/api/src/__tests__/middleware/error.middleware.test.ts`
+  - `apps/website-builder-api/src/middleware/error.ts`
+  - `apps/website-builder-api/src/__tests__/middleware/error.middleware.test.ts`
 - Verification:
-  - `pnpm --filter @booking-engine/api test -- src/__tests__/middleware/error.middleware.test.ts`
-  - `pnpm --filter @booking-engine/api exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-api test -- src/__tests__/middleware/error.middleware.test.ts`
+  - `pnpm --filter @project-aurora/website-builder-api exec tsc -p tsconfig.json --noEmit`
 - Migration/rollout implications:
   - No database migration required.
   - Restart API runtime to apply updated error mapping behavior.
@@ -1706,11 +1822,11 @@ If tests are skipped, explicitly record why and residual risk.
   - removed inline image upload handlers and editor image insertion controls
 - Renamed editor component usage in blog details from `medium-editor-field` to `word-editor-field` and deleted the old component file.
 - Impacted modules/files:
-  - `apps/cms/components/blog/word-editor-field.tsx`
-  - `apps/cms/app/dashboard/blogs/[id]/page.tsx`
-  - `apps/cms/components/blog/medium-editor-field.tsx` (removed)
+  - `apps/website-builder-web/components/blog/word-editor-field.tsx`
+  - `apps/website-builder-web/app/dashboard/blogs/[id]/page.tsx`
+  - `apps/website-builder-web/components/blog/medium-editor-field.tsx` (removed)
 - Verification:
-  - `pnpm --filter @booking-engine/cms exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-web exec tsc -p tsconfig.json --noEmit`
 - Migration/rollout implications:
   - No database migration required.
   - Restart CMS runtime so the new editor bundle and page wiring are active.
@@ -1724,11 +1840,11 @@ If tests are skipped, explicitly record why and residual risk.
   - import from `@tiptap/react/menus`
   - use `options` (Floating UI) instead of removed `tippyOptions` prop.
 - Impacted modules/files:
-  - `apps/cms/app/layout.tsx`
-  - `apps/cms/components/blog/medium-editor-field.tsx`
+  - `apps/website-builder-web/app/layout.tsx`
+  - `apps/website-builder-web/components/blog/medium-editor-field.tsx`
 - Verification:
-  - `pnpm --filter @booking-engine/cms exec tsc -p tsconfig.json --noEmit`
-  - `pnpm --filter @booking-engine/cms test -- app/__tests__/preview-blog.metadata.test.ts app/__tests__/theme-components.smoke.test.ts`
+  - `pnpm --filter @project-aurora/website-builder-web exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-web test -- app/__tests__/preview-blog.metadata.test.ts app/__tests__/theme-components.smoke.test.ts`
 - Migration/rollout implications:
   - No database migration required.
   - Restart CMS runtime (or clean `.next` + restart dev server) so chunk-recovery and editor bundle updates are active.
@@ -1759,17 +1875,17 @@ If tests are skipped, explicitly record why and residual risk.
   - removed `medium-editor` and `@types/medium-editor`
   - added TipTap packages (`@tiptap/react`, `starter-kit`, image/link/placeholder/highlight/underline/text-style/font-family extensions)
 - Impacted modules/files:
-  - `apps/cms/components/blog/medium-editor-field.tsx`
-  - `apps/cms/app/dashboard/blogs/[id]/page.tsx`
-  - `apps/api/src/lib/sanitize-blog-html.ts`
-  - `apps/cms/app/preview/[subdomain]/blog/[slug]/page.tsx`
-  - `apps/cms/package.json`
+  - `apps/website-builder-web/components/blog/medium-editor-field.tsx`
+  - `apps/website-builder-web/app/dashboard/blogs/[id]/page.tsx`
+  - `apps/website-builder-api/src/lib/sanitize-blog-html.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/blog/[slug]/page.tsx`
+  - `apps/website-builder-web/package.json`
   - `pnpm-lock.yaml`
 - Verification:
-  - `pnpm --filter @booking-engine/cms exec tsc -p tsconfig.json --noEmit`
-  - `pnpm --filter @booking-engine/api exec tsc -p tsconfig.json --noEmit`
-  - `pnpm --filter @booking-engine/api test -- src/__tests__/validators/blogs.validators.test.ts src/__tests__/controllers/blogs.controller.test.ts src/__tests__/routes/web.blogs.routes.test.ts`
-  - `pnpm --filter @booking-engine/cms test -- app/__tests__/preview-blog.metadata.test.ts`
+  - `pnpm --filter @project-aurora/website-builder-web exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-api exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-api test -- src/__tests__/validators/blogs.validators.test.ts src/__tests__/controllers/blogs.controller.test.ts src/__tests__/routes/web.blogs.routes.test.ts`
+  - `pnpm --filter @project-aurora/website-builder-web test -- app/__tests__/preview-blog.metadata.test.ts`
 - Migration/rollout implications:
   - No database migration required.
   - Restart CMS and API runtimes so dependency and sanitizer changes are active.
@@ -1786,29 +1902,29 @@ If tests are skipped, explicitly record why and residual risk.
   - `packages/database/prisma/seed.ts`
   - `packages/database/src/seed-roles.ts`
 - Added API support:
-  - `apps/api/src/controllers/blogs.controller.ts`
-  - `apps/api/src/validators/blogs.validators.ts`
-  - `apps/api/src/lib/sanitize-blog-html.ts`
-  - route wiring in `apps/api/src/routes/cms/index.ts` and `apps/api/src/routes/web/index.ts`
-  - swagger contract updates in `apps/api/src/swagger.ts`
+  - `apps/website-builder-api/src/controllers/blogs.controller.ts`
+  - `apps/website-builder-api/src/validators/blogs.validators.ts`
+  - `apps/website-builder-api/src/lib/sanitize-blog-html.ts`
+  - route wiring in `apps/website-builder-api/src/routes/cms/index.ts` and `apps/website-builder-api/src/routes/web/index.ts`
+  - swagger contract updates in `apps/website-builder-api/src/swagger.ts`
 - Added CMS authoring UI and editor integration:
-  - list/detail pages under `apps/cms/app/dashboard/blogs/*`
+  - list/detail pages under `apps/website-builder-web/app/dashboard/blogs/*`
   - sidebar/blog navigation updates
-  - `apps/cms/components/blog/medium-editor-field.tsx` wrapper around pinned `medium-editor` (`5.23.3`) with sanitized HTML persistence and inline image insertion
+  - `apps/website-builder-web/components/blog/medium-editor-field.tsx` wrapper around pinned `medium-editor` (`5.23.3`) with sanitized HTML persistence and inline image insertion
 - Added theme/public rendering integration:
   - `packages/themes/src/components/blog/v1.tsx`
   - `packages/themes/src/registry.ts` registration + `blog/v1..v12` mapping
   - blog data hooks in `packages/themes/src/components/shared/public-web.ts`
   - theme picker + builder schema normalization updates for `blog` sections
 - Added preview/blog route and SEO behavior:
-  - `apps/cms/app/preview/[subdomain]/blog/[slug]/page.tsx`
-  - `apps/cms/app/preview/[subdomain]/sitemap.xml/route.ts` now includes blog URLs
+  - `apps/website-builder-web/app/preview/[subdomain]/blog/[slug]/page.tsx`
+  - `apps/website-builder-web/app/preview/[subdomain]/sitemap.xml/route.ts` now includes blog URLs
 - Added/updated tests:
   - API: blog validators, controller isolation, `/web/blogs*` route behavior
   - CMS: blog metadata route tests, sitemap blog URLs, registry/theme smoke fixture coverage
 - Impacted modules/files:
-  - API: `apps/api/src/controllers/*`, `apps/api/src/validators/*`, `apps/api/src/routes/*`, `apps/api/src/swagger.ts`
-  - CMS: `apps/cms/app/dashboard/blogs/*`, `apps/cms/app/preview/[subdomain]/blog/[slug]/page.tsx`, `apps/cms/components/blog/*`, builder/theme picker updates
+  - API: `apps/website-builder-api/src/controllers/*`, `apps/website-builder-api/src/validators/*`, `apps/website-builder-api/src/routes/*`, `apps/website-builder-api/src/swagger.ts`
+  - CMS: `apps/website-builder-web/app/dashboard/blogs/*`, `apps/website-builder-web/app/preview/[subdomain]/blog/[slug]/page.tsx`, `apps/website-builder-web/components/blog/*`, builder/theme picker updates
   - Database: Prisma schema + migrations + seed/role mappings
   - Themes: blog component + shared public hooks + registry mappings
 - Migration/rollout notes:
@@ -1819,7 +1935,7 @@ If tests are skipped, explicitly record why and residual risk.
 ### 2026-04-16 (CMS Global Head Script Injection: Ecommex Widget)
 
 - Added a global CMS root-layout script injection for the Ecommex widget so it loads across app routes when configured.
-- Implemented the script in `apps/cms/app/layout.tsx` head with:
+- Implemented the script in `apps/website-builder-web/app/layout.tsx` head with:
   - `src`: `https://inbox-backend-fignp.sevalla.app/widget/ecommex-widget.js`
   - `data-api-url`: `https://inbox-backend-fignp.sevalla.app/`
   - `data-merchant-id`: sourced from `NEXT_PUBLIC_ECOMMEX_MERCHANT_ID`
@@ -1828,7 +1944,7 @@ If tests are skipped, explicitly record why and residual risk.
   - `NEXT_PUBLIC_ECOMMEX_MERCHANT_ID`
   - script injection is conditional and skipped when the variable is empty.
 - Impacted modules/files:
-  - `apps/cms/app/layout.tsx`
+  - `apps/website-builder-web/app/layout.tsx`
   - `.env.example`
   - `AGENTS.md`
 - Verification:
@@ -1858,8 +1974,8 @@ If tests are skipped, explicitly record why and residual risk.
   - `packages/themes/src/components/harmozi-vsl-v1/footer-v1.tsx`
   - `packages/themes/src/registry.ts`
   - `packages/themes/src/templates.ts`
-  - `apps/cms/components/builder/template-picker.tsx`
-  - `apps/cms/app/__tests__/fixtures/theme-component-fixtures.ts`
+  - `apps/website-builder-web/components/builder/template-picker.tsx`
+  - `apps/website-builder-web/app/__tests__/fixtures/theme-component-fixtures.ts`
   - `packages/database/prisma/migrations/20260408183000_add_harmozi_vsl_template/migration.sql`
   - `AGENTS.md`
 - Migration/rollout implications:
@@ -1931,7 +2047,7 @@ If tests are skipped, explicitly record why and residual risk.
 - Kept `Fusion Growth` on standard feature families (`header`, `hero`, `testimonials`, `about`, `logos`, `product`, `services`, `team`, `footer`), so existing builder section-theme replacement continues to work by feature for this template.
 - Added a compensating data migration to sync already-applied environments with the latest `Fusion Growth` builder-facing header schema/defaults.
 - Impacted modules/files:
-  - `apps/cms/app/dashboard/builder/page.tsx`
+  - `apps/website-builder-web/app/dashboard/builder/page.tsx`
   - `packages/themes/src/components/shared/style-overrides.ts`
   - `packages/themes/src/components/header/v13.tsx`
   - `packages/themes/src/components/hero/v13.tsx`
@@ -1952,7 +2068,7 @@ If tests are skipped, explicitly record why and residual risk.
 
 - Added `template-2026-fusion-growth` back to the CMS builder template picker whitelist so it appears in the Apply Template flow again.
 - Impacted modules/files:
-  - `apps/cms/components/builder/template-picker.tsx`
+  - `apps/website-builder-web/components/builder/template-picker.tsx`
   - `AGENTS.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -1976,7 +2092,7 @@ If tests are skipped, explicitly record why and residual risk.
   - `packages/themes/src/components/team/v13.tsx`
   - `packages/themes/src/components/footer/v13.tsx`
   - `packages/themes/src/templates.ts`
-  - `apps/cms/app/__tests__/fixtures/theme-component-fixtures.ts`
+  - `apps/website-builder-web/app/__tests__/fixtures/theme-component-fixtures.ts`
   - `packages/database/prisma/migrations/20260407223000_redesign_fusion_growth_template/migration.sql`
   - `AGENTS.md`
 - Migration/rollout implications:
@@ -2004,7 +2120,7 @@ If tests are skipped, explicitly record why and residual risk.
   - `packages/themes/src/components/footer/v13.tsx`
   - `packages/themes/src/registry.ts`
   - `packages/themes/src/templates.ts`
-  - `apps/cms/app/__tests__/fixtures/theme-component-fixtures.ts`
+  - `apps/website-builder-web/app/__tests__/fixtures/theme-component-fixtures.ts`
   - `packages/database/prisma/migrations/20260407223000_redesign_fusion_growth_template/migration.sql`
   - `AGENTS.md`
 - Migration/rollout implications:
@@ -2016,10 +2132,10 @@ If tests are skipped, explicitly record why and residual risk.
 
 - Unblocked Coolify/Docker CMS builds that were failing during Next.js type-check with `TS6133` unused-local errors in generated v7-v12 theme component files.
 - Added a CMS-local TypeScript override so strict unused-local checks no longer fail CMS production builds:
-  - `apps/cms/tsconfig.json`: `compilerOptions.noUnusedLocals = false`
+  - `apps/website-builder-web/tsconfig.json`: `compilerOptions.noUnusedLocals = false`
 - Applied targeted cleanup to remove known dead local declarations in affected theme files that surfaced during initial failure triage (including `about/*` and lane-specific `laneText` declarations).
 - Impacted modules/files:
-  - `apps/cms/tsconfig.json`
+  - `apps/website-builder-web/tsconfig.json`
   - `packages/themes/src/components/about/v7.tsx`
   - `packages/themes/src/components/about/v8.tsx`
   - `packages/themes/src/components/about/v9.tsx`
@@ -2047,7 +2163,7 @@ If tests are skipped, explicitly record why and residual risk.
   - `packages/themes/src/components/hero/v12.tsx`
   - `AGENTS.md`
 - Verification:
-  - `pnpm turbo build --filter=@booking-engine/cms... --concurrency=1`
+  - `pnpm turbo build --filter=@project-aurora/website-builder-web... --concurrency=1`
 - Migration/rollout implications:
   - No database migration required.
   - Runtime behavior is unchanged; this is a build-time type-checking policy adjustment for CMS compilation scope.
@@ -2080,8 +2196,8 @@ If tests are skipped, explicitly record why and residual risk.
   - `packages/database/prisma/migrations/20260407214500_redesign_acquisition_shop_template/migration.sql`
   - `AGENTS.md`
 - Verification:
-  - `pnpm --filter @booking-engine/themes exec tsc -p tsconfig.json --noEmit`
-  - `pnpm --filter @booking-engine/cms test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
+  - `pnpm --filter @project-aurora/themes exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-web test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
 - Migration/rollout implications:
   - Requires running Prisma migrations in target environments to update existing Acquisition Shop template defaults in `page_templates`.
   - No schema changes; migration is data-only for one template row.
@@ -2097,10 +2213,10 @@ If tests are skipped, explicitly record why and residual risk.
   - `AGENTS.md`
 - Verification:
   - Migration file added for deployment in Prisma migration chain (data-only rewrite).
-  - `pnpm --filter @booking-engine/database exec prisma migrate deploy`
+  - `pnpm --filter @project-aurora/database exec prisma migrate deploy`
   - Theme compile + CMS render tests validated against explicit v6-v12 lane component implementations:
-    - `pnpm --filter @booking-engine/themes exec tsc -p tsconfig.json --noEmit`
-    - `pnpm --filter @booking-engine/cms test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
+    - `pnpm --filter @project-aurora/themes exec tsc -p tsconfig.json --noEmit`
+    - `pnpm --filter @project-aurora/website-builder-web test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
 - Migration/rollout implications:
   - Requires running Prisma migrations in target environments to rewrite existing seeded template rows.
   - No schema shape changes; this migration updates `page_templates.sections_jsonb` data only.
@@ -2138,8 +2254,8 @@ If tests are skipped, explicitly record why and residual risk.
   - `packages/themes/src/components/pricing/v6.tsx` .. `packages/themes/src/components/pricing/v12.tsx`
   - `AGENTS.md`
 - Verification:
-  - `pnpm --filter @booking-engine/themes exec tsc -p tsconfig.json --noEmit`
-  - `pnpm --filter @booking-engine/cms test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
+  - `pnpm --filter @project-aurora/themes exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-web test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
 - Migration/rollout implications:
   - No database migration required for this renderer/component implementation wave.
   - Restart CMS runtime to ensure builder preview and published rendering load updated lane implementations.
@@ -2158,17 +2274,17 @@ If tests are skipped, explicitly record why and residual risk.
   - duplicate-blocking now applies across versions per feature (cannot add `header/v2` if any `header/*` exists on page)
   - sync propagation now keyed by shared layout feature (`header` or `footer`) rather than a single component key.
 - Added focused controller tests covering these guardrails:
-  - `apps/api/src/__tests__/controllers/pages.controller.apply-template.test.ts`
-  - `apps/api/src/__tests__/controllers/sections.controller.shared-layout.test.ts`
+  - `apps/website-builder-api/src/__tests__/controllers/pages.controller.apply-template.test.ts`
+  - `apps/website-builder-api/src/__tests__/controllers/sections.controller.shared-layout.test.ts`
 - Impacted modules/files:
-  - `apps/api/src/controllers/pages.controller.ts`
-  - `apps/api/src/controllers/sections.controller.ts`
-  - `apps/api/src/__tests__/controllers/pages.controller.apply-template.test.ts`
-  - `apps/api/src/__tests__/controllers/sections.controller.shared-layout.test.ts`
+  - `apps/website-builder-api/src/controllers/pages.controller.ts`
+  - `apps/website-builder-api/src/controllers/sections.controller.ts`
+  - `apps/website-builder-api/src/__tests__/controllers/pages.controller.apply-template.test.ts`
+  - `apps/website-builder-api/src/__tests__/controllers/sections.controller.shared-layout.test.ts`
   - `AGENTS.md`
 - Verification:
-  - `pnpm --filter @booking-engine/api test -- src/__tests__/controllers/pages.controller.apply-template.test.ts src/__tests__/controllers/sections.controller.shared-layout.test.ts`
-  - `pnpm --filter @booking-engine/api exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-api test -- src/__tests__/controllers/pages.controller.apply-template.test.ts src/__tests__/controllers/sections.controller.shared-layout.test.ts`
+  - `pnpm --filter @project-aurora/website-builder-api exec tsc -p tsconfig.json --noEmit`
 - Migration/rollout implications:
   - No database schema migration required for this phase.
   - Restart API runtime so updated apply-template/shared-layout sync behavior is active.
@@ -2201,8 +2317,8 @@ If tests are skipped, explicitly record why and residual risk.
   - `packages/themes/src/components/gallery/v5.tsx`..`v12.tsx`
   - `AGENTS.md`
 - Verification:
-  - `pnpm --filter @booking-engine/themes exec tsc -p tsconfig.json --noEmit`
-  - `pnpm --filter @booking-engine/cms test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
+  - `pnpm --filter @project-aurora/themes exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-web test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
 - Migration/rollout implications:
   - No database migration required.
   - Restart CMS runtime to ensure preview/builder surfaces load updated section version modules.
@@ -2248,8 +2364,8 @@ If tests are skipped, explicitly record why and residual risk.
   - `packages/themes/src/components/*/v5..v12.tsx` (family/version-specific entrypoints as listed above)
   - `AGENTS.md`
 - Verification:
-  - `pnpm --filter @booking-engine/themes exec tsc -p tsconfig.json --noEmit`
-  - `pnpm --filter @booking-engine/cms test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
+  - `pnpm --filter @project-aurora/themes exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-web test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
 - Migration/rollout implications:
   - No database migration required for this rendering/registry implementation wave.
   - Restart CMS runtime to ensure builder preview and published rendering load explicit v12 section mappings.
@@ -2275,8 +2391,8 @@ If tests are skipped, explicitly record why and residual risk.
   - `packages/themes/src/registry.ts`
   - `AGENTS.md`
 - Verification:
-  - `pnpm --filter @booking-engine/themes exec tsc -p tsconfig.json --noEmit`
-  - `pnpm --filter @booking-engine/cms test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
+  - `pnpm --filter @project-aurora/themes exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-web test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
 - Migration/rollout implications:
   - No database migration required for this Team-only rendering update.
   - Restart CMS runtime to ensure builder preview and published rendering load updated Team v5-v12 components.
@@ -2296,8 +2412,8 @@ If tests are skipped, explicitly record why and residual risk.
   - `packages/themes/src/components/*/v*.tsx` (new v5/v6..v12 wrapper files depending on feature family)
   - `AGENTS.md`
 - Verification:
-  - `pnpm --filter @booking-engine/themes exec tsc -p tsconfig.json --noEmit`
-  - `pnpm --filter @booking-engine/database exec prisma migrate deploy`
+  - `pnpm --filter @project-aurora/themes exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/database exec prisma migrate deploy`
   - Prisma query verification confirms section theme coverage through `v12` for all targeted features and compensated template section-count profile (no longer forced to all 12).
 - Migration/rollout implications:
   - Requires running Prisma migrations to apply compensation + v12 catalog rows in existing environments.
@@ -2334,8 +2450,8 @@ If tests are skipped, explicitly record why and residual risk.
   - `packages/themes/src/components/header/v4.tsx`
   - `AGENTS.md`
 - Verification:
-  - `pnpm --filter @booking-engine/cms test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
-  - `pnpm --filter @booking-engine/cms build` (currently fails in workspace due to unrelated Next.js `PageNotFoundError: Cannot find module for page: /_document` during page data collection)
+  - `pnpm --filter @project-aurora/website-builder-web test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
+  - `pnpm --filter @project-aurora/website-builder-web build` (currently fails in workspace due to unrelated Next.js `PageNotFoundError: Cannot find module for page: /_document` during page data collection)
 - Migration/rollout implications:
   - No database migration required.
   - Restart CMS runtime to pick up updated header component behavior in builder preview and published preview surfaces.
@@ -2354,8 +2470,8 @@ If tests are skipped, explicitly record why and residual risk.
   - `packages/themes/src/components/services/v5.tsx`
   - `AGENTS.md`
 - Verification:
-  - `pnpm --filter @booking-engine/cms test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
-  - `pnpm --filter @booking-engine/cms build` (currently fails in workspace due to unrelated Next.js page data collection errors for `/api/uploads/proxy`, `/robots.txt`, and `/routing-index/current.json`)
+  - `pnpm --filter @project-aurora/website-builder-web test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
+  - `pnpm --filter @project-aurora/website-builder-web build` (currently fails in workspace due to unrelated Next.js page data collection errors for `/api/uploads/proxy`, `/robots.txt`, and `/routing-index/current.json`)
 - Migration/rollout implications:
   - No database migration required.
   - Restart CMS runtime to pick up updated Signal Horizon `v5` header/CTA rendering behavior in preview/builder surfaces.
@@ -2393,8 +2509,8 @@ If tests are skipped, explicitly record why and residual risk.
   - `packages/themes/src/components/testimonials/v4.tsx`
   - `AGENTS.md`
 - Verification:
-  - `pnpm --filter @booking-engine/cms test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
-  - `pnpm --filter @booking-engine/cms build`
+  - `pnpm --filter @project-aurora/website-builder-web test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
+  - `pnpm --filter @project-aurora/website-builder-web build`
 - Migration/rollout implications:
   - No database migration required.
   - Restart CMS runtime to pick up updated theme component render behavior in preview/builder surfaces.
@@ -2402,7 +2518,7 @@ If tests are skipped, explicitly record why and residual risk.
 ### 2026-04-07 (Global Mobile Optimization Pass for Templates/Themes)
 
 - Added a shared mobile-safety runtime layer for all rendered theme sections through `SectionRenderer` by wrapping output with a dedicated class hook.
-- Added global responsive CSS safeguards in `apps/cms/app/globals.css` for `.be-theme-mobile-safe` to improve small-screen behavior across all template/theme sections:
+- Added global responsive CSS safeguards in `apps/website-builder-web/app/globals.css` for `.be-theme-mobile-safe` to improve small-screen behavior across all template/theme sections:
   - force media elements (`img/video/iframe/svg/canvas`) to remain within viewport width
   - avoid horizontal overflow via box sizing + wrapping rules
   - enforce mobile flex wrapping and single-column fallback for inline grid layouts
@@ -2410,10 +2526,10 @@ If tests are skipped, explicitly record why and residual risk.
   - normalize section horizontal padding on mobile widths
 - Updated builder template/theme picker preview panes to be more usable on smaller screens by lowering hard minimum preview heights under mobile breakpoints.
 - Impacted modules/files:
-  - `apps/cms/components/builder/section-renderer.tsx`
-  - `apps/cms/app/globals.css`
-  - `apps/cms/components/builder/template-picker.tsx`
-  - `apps/cms/components/builder/theme-picker.tsx`
+  - `apps/website-builder-web/components/builder/section-renderer.tsx`
+  - `apps/website-builder-web/app/globals.css`
+  - `apps/website-builder-web/components/builder/template-picker.tsx`
+  - `apps/website-builder-web/components/builder/theme-picker.tsx`
   - `AGENTS.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -2436,11 +2552,11 @@ If tests are skipped, explicitly record why and residual risk.
   - `packages/themes/src/components/pricing/v4.tsx`
   - `packages/themes/src/components/testimonials/v4.tsx`
 - Updated Builder Preview font loading to use hosted font resolution rather than a limited hardcoded import set:
-  - `apps/cms/app/builder-preview/[name]/page.tsx`
+  - `apps/website-builder-web/app/builder-preview/[name]/page.tsx`
 - Updated template apply flow so template token overrides are persisted into instance settings during apply (transactional update), fixing post-apply font/color mismatches:
-  - `apps/api/src/controllers/pages.controller.ts`
+  - `apps/website-builder-api/src/controllers/pages.controller.ts`
 - Updated Builder page to refresh settings after template apply so newly-synced tokens are reflected immediately in editor UI:
-  - `apps/cms/app/dashboard/builder/page.tsx`
+  - `apps/website-builder-web/app/dashboard/builder/page.tsx`
 - Added migration to normalize mixed section pack versions and backfill missing `themeTokens` for affected templates:
   - `packages/database/prisma/migrations/20260407153000_normalize_template_tokens_and_section_packs/migration.sql`
 - Standardized selected conversion templates to single-version section packs so layout style is consistent within each template (not color-only variation):
@@ -2463,15 +2579,15 @@ If tests are skipped, explicitly record why and residual risk.
   - map common aliases (`products` -> `product`, etc.)
   - preserve feature-level fallback to latest registered `feature/vN` when requested version is unavailable
 - Added direct compatibility aliases for product catalog keys `product/v7`..`product/v9` to current product renderer implementation so catalog drift does not produce unknown-component blocks.
-- Added CMS-side defensive resolution in `apps/cms/components/builder/section-renderer.tsx` so Builder and template preview remain resilient even when incoming component keys are slightly malformed.
+- Added CMS-side defensive resolution in `apps/website-builder-web/components/builder/section-renderer.tsx` so Builder and template preview remain resilient even when incoming component keys are slightly malformed.
 - Added regression coverage for normalized product key variants and unknown-version fallback behavior in:
-  - `apps/cms/app/__tests__/section-renderer.integration.test.ts`
-  - `apps/cms/app/__tests__/theme-components.smoke.test.ts`
+  - `apps/website-builder-web/app/__tests__/section-renderer.integration.test.ts`
+  - `apps/website-builder-web/app/__tests__/theme-components.smoke.test.ts`
 - Impacted modules/files:
   - `packages/themes/src/registry.ts`
-  - `apps/cms/components/builder/section-renderer.tsx`
-  - `apps/cms/app/__tests__/section-renderer.integration.test.ts`
-  - `apps/cms/app/__tests__/theme-components.smoke.test.ts`
+  - `apps/website-builder-web/components/builder/section-renderer.tsx`
+  - `apps/website-builder-web/app/__tests__/section-renderer.integration.test.ts`
+  - `apps/website-builder-web/app/__tests__/theme-components.smoke.test.ts`
   - `AGENTS.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -2523,9 +2639,9 @@ If tests are skipped, explicitly record why and residual risk.
   - preserve existing `/cms/uploads/presign` -> `/cms/uploads/complete` metadata lifecycle
 - Updated builder schema image upload field to reuse shared media upload helper so product forms and builder image fields behave consistently.
 - Impacted modules/files:
-  - `apps/cms/app/api/uploads/proxy/route.ts`
-  - `apps/cms/lib/media-upload.ts`
-  - `apps/cms/components/builder/schema-form.tsx`
+  - `apps/website-builder-web/app/api/uploads/proxy/route.ts`
+  - `apps/website-builder-web/lib/media-upload.ts`
+  - `apps/website-builder-web/components/builder/schema-form.tsx`
   - `AGENTS.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -2559,16 +2675,16 @@ If tests are skipped, explicitly record why and residual risk.
   - `packages/database/src/client.ts`
   - `packages/database/src/index.ts`
   - `packages/database/src/seed-roles.ts`
-  - `apps/api/src/controllers/products.controller.ts`
-  - `apps/api/src/validators/products.validators.ts`
-  - `apps/api/src/routes/cms/index.ts`
-  - `apps/api/src/routes/web/index.ts`
-  - `apps/api/src/swagger.ts`
-  - `apps/cms/app/dashboard/products/page.tsx`
-  - `apps/cms/app/dashboard/products/[id]/page.tsx`
-  - `apps/cms/components/sidebar.tsx`
-  - `apps/cms/components/builder/theme-picker.tsx`
-  - `apps/cms/lib/media-upload.ts`
+  - `apps/website-builder-api/src/controllers/products.controller.ts`
+  - `apps/website-builder-api/src/validators/products.validators.ts`
+  - `apps/website-builder-api/src/routes/cms/index.ts`
+  - `apps/website-builder-api/src/routes/web/index.ts`
+  - `apps/website-builder-api/src/swagger.ts`
+  - `apps/website-builder-web/app/dashboard/products/page.tsx`
+  - `apps/website-builder-web/app/dashboard/products/[id]/page.tsx`
+  - `apps/website-builder-web/components/sidebar.tsx`
+  - `apps/website-builder-web/components/builder/theme-picker.tsx`
+  - `apps/website-builder-web/lib/media-upload.ts`
   - `packages/themes/src/components/shared/public-web.ts`
   - `packages/themes/src/components/product/shared.ts`
   - `packages/themes/src/components/product/v1.tsx`
@@ -2594,9 +2710,9 @@ If tests are skipped, explicitly record why and residual risk.
   - auto-contrast text fallback when only background override is set
 - Added integration coverage for section-level color override and auto-contrast rendering.
 - Impacted modules/files:
-  - `apps/cms/components/builder/section-renderer.tsx`
-  - `apps/cms/app/dashboard/builder/page.tsx`
-  - `apps/cms/app/__tests__/section-renderer.integration.test.ts`
+  - `apps/website-builder-web/components/builder/section-renderer.tsx`
+  - `apps/website-builder-web/app/dashboard/builder/page.tsx`
+  - `apps/website-builder-web/app/__tests__/section-renderer.integration.test.ts`
   - `docs/AGENTS.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -2604,11 +2720,11 @@ If tests are skipped, explicitly record why and residual risk.
 
 ### 2026-04-03 (CMS Docker pnpm Bootstrap Hardening)
 
-- Hardened `apps/cms/Dockerfile` pnpm activation in the base stage to reduce transient deployment failures from `corepack prepare` network socket interruptions.
+- Hardened `apps/website-builder-web/Dockerfile` pnpm activation in the base stage to reduce transient deployment failures from `corepack prepare` network socket interruptions.
 - Added retry logic for `corepack prepare pnpm@10.30.3 --activate` and a fallback path to `npm install -g pnpm@10.30.3` after repeated failures.
 - Added explicit `pnpm --version` verification after activation.
 - Impacted modules/files:
-  - `apps/cms/Dockerfile`
+  - `apps/website-builder-web/Dockerfile`
   - `docs/AGENTS.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -2625,9 +2741,9 @@ If tests are skipped, explicitly record why and residual risk.
 - Removed dependency on hardcoded page-name variants for published root routing.
 - Added and updated resolver tests for `defaultPageSlug` behavior.
 - Impacted modules/files:
-  - `apps/api/src/controllers/builder.controller.ts`
-  - `apps/cms/lib/published-site.ts`
-  - `apps/cms/lib/__tests__/published-site.seo.test.ts`
+  - `apps/website-builder-api/src/controllers/builder.controller.ts`
+  - `apps/website-builder-web/lib/published-site.ts`
+  - `apps/website-builder-web/lib/__tests__/published-site.seo.test.ts`
   - `docs/AGENTS.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -2643,8 +2759,8 @@ If tests are skipped, explicitly record why and residual risk.
   - fallback to first page in manifest
 - Added resolver tests for root fallback scenarios.
 - Impacted modules/files:
-  - `apps/cms/lib/published-site.ts`
-  - `apps/cms/lib/__tests__/published-site.seo.test.ts`
+  - `apps/website-builder-web/lib/published-site.ts`
+  - `apps/website-builder-web/lib/__tests__/published-site.seo.test.ts`
   - `docs/AGENTS.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -2659,7 +2775,7 @@ If tests are skipped, explicitly record why and residual risk.
   - one-click "Create Home + Template" flow from template buttons when no page is selected
 - Updated no-selection/no-sections messaging so users are guided to create/select a page first before adding sections.
 - Impacted modules/files:
-  - `apps/cms/app/dashboard/builder/page.tsx`
+  - `apps/website-builder-web/app/dashboard/builder/page.tsx`
   - `docs/AGENTS.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -2674,7 +2790,7 @@ If tests are skipped, explicitly record why and residual risk.
   - show global warning with "Stay signed in" and "Sign out" actions
   - auto-logout only when countdown expires without activity
 - Impacted modules/files:
-  - `apps/cms/contexts/auth-context.tsx`
+  - `apps/website-builder-web/contexts/auth-context.tsx`
   - `docs/AGENTS.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -2688,7 +2804,7 @@ If tests are skipped, explicitly record why and residual risk.
   - `Product-based business` -> redirect to external registration URL (`https://easyonlineweb.com/user/admin/auth/view/register.php`)
 - Existing register API contract (`POST /auth/register`) is unchanged; this is a frontend flow gate.
 - Impacted modules/files:
-  - `apps/cms/app/register/page.tsx`
+  - `apps/website-builder-web/app/register/page.tsx`
   - `docs/AGENTS.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -2699,7 +2815,7 @@ If tests are skipped, explicitly record why and residual risk.
 - Simplified dashboard custom-domain support area by removing the separate "Domain connection status" check panel.
 - Dashboard now shows only the shared support contact block (WhatsApp + QR + contact tagline) when a custom domain is pending.
 - Impacted modules/files:
-  - `apps/cms/app/dashboard/page.tsx`
+  - `apps/website-builder-web/app/dashboard/page.tsx`
   - `docs/AGENTS.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -2715,11 +2831,11 @@ If tests are skipped, explicitly record why and residual risk.
 - Updated domain connection check messaging from nameserver-specific copy to generic connected/pending status copy.
 - Applied the same support block across onboarding and dashboard instance/domain screens for consistency.
 - Impacted modules/files:
-  - `apps/cms/components/domain-support-contact.tsx`
-  - `apps/cms/app/dashboard/page.tsx`
-  - `apps/cms/app/onboarding/custom-domain/setup/page.tsx`
-  - `apps/cms/app/dashboard/instances/new/page.tsx`
-  - `apps/cms/app/dashboard/instances/page.tsx`
+  - `apps/website-builder-web/components/domain-support-contact.tsx`
+  - `apps/website-builder-web/app/dashboard/page.tsx`
+  - `apps/website-builder-web/app/onboarding/custom-domain/setup/page.tsx`
+  - `apps/website-builder-web/app/dashboard/instances/new/page.tsx`
+  - `apps/website-builder-web/app/dashboard/instances/page.tsx`
   - `docs/AGENTS.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -2732,7 +2848,7 @@ If tests are skipped, explicitly record why and residual risk.
   - `Create Organization` -> onboarding route when tenant context is missing
 - This removes the dead-end state in Builder and makes instance creation discoverable from the exact blocked screen.
 - Impacted modules/files:
-  - `apps/cms/app/dashboard/builder/page.tsx`
+  - `apps/website-builder-web/app/dashboard/builder/page.tsx`
   - `docs/AGENTS.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -2748,11 +2864,11 @@ If tests are skipped, explicitly record why and residual risk.
 - Added delete-response storage cleanup summary and OpenAPI documentation for 502 storage failure behavior.
 - Added controller tests for successful storage-first deletion and failure when storage is unavailable.
 - Impacted modules/files:
-  - `apps/api/src/controllers/instances.controller.ts`
-  - `apps/api/src/services/s3.service.ts`
-  - `apps/api/src/swagger.ts`
-  - `apps/api/src/__tests__/controllers/instances.controller.full-domain.test.ts`
-  - `apps/api/src/__tests__/services/s3.service.test.ts`
+  - `apps/website-builder-api/src/controllers/instances.controller.ts`
+  - `apps/website-builder-api/src/services/s3.service.ts`
+  - `apps/website-builder-api/src/swagger.ts`
+  - `apps/website-builder-api/src/__tests__/controllers/instances.controller.full-domain.test.ts`
+  - `apps/website-builder-api/src/__tests__/services/s3.service.test.ts`
   - `docs/AGENTS.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -2766,11 +2882,11 @@ If tests are skipped, explicitly record why and residual risk.
 - Updated builder template preview to use hosted-font loading logic instead of a fixed hardcoded font import list.
 - Added focused utility tests for hosted font request resolution and input validation.
 - Impacted modules/files:
-  - `apps/cms/lib/hosted-font-utils.ts`
-  - `apps/cms/lib/use-hosted-font.ts`
-  - `apps/cms/app/preview/[subdomain]/[[...slug]]/page.tsx`
-  - `apps/cms/app/builder-preview/[name]/page.tsx`
-  - `apps/cms/lib/__tests__/hosted-font-utils.test.ts`
+  - `apps/website-builder-web/lib/hosted-font-utils.ts`
+  - `apps/website-builder-web/lib/use-hosted-font.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/[[...slug]]/page.tsx`
+  - `apps/website-builder-web/app/builder-preview/[name]/page.tsx`
+  - `apps/website-builder-web/lib/__tests__/hosted-font-utils.test.ts`
   - `docs/AGENTS.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -2782,10 +2898,10 @@ If tests are skipped, explicitly record why and residual risk.
 - Added `PUBLISHED_SITES_PRUNE_OLD_VERSIONS` environment toggle (`true` by default) for retention behavior control.
 - Added service-level tests for prune-on-publish behavior and toggle/override behavior.
 - Impacted modules/files:
-  - `apps/api/src/services/s3.service.ts`
-  - `apps/api/src/__tests__/services/s3.service.test.ts`
+  - `apps/website-builder-api/src/services/s3.service.ts`
+  - `apps/website-builder-api/src/__tests__/services/s3.service.test.ts`
   - `.env.example`
-  - `apps/api/.env.example`
+  - `apps/website-builder-api/.env.example`
   - `docs/AGENTS.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -2801,10 +2917,10 @@ If tests are skipped, explicitly record why and residual risk.
 - Simplified builder page creation UX to a single generic "Add Page" flow and removed the "Create Home first" requirement from the UI.
 - Hardened page deletion by removing page sections in a transaction before deleting the page row.
 - Impacted modules/files:
-  - `apps/api/src/controllers/pages.controller.ts`
-  - `apps/api/src/controllers/instances.controller.ts`
-  - `apps/cms/app/dashboard/builder/page.tsx`
-  - `apps/api/src/__tests__/controllers/instances.controller.full-domain.test.ts`
+  - `apps/website-builder-api/src/controllers/pages.controller.ts`
+  - `apps/website-builder-api/src/controllers/instances.controller.ts`
+  - `apps/website-builder-web/app/dashboard/builder/page.tsx`
+  - `apps/website-builder-api/src/__tests__/controllers/instances.controller.full-domain.test.ts`
   - `docs/AGENTS.md`
   - `docs/website-builder-template-domain-technical-architecture.md`
 - Migration/rollout implications:
@@ -2818,10 +2934,10 @@ If tests are skipped, explicitly record why and residual risk.
 - Generalized shared layout synchronization from exact `header/v1` and `footer/v1` keys to all `header/*` and `footer/*` theme variants.
 - Updated builder-side header schema normalization and global-layout duplicate blocking to work across all header/footer component versions.
 - Impacted modules/files:
-  - `apps/api/src/controllers/pages.controller.ts`
-  - `apps/api/src/controllers/sections.controller.ts`
-  - `apps/cms/app/dashboard/builder/page.tsx`
-  - `apps/cms/components/builder/theme-picker.tsx`
+  - `apps/website-builder-api/src/controllers/pages.controller.ts`
+  - `apps/website-builder-api/src/controllers/sections.controller.ts`
+  - `apps/website-builder-web/app/dashboard/builder/page.tsx`
+  - `apps/website-builder-web/components/builder/theme-picker.tsx`
   - `docs/AGENTS.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -2842,3 +2958,137 @@ If tests are skipped, explicitly record why and residual risk.
 - Rewrote handbook to align with actual runtime architecture.
 - Replaced outdated assumptions with current JWT + refresh-cookie auth model.
 - Added password/token back-and-forth flow and baseline guardrails.
+
+### 2026-07-11 (Template Catalog Reconciliation: Guarantee Picker-Visible Templates Active)
+
+- Fixed the empty template picker ("No templates available") symptom caused by `is_active` flag drift across the long chain of re-seed/compensate template migrations.
+- Added `packages/database/prisma/migrations/20260711001000_reconcile_template_catalog_active/migration.sql`:
+  - forces the 8 curated `VISIBLE_TEMPLATE_IDS` (clean-appointments, elegant-concierge, motion-studio, signal-horizon, acquisition-shop, fusion-growth, editorial-pulse, harmozi-vsl) to `is_active = true`
+  - keeps the remaining non-legacy catalog templates active
+  - keeps legacy blog-only templates (blog-authority-hub, editorial-conversion-desk) `is_active = false`
+  - non-destructive: only updates `is_active`, never rewrites `sections_jsonb`, so previously-applied template content is preserved
+- Root-cause note for operators: this migration is applied last in the chain, so a full `prisma migrate deploy` both creates any missing template rows (from earlier migrations) and guarantees their visibility. If the picker is still empty after deploy, the DB was never migrated or `migrate deploy` failed partway.
+- Impacted modules/files:
+  - `packages/database/prisma/migrations/20260711001000_reconcile_template_catalog_active/migration.sql`
+  - `AGENTS.md`
+- Verification:
+  - `pnpm --filter @project-aurora/database prisma migrate deploy`
+  - Confirm active templates:
+    ```sql
+    SELECT id, is_active FROM page_templates ORDER BY id;
+    ```
+    The 8 curated IDs above must report `is_active = true`.
+- Migration/rollout implications:
+  - No schema change; data-only flag reconciliation.
+  - Restart API + CMS runtimes, then reopen the template picker in the builder.
+
+### 2026-07-11 (GA4 Traffic Analytics Dashboard)
+
+- Added a GA4-based traffic analytics dashboard so tenants can see Google traffic for their published website as charts.
+- Per-site GA4 config stored in `Instance.settingsJsonb.analytics` (`ga4MeasurementId`, `ga4PropertyId`):
+  - `ga4MeasurementId` is injected as the gtag collection script on the published site (`apps/website-builder-web/app/layout.tsx`) and persisted into the published manifest (`analytics.ga4MeasurementId`).
+  - `ga4PropertyId` is used by the server-side dashboard proxy to query the GA4 Data API.
+- Server-side GA4 Data API proxy (dependency-free: Node `crypto` for service-account JWT + `fetch` to the REST endpoint, no gRPC SDK):
+  - `apps/website-builder-api/src/services/ga4.service.ts` (`getAnalyticsSummary`, `isGa4ConfiguredServerSide`)
+  - reads credentials from `GA4_SERVICE_ACCOUNT_JSON` via `apps/website-builder-api/src/lib/env.ts` (`ga4ServiceAccountJson()`)
+- New API endpoint `GET /cms/analytics/summary` (instance-scoped, `requirePermission('analytics.view')`, query params `startDate`/`endDate` with 30-day default):
+  - `apps/website-builder-api/src/controllers/analytics.controller.ts`
+  - `apps/website-builder-api/src/validators/analytics.validators.ts`
+  - route registered in `apps/website-builder-api/src/routes/cms/index.ts`
+- New `analytics.view` permission (Owner/Admin/Staff/Read Only), seeded via migration `20260711000000_add_analytics_permission` and `packages/database/src/seed-roles.ts`.
+- New CMS dashboard page `apps/website-builder-web/app/dashboard/analytics/page.tsx` renders charts (sessions/users over time, traffic by channel, sessions by device, top pages) via `recharts` (added to `apps/website-builder-web/package.json`), with range selector (7/30/90 days) and a setup CTA when GA4 is unconfigured.
+- Website Settings page now includes a Google Analytics (GA4) section that persists `analytics.ga4MeasurementId`/`ga4PropertyId` via `PUT /cms/builder/settings` (validator extended in `apps/website-builder-api/src/validators/builder.validators.ts`).
+- `WebsiteAnalyticsSettings` added to `packages/core/src/types/index.ts` and `WebsiteSettings.analytics`; published manifest type extended in `apps/website-builder-web/lib/published-site.ts`; publish builder now includes `analytics` in `apps/website-builder-api/src/controllers/builder.controller.ts`.
+- Swagger docs for `AnalyticsSummary` + `/cms/analytics/summary` added in `apps/website-builder-api/src/swagger.ts`; `GA4_SERVICE_ACCOUNT_JSON` documented in `.env.example` + AGENTS.md §17.7.
+- Impacted modules/files:
+  - `apps/website-builder-web/app/layout.tsx`, `app/dashboard/analytics/page.tsx`, `app/dashboard/website-settings/page.tsx`, `components/sidebar.tsx`, `lib/published-site.ts`, `package.json`
+  - `apps/website-builder-api/src/controllers/analytics.controller.ts`, `src/validators/analytics.validators.ts`, `src/validators/builder.validators.ts`, `src/routes/cms/index.ts`, `src/lib/env.ts`, `src/services/ga4.service.ts`, `src/swagger.ts`, `package.json`, `.env.example`
+  - `packages/core/src/types/index.ts`
+  - `packages/database/prisma/migrations/20260711000000_add_analytics_permission/migration.sql`, `packages/database/src/seed-roles.ts`
+  - `AGENTS.md`
+- Verification:
+  - `pnpm --filter @project-aurora/website-builder-api exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-web exec tsc -p tsconfig.json --noEmit`
+- Migration/rollout implications:
+  - Run `pnpm --filter @project-aurora/database prisma migrate deploy` to add the `analytics.view` permission.
+  - Set `GA4_SERVICE_ACCOUNT_JSON` in the API runtime (service account with Viewer access to each GA4 property).
+  - Tenants add their GA4 Measurement ID + Property ID in Website Settings and publish; charts appear on `/dashboard/analytics`.
+
+### 2026-07-11 (Dashboard Overview: Stat Cards + Activity Charts)
+
+- Added a separate "Overview" section to the tenant CMS dashboard (`/dashboard`) so customers get a normal dashboard view with metrics and charts, distinct from the Getting Started guide.
+- Overview includes:
+  - stat cards for Services, Products, Bookings, Customers, Inquiries, and Blogs (counts; each links to its module; modules are shown only when the user has the matching permission)
+  - a `Bookings by Status` pie chart (via `/cms/bookings/stats`) when `bookings.view` is granted
+  - a `Recent Activity` feed combining latest bookings and inquiries with status badges and relative timestamps
+- All overview fetches are instance-scoped and permission-gated; failures degrade silently to zero/empty rather than breaking the page.
+- When no website instance is selected, the overview shows a "Select a website" prompt instead of empty charts.
+- Reused existing list/stats endpoints (`/cms/services`, `/cms/products`, `/cms/customers`, `/cms/inquiries`, `/cms/blogs`, `/cms/bookings/stats`, `/cms/bookings`) — no new API endpoints or migrations required.
+- Impacted modules/files:
+  - `apps/website-builder-web/app/dashboard/page.tsx`
+  - `AGENTS.md`
+- Verification:
+  - `pnpm --filter @project-aurora/website-builder-web exec tsc -p tsconfig.json --noEmit --incremental false`
+- Migration/rollout implications:
+  - No database migration required.
+  - Redeploy/restart the CMS runtime so the new Overview section is served.
+
+### 2026-07-10 (Environment Variable Consolidation: Single Source of Truth)
+
+- Eliminated the need to set the same value under many variable names. Each concern now has ONE canonical variable name; legacy aliases remain as silent fallbacks so existing deploys keep working.
+- Canonical names:
+  - `WEBSITE_BUILDER_API_URL` (replaces `NEXT_PUBLIC_WEBSITE_BUILDER_API_URL`, `NEXT_PUBLIC_API_URL`, `API_BASE_URL`)
+  - `WEBSITE_BUILDER_WEB_URL` (replaces `CMS_URL`, `NEXT_PUBLIC_CMS_URL`)
+  - `SITE_DOMAIN` (auto-exposes `NEXT_PUBLIC_SITE_DOMAIN` via `next.config.mjs`)
+  - `PUBLISHED_SITES_BASE_URL`, `ROUTING_INDEX_CURRENT_URL`, `ROUTING_INDEX_CACHE_TTL_MS`, `PLATFORM_HOST_BYPASS`, `WEB_PROXY_SHARED_SECRET`
+- Added central resolvers:
+  - `apps/website-builder-web/lib/env.ts`
+  - `apps/website-builder-api/src/lib/env.ts`
+- Updated all env reads to use these resolvers (canonical first, legacy fallback):
+  - CMS: `middleware.ts`, `lib/api-proxy.ts`, `lib/web-proxy.ts`, `lib/published-site.ts`, `lib/routing-index.ts`, `lib/cache-policy.ts`, `lib/domain.ts`, `lib/published-proxy.ts`, `app/dashboard/builder/page.tsx` (already used `NEXT_PUBLIC_SITE_DOMAIN`)
+  - API: `src/middleware/public-web-context.ts`, `src/server.ts`, `src/services/publish-cache-invalidation.service.ts`, `src/services/referrals.service.ts`
+- Confirmed only `NEXT_PUBLIC_SITE_DOMAIN` is read in client code; all other public twins were server-only and are no longer needed.
+- Consolidated `.env.example` (root) and `apps/website-builder-api/.env.example` to canonical names only, with a documented list of removed legacy aliases.
+- Updated `docker-compose.prod.yml` and the web `Dockerfile`/`Dockerfile.coolify` to pass only canonical vars; the CMS build now bakes only `SITE_DOMAIN` (which drives `NEXT_PUBLIC_SITE_DOMAIN`).
+- Impacted modules/files:
+  - `apps/website-builder-web/lib/env.ts` (new)
+  - `apps/website-builder-api/src/lib/env.ts` (new)
+  - `apps/website-builder-web/middleware.ts`
+  - `apps/website-builder-web/lib/api-proxy.ts`
+  - `apps/website-builder-web/lib/web-proxy.ts`
+  - `apps/website-builder-web/lib/published-site.ts`
+  - `apps/website-builder-web/lib/routing-index.ts`
+  - `apps/website-builder-web/lib/cache-policy.ts`
+  - `apps/website-builder-web/lib/domain.ts`
+  - `apps/website-builder-web/lib/published-proxy.ts`
+  - `apps/website-builder-api/src/middleware/public-web-context.ts`
+  - `apps/website-builder-api/src/server.ts`
+  - `apps/website-builder-api/src/services/publish-cache-invalidation.service.ts`
+  - `apps/website-builder-api/src/services/referrals.service.ts`
+  - `.env.example`
+  - `apps/website-builder-api/.env.example`
+  - `docker-compose.prod.yml`
+  - `apps/website-builder-web/Dockerfile`
+  - `apps/website-builder-web/Dockerfile.coolify`
+  - `AGENTS.md`
+- Migration/rollout implications:
+  - No database migration required.
+  - Operators can now delete the redundant legacy alias lines from their deployment env (Coolify/compose): `API_BASE_URL`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_WEBSITE_BUILDER_API_URL`, `CMS_URL`, `NEXT_PUBLIC_CMS_URL`, `NEXT_PUBLIC_SITE_DOMAIN` (derived from `SITE_DOMAIN`), and the `NEXT_PUBLIC_*` twins of routing-index/published-sites/platform-bypass. Setting the canonical name is sufficient.
+  - Existing deploys that still set the legacy names continue to work unchanged because the resolvers read them as fallbacks.
+  - Redeploy CMS (rebuild standalone) and API so the consolidated resolvers and Dockerfile changes take effect.
+
+### 2026-07-10 (API Health Endpoints + Healthcheck-Compatible Image)
+
+- Added explicit lightweight health endpoints to the API server so platform health checks (Coolify/Sevalla) succeed and the new container is not rolled back:
+  - `GET /health` returns `200 { status: 'ok' }`
+  - `GET /` returns `200 { status: 'ok' }` (platform probe default path)
+- Added `curl` to the API runner image (`apps/website-builder-api/Dockerfile`) because the `node:20-alpine` base lacks it and platform health checks require a probe client (`wget` alone surfaced `Connection refused` / `curl: not found` failures).
+- Impacted modules/files:
+  - `apps/website-builder-api/src/server.ts`
+  - `apps/website-builder-api/Dockerfile`
+  - `AGENTS.md`
+- Background: a deploy rolled the new API container back to the previous image because its health check failed (no `/health`/`/` 200 response and no `curl` in the image). That rollback is why a stale `/api/auth/register` response (404 then 502) persisted after the env-consolidation fix was built.
+- Migration/rollout implications:
+  - No database migration required.
+  - Point the platform health check at `GET /health` on port `5074` (or keep `/`); both now respond `200`.
+  - Redeploy the API image; the container should now pass the health check and stay live.

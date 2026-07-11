@@ -17,7 +17,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: be-redis
+    container_name: project-aurora-redis
     restart: unless-stopped
     command: >
       redis-server
@@ -39,9 +39,9 @@ services:
   api-migrate:
     build:
       context: .
-      dockerfile: apps/api/Dockerfile
+      dockerfile: apps/website-builder-api/Dockerfile
       target: installer
-    container_name: be-api-migrate
+    container_name: project-aurora-api-migrate
     command: >
       sh -c "
         cd packages/database &&
@@ -60,14 +60,16 @@ services:
   api:
     build:
       context: .
-      dockerfile: apps/api/Dockerfile
-    container_name: be-api
+      dockerfile: apps/website-builder-api/Dockerfile
+    container_name: project-aurora-website-builder-api
     restart: unless-stopped
     ports:
       - "${API_PORT:-3002}:3002"
     environment:
       NODE_ENV: production
       PORT: 3002
+      WEBSITE_BUILDER_API_URL: ${WEBSITE_BUILDER_API_URL:-http://api:3002}
+      WEBSITE_BUILDER_WEB_URL: ${WEBSITE_BUILDER_WEB_URL:-http://cms:3001}
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env (Neon DB connection string)}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?Set JWT_REFRESH_SECRET in .env}
@@ -92,10 +94,6 @@ services:
       R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:-}
       CUSTOM_DOMAIN_CNAME_TARGET: ${CUSTOM_DOMAIN_CNAME_TARGET:-}
       DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:-}
-      DISCORD_WEBHOOK_ENDPOINT: ${DISCORD_WEBHOOK_ENDPOINT:-}
-      DISCORD_WEBHOOK: ${DISCORD_WEBHOOK:-}
-      WEBHOOK_ENDPOINT: ${WEBHOOK_ENDPOINT:-}
-      WEBHOOK_URL: ${WEBHOOK_URL:-}
       DISCORD_WEBHOOK_TIMEOUT_MS: ${DISCORD_WEBHOOK_TIMEOUT_MS:-3500}
     depends_on:
       redis:
@@ -117,24 +115,21 @@ services:
   cms:
     build:
       context: .
-      dockerfile: apps/cms/Dockerfile
+      dockerfile: apps/website-builder-web/Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3002}
-    container_name: be-cms
+        SITE_DOMAIN: ${SITE_DOMAIN:-buildmyonlineweb.site}
+    container_name: project-aurora-website-builder-web
     restart: unless-stopped
     ports:
       - "${CMS_PORT:-3001}:3001"
     environment:
       NODE_ENV: production
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3002}
+      WEBSITE_BUILDER_API_URL: ${WEBSITE_BUILDER_API_URL:-http://api:3002}
+      WEBSITE_BUILDER_WEB_URL: ${WEBSITE_BUILDER_WEB_URL:-http://cms:3001}
       SITE_DOMAIN: ${SITE_DOMAIN:-buildmyonlineweb.site}
-      NEXT_PUBLIC_SITE_DOMAIN: ${SITE_DOMAIN:-buildmyonlineweb.site}
       WEB_PROXY_SHARED_SECRET: ${WEB_PROXY_SHARED_SECRET:-}
       ROUTING_INDEX_CURRENT_URL: ${ROUTING_INDEX_CURRENT_URL:-}
-      NEXT_PUBLIC_ROUTING_INDEX_CURRENT_URL: ${ROUTING_INDEX_CURRENT_URL:-}
       PUBLISHED_SITES_BASE_URL: ${PUBLISHED_SITES_BASE_URL:-}
-      NEXT_PUBLIC_PUBLISHED_SITES_BASE_URL: ${PUBLISHED_SITES_BASE_URL:-}
-      CMS_URL: ${CMS_URL:-}
     depends_on:
       api:
         condition: service_healthy

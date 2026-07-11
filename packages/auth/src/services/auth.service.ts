@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { JWTService } from './jwt.service';
 import { PasswordService } from './password.service';
-import { db, seedDefaultRoles } from '@booking-engine/database';
+import { db, seedDefaultRoles } from '@project-aurora/database';
 import {
     RegisterRequest,
     LoginRequest,
@@ -12,7 +12,7 @@ import {
     JWTPayload,
     logger,
     ERROR_CODES,
-} from '@booking-engine/core';
+} from '@project-aurora/core';
 
 export class AppError extends Error {
     constructor(

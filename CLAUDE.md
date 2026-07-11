@@ -1,5 +1,5 @@
 # CLAUDE.md — Comprehensive Agent + Technical Architecture Handbook
-# Booking Engine CMS Monorepo
+# Project Aurora Monorepo
 
 This file is the primary technical source-of-truth for AI agents and contributors working in this repository.
 
@@ -76,9 +76,9 @@ A code change without required doc updates is incomplete.
 
 ```mermaid
 flowchart LR
-    U["CMS User"] --> CMS["apps/cms (Next.js)"]
+    U["CMS User"] --> CMS["apps/website-builder-web (Next.js)"]
     P["Public Visitor"] --> CMS
-    CMS --> API["apps/api (Express)"]
+    CMS --> API["apps/website-builder-api (Express)"]
     API --> DB["PostgreSQL via Prisma"]
     API --> R2["Cloudflare R2 / S3-compatible storage"]
     API --> CF["Cloudflare cache purge APIs"]
@@ -99,9 +99,8 @@ Core idea:
 
 ### 5.1 Active apps
 
-- `apps/api`: primary Express API runtime.
-- `apps/cms`: primary Next.js CMS app + API/web/published proxy layer.
-- `apps/themes/theme-default`: theme app scaffold.
+- `apps/website-builder-api`: primary Express API runtime.
+- `apps/website-builder-web`: primary Next.js CMS app + API/web/published proxy layer.
 
 ### 5.2 Core packages
 
@@ -113,9 +112,7 @@ Core idea:
 
 ### 5.3 Auxiliary/legacy
 
-- `packages/api`: legacy API package (`@booking-engine/api-legacy`), not the primary runtime path.
-- `mock-builder/`: parallel sandbox copy.
-- `apps/super-admin`: reserved placeholder.
+- (Removed) `packages/api` (`@project-aurora/api-legacy`), `packages/booking`, `packages/auth-ui`, `mock-builder/`, `apps/themes/theme-default`, and `apps/super-admin` were deleted as obsolete/legacy scaffolding. The live API/booking/auth/theme logic lives in `apps/website-builder-api`, `packages/themes`, and `packages/auth`.
 
 Do not shift runtime behavior into legacy modules unless explicitly planned.
 
@@ -227,7 +224,7 @@ This section documents exact credential/token data flow.
 
 ### 8.1 Context objects on request
 
-`apps/api` augments request with:
+`apps/website-builder-api` augments request with:
 
 - `req.auth`: user/role/permission context
 - `req.tenant`: resolved tenant
@@ -242,7 +239,7 @@ This section documents exact credential/token data flow.
 
 ### 8.3 Important implementation detail
 
-`packages/database` includes AsyncLocalStorage scoping helpers (`setTenantContext`), but active `apps/api` runtime currently relies heavily on explicit `where: { tenantId, instanceId }` clauses in controllers/services.
+`packages/database` includes AsyncLocalStorage scoping helpers (`setTenantContext`), but active `apps/website-builder-api` runtime currently relies heavily on explicit `where: { tenantId, instanceId }` clauses in controllers/services.
 
 Until active middleware wraps all requests with tenant context, explicit scoping in queries remains mandatory.
 
@@ -502,7 +499,7 @@ When these sections are changed, sync propagates across instance pages and remov
 
 ### 12.5 Builder UI flow
 
-`apps/cms/app/dashboard/builder/page.tsx` orchestrates:
+`apps/website-builder-web/app/dashboard/builder/page.tsx` orchestrates:
 
 - page list selection
 - section selection and editor panel
@@ -695,7 +692,7 @@ Published pages call `/web/*` through CMS web proxy route handlers.
 
 ### 18.1 Validation
 
-- Zod schemas in `apps/api/src/validators/*`
+- Zod schemas in `apps/website-builder-api/src/validators/*`
 - Request validation via `validate` middleware
 
 ### 18.2 Error model
@@ -745,8 +742,8 @@ Unified error shape:
 
 ### 19.3 Add new builder capability
 
-1. Add route + validator + controller logic in `apps/api`
-2. Integrate into `apps/cms/app/dashboard/builder/page.tsx`
+1. Add route + validator + controller logic in `apps/website-builder-api`
+2. Integrate into `apps/website-builder-web/app/dashboard/builder/page.tsx`
 3. Preserve tenant/instance header behavior from API client
 4. Add tests for permission and scoped data behavior
 5. Update this file + change log
@@ -761,7 +758,7 @@ Unified error shape:
 
 ### 19.5 Add new public `/web` endpoint
 
-1. Add route under `apps/api/src/routes/web/index.ts`
+1. Add route under `apps/website-builder-api/src/routes/web/index.ts`
 2. Keep endpoint public-safe and instance-scoped
 3. Ensure host-based context resolution still applies
 4. Do not introduce CMS auth requirements to public endpoints
@@ -775,8 +772,8 @@ Unified error shape:
 
 - `pnpm build`
 - `pnpm lint`
-- `pnpm --filter @booking-engine/api test`
-- `pnpm --filter @booking-engine/cms test`
+- `pnpm --filter @project-aurora/website-builder-api test`
+- `pnpm --filter @project-aurora/website-builder-web test`
 
 ### 20.2 Scope-specific verification
 
@@ -829,10 +826,10 @@ If tests are skipped, explicitly record why and residual risk.
 
 - Unblocked Coolify/Docker CMS builds that were failing during Next.js type-check with `TS6133` unused-local errors in generated v7-v12 theme component files.
 - Added a CMS-local TypeScript override so strict unused-local checks no longer fail CMS production builds:
-  - `apps/cms/tsconfig.json`: `compilerOptions.noUnusedLocals = false`
+  - `apps/website-builder-web/tsconfig.json`: `compilerOptions.noUnusedLocals = false`
 - Applied targeted cleanup to remove known dead local declarations in affected theme files that surfaced during initial failure triage (including `about/*` and lane-specific `laneText` declarations).
 - Impacted modules/files:
-  - `apps/cms/tsconfig.json`
+  - `apps/website-builder-web/tsconfig.json`
   - `packages/themes/src/components/about/v7.tsx`
   - `packages/themes/src/components/about/v8.tsx`
   - `packages/themes/src/components/about/v9.tsx`
@@ -860,7 +857,7 @@ If tests are skipped, explicitly record why and residual risk.
   - `packages/themes/src/components/hero/v12.tsx`
   - `CLAUDE.md`
 - Verification:
-  - `pnpm turbo build --filter=@booking-engine/cms... --concurrency=1`
+  - `pnpm turbo build --filter=@project-aurora/website-builder-web... --concurrency=1`
 - Migration/rollout implications:
   - No database migration required.
   - Runtime behavior is unchanged; this is a build-time type-checking policy adjustment for CMS compilation scope.
@@ -893,8 +890,8 @@ If tests are skipped, explicitly record why and residual risk.
   - `packages/database/prisma/migrations/20260407214500_redesign_acquisition_shop_template/migration.sql`
   - `CLAUDE.md`
 - Verification:
-  - `pnpm --filter @booking-engine/themes exec tsc -p tsconfig.json --noEmit`
-  - `pnpm --filter @booking-engine/cms test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
+  - `pnpm --filter @project-aurora/themes exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-web test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
 - Migration/rollout implications:
   - Requires running Prisma migrations in target environments to update existing Acquisition Shop template defaults in `page_templates`.
   - No schema changes; migration is data-only for one template row.
@@ -910,10 +907,10 @@ If tests are skipped, explicitly record why and residual risk.
   - `CLAUDE.md`
 - Verification:
   - Migration file added for deployment in Prisma migration chain (data-only rewrite).
-  - `pnpm --filter @booking-engine/database exec prisma migrate deploy`
+  - `pnpm --filter @project-aurora/database exec prisma migrate deploy`
   - Theme compile + CMS render tests validated against explicit v6-v12 lane component implementations:
-    - `pnpm --filter @booking-engine/themes exec tsc -p tsconfig.json --noEmit`
-    - `pnpm --filter @booking-engine/cms test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
+    - `pnpm --filter @project-aurora/themes exec tsc -p tsconfig.json --noEmit`
+    - `pnpm --filter @project-aurora/website-builder-web test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
 - Migration/rollout implications:
   - Requires running Prisma migrations in target environments to rewrite existing seeded template rows.
   - No schema shape changes; this migration updates `page_templates.sections_jsonb` data only.
@@ -951,8 +948,8 @@ If tests are skipped, explicitly record why and residual risk.
   - `packages/themes/src/components/pricing/v6.tsx` .. `packages/themes/src/components/pricing/v12.tsx`
   - `CLAUDE.md`
 - Verification:
-  - `pnpm --filter @booking-engine/themes exec tsc -p tsconfig.json --noEmit`
-  - `pnpm --filter @booking-engine/cms test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
+  - `pnpm --filter @project-aurora/themes exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-web test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
 - Migration/rollout implications:
   - No database migration required for this renderer/component implementation wave.
   - Restart CMS runtime to ensure builder preview and published rendering load updated lane implementations.
@@ -971,17 +968,17 @@ If tests are skipped, explicitly record why and residual risk.
   - duplicate-blocking now applies across versions per feature (cannot add `header/v2` if any `header/*` exists on page)
   - sync propagation now keyed by shared layout feature (`header` or `footer`) rather than a single component key.
 - Added focused controller tests covering these guardrails:
-  - `apps/api/src/__tests__/controllers/pages.controller.apply-template.test.ts`
-  - `apps/api/src/__tests__/controllers/sections.controller.shared-layout.test.ts`
+  - `apps/website-builder-api/src/__tests__/controllers/pages.controller.apply-template.test.ts`
+  - `apps/website-builder-api/src/__tests__/controllers/sections.controller.shared-layout.test.ts`
 - Impacted modules/files:
-  - `apps/api/src/controllers/pages.controller.ts`
-  - `apps/api/src/controllers/sections.controller.ts`
-  - `apps/api/src/__tests__/controllers/pages.controller.apply-template.test.ts`
-  - `apps/api/src/__tests__/controllers/sections.controller.shared-layout.test.ts`
+  - `apps/website-builder-api/src/controllers/pages.controller.ts`
+  - `apps/website-builder-api/src/controllers/sections.controller.ts`
+  - `apps/website-builder-api/src/__tests__/controllers/pages.controller.apply-template.test.ts`
+  - `apps/website-builder-api/src/__tests__/controllers/sections.controller.shared-layout.test.ts`
   - `CLAUDE.md`
 - Verification:
-  - `pnpm --filter @booking-engine/api test -- src/__tests__/controllers/pages.controller.apply-template.test.ts src/__tests__/controllers/sections.controller.shared-layout.test.ts`
-  - `pnpm --filter @booking-engine/api exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-api test -- src/__tests__/controllers/pages.controller.apply-template.test.ts src/__tests__/controllers/sections.controller.shared-layout.test.ts`
+  - `pnpm --filter @project-aurora/website-builder-api exec tsc -p tsconfig.json --noEmit`
 - Migration/rollout implications:
   - No database schema migration required for this phase.
   - Restart API runtime so updated apply-template/shared-layout sync behavior is active.
@@ -1014,8 +1011,8 @@ If tests are skipped, explicitly record why and residual risk.
   - `packages/themes/src/components/gallery/v5.tsx`..`v12.tsx`
   - `CLAUDE.md`
 - Verification:
-  - `pnpm --filter @booking-engine/themes exec tsc -p tsconfig.json --noEmit`
-  - `pnpm --filter @booking-engine/cms test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
+  - `pnpm --filter @project-aurora/themes exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-web test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
 - Migration/rollout implications:
   - No database migration required.
   - Restart CMS runtime to ensure preview/builder surfaces load updated section version modules.
@@ -1061,8 +1058,8 @@ If tests are skipped, explicitly record why and residual risk.
   - `packages/themes/src/components/*/v5..v12.tsx` (family/version-specific entrypoints as listed above)
   - `CLAUDE.md`
 - Verification:
-  - `pnpm --filter @booking-engine/themes exec tsc -p tsconfig.json --noEmit`
-  - `pnpm --filter @booking-engine/cms test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
+  - `pnpm --filter @project-aurora/themes exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-web test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
 - Migration/rollout implications:
   - No database migration required for this rendering/registry implementation wave.
   - Restart CMS runtime to ensure builder preview and published rendering load explicit v12 section mappings.
@@ -1088,8 +1085,8 @@ If tests are skipped, explicitly record why and residual risk.
   - `packages/themes/src/registry.ts`
   - `CLAUDE.md`
 - Verification:
-  - `pnpm --filter @booking-engine/themes exec tsc -p tsconfig.json --noEmit`
-  - `pnpm --filter @booking-engine/cms test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
+  - `pnpm --filter @project-aurora/themes exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-web test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
 - Migration/rollout implications:
   - No database migration required for this Team-only rendering update.
   - Restart CMS runtime to ensure builder preview and published rendering load updated Team v5-v12 components.
@@ -1109,8 +1106,8 @@ If tests are skipped, explicitly record why and residual risk.
   - `packages/themes/src/components/*/v*.tsx` (new v5/v6..v12 wrapper files depending on feature family)
   - `CLAUDE.md`
 - Verification:
-  - `pnpm --filter @booking-engine/themes exec tsc -p tsconfig.json --noEmit`
-  - `pnpm --filter @booking-engine/database exec prisma migrate deploy`
+  - `pnpm --filter @project-aurora/themes exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/database exec prisma migrate deploy`
   - Prisma query verification confirms section theme coverage through `v12` for all targeted features and compensated template section-count profile (no longer forced to all 12).
 - Migration/rollout implications:
   - Requires running Prisma migrations to apply compensation + v12 catalog rows in existing environments.
@@ -1147,8 +1144,8 @@ If tests are skipped, explicitly record why and residual risk.
   - `packages/themes/src/components/header/v4.tsx`
   - `CLAUDE.md`
 - Verification:
-  - `pnpm --filter @booking-engine/cms test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
-  - `pnpm --filter @booking-engine/cms build` (currently fails in workspace due to unrelated Next.js `PageNotFoundError: Cannot find module for page: /_document` during page data collection)
+  - `pnpm --filter @project-aurora/website-builder-web test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
+  - `pnpm --filter @project-aurora/website-builder-web build` (currently fails in workspace due to unrelated Next.js `PageNotFoundError: Cannot find module for page: /_document` during page data collection)
 - Migration/rollout implications:
   - No database migration required.
   - Restart CMS runtime to pick up updated header component behavior in builder preview and published preview surfaces.
@@ -1167,8 +1164,8 @@ If tests are skipped, explicitly record why and residual risk.
   - `packages/themes/src/components/services/v5.tsx`
   - `CLAUDE.md`
 - Verification:
-  - `pnpm --filter @booking-engine/cms test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
-  - `pnpm --filter @booking-engine/cms build` (currently fails in workspace due to unrelated Next.js page data collection errors for `/api/uploads/proxy`, `/robots.txt`, and `/routing-index/current.json`)
+  - `pnpm --filter @project-aurora/website-builder-web test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
+  - `pnpm --filter @project-aurora/website-builder-web build` (currently fails in workspace due to unrelated Next.js page data collection errors for `/api/uploads/proxy`, `/robots.txt`, and `/routing-index/current.json`)
 - Migration/rollout implications:
   - No database migration required.
   - Restart CMS runtime to pick up updated Signal Horizon `v5` header/CTA rendering behavior in preview/builder surfaces.
@@ -1206,8 +1203,8 @@ If tests are skipped, explicitly record why and residual risk.
   - `packages/themes/src/components/testimonials/v4.tsx`
   - `CLAUDE.md`
 - Verification:
-  - `pnpm --filter @booking-engine/cms test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
-  - `pnpm --filter @booking-engine/cms build`
+  - `pnpm --filter @project-aurora/website-builder-web test -- app/__tests__/theme-components.smoke.test.ts app/__tests__/section-renderer.integration.test.ts`
+  - `pnpm --filter @project-aurora/website-builder-web build`
 - Migration/rollout implications:
   - No database migration required.
   - Restart CMS runtime to pick up updated theme component render behavior in preview/builder surfaces.
@@ -1215,7 +1212,7 @@ If tests are skipped, explicitly record why and residual risk.
 ### 2026-04-07 (Global Mobile Optimization Pass for Templates/Themes)
 
 - Added a shared mobile-safety runtime layer for all rendered theme sections through `SectionRenderer` by wrapping output with a dedicated class hook.
-- Added global responsive CSS safeguards in `apps/cms/app/globals.css` for `.be-theme-mobile-safe` to improve small-screen behavior across all template/theme sections:
+- Added global responsive CSS safeguards in `apps/website-builder-web/app/globals.css` for `.be-theme-mobile-safe` to improve small-screen behavior across all template/theme sections:
   - force media elements (`img/video/iframe/svg/canvas`) to remain within viewport width
   - avoid horizontal overflow via box sizing + wrapping rules
   - enforce mobile flex wrapping and single-column fallback for inline grid layouts
@@ -1223,10 +1220,10 @@ If tests are skipped, explicitly record why and residual risk.
   - normalize section horizontal padding on mobile widths
 - Updated builder template/theme picker preview panes to be more usable on smaller screens by lowering hard minimum preview heights under mobile breakpoints.
 - Impacted modules/files:
-  - `apps/cms/components/builder/section-renderer.tsx`
-  - `apps/cms/app/globals.css`
-  - `apps/cms/components/builder/template-picker.tsx`
-  - `apps/cms/components/builder/theme-picker.tsx`
+  - `apps/website-builder-web/components/builder/section-renderer.tsx`
+  - `apps/website-builder-web/app/globals.css`
+  - `apps/website-builder-web/components/builder/template-picker.tsx`
+  - `apps/website-builder-web/components/builder/theme-picker.tsx`
   - `CLAUDE.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -1249,11 +1246,11 @@ If tests are skipped, explicitly record why and residual risk.
   - `packages/themes/src/components/pricing/v4.tsx`
   - `packages/themes/src/components/testimonials/v4.tsx`
 - Updated Builder Preview font loading to use hosted font resolution rather than a limited hardcoded import set:
-  - `apps/cms/app/builder-preview/[name]/page.tsx`
+  - `apps/website-builder-web/app/builder-preview/[name]/page.tsx`
 - Updated template apply flow so template token overrides are persisted into instance settings during apply (transactional update), fixing post-apply font/color mismatches:
-  - `apps/api/src/controllers/pages.controller.ts`
+  - `apps/website-builder-api/src/controllers/pages.controller.ts`
 - Updated Builder page to refresh settings after template apply so newly-synced tokens are reflected immediately in editor UI:
-  - `apps/cms/app/dashboard/builder/page.tsx`
+  - `apps/website-builder-web/app/dashboard/builder/page.tsx`
 - Added migration to normalize mixed section pack versions and backfill missing `themeTokens` for affected templates:
   - `packages/database/prisma/migrations/20260407153000_normalize_template_tokens_and_section_packs/migration.sql`
 - Standardized selected conversion templates to single-version section packs so layout style is consistent within each template (not color-only variation):
@@ -1276,15 +1273,15 @@ If tests are skipped, explicitly record why and residual risk.
   - map common aliases (`products` -> `product`, etc.)
   - preserve feature-level fallback to latest registered `feature/vN` when requested version is unavailable
 - Added direct compatibility aliases for product catalog keys `product/v7`..`product/v9` to current product renderer implementation so catalog drift does not produce unknown-component blocks.
-- Added CMS-side defensive resolution in `apps/cms/components/builder/section-renderer.tsx` so Builder and template preview remain resilient even when incoming component keys are slightly malformed.
+- Added CMS-side defensive resolution in `apps/website-builder-web/components/builder/section-renderer.tsx` so Builder and template preview remain resilient even when incoming component keys are slightly malformed.
 - Added regression coverage for normalized product key variants and unknown-version fallback behavior in:
-  - `apps/cms/app/__tests__/section-renderer.integration.test.ts`
-  - `apps/cms/app/__tests__/theme-components.smoke.test.ts`
+  - `apps/website-builder-web/app/__tests__/section-renderer.integration.test.ts`
+  - `apps/website-builder-web/app/__tests__/theme-components.smoke.test.ts`
 - Impacted modules/files:
   - `packages/themes/src/registry.ts`
-  - `apps/cms/components/builder/section-renderer.tsx`
-  - `apps/cms/app/__tests__/section-renderer.integration.test.ts`
-  - `apps/cms/app/__tests__/theme-components.smoke.test.ts`
+  - `apps/website-builder-web/components/builder/section-renderer.tsx`
+  - `apps/website-builder-web/app/__tests__/section-renderer.integration.test.ts`
+  - `apps/website-builder-web/app/__tests__/theme-components.smoke.test.ts`
   - `CLAUDE.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -1336,9 +1333,9 @@ If tests are skipped, explicitly record why and residual risk.
   - preserve existing `/cms/uploads/presign` -> `/cms/uploads/complete` metadata lifecycle
 - Updated builder schema image upload field to reuse shared media upload helper so product forms and builder image fields behave consistently.
 - Impacted modules/files:
-  - `apps/cms/app/api/uploads/proxy/route.ts`
-  - `apps/cms/lib/media-upload.ts`
-  - `apps/cms/components/builder/schema-form.tsx`
+  - `apps/website-builder-web/app/api/uploads/proxy/route.ts`
+  - `apps/website-builder-web/lib/media-upload.ts`
+  - `apps/website-builder-web/components/builder/schema-form.tsx`
   - `CLAUDE.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -1372,16 +1369,16 @@ If tests are skipped, explicitly record why and residual risk.
   - `packages/database/src/client.ts`
   - `packages/database/src/index.ts`
   - `packages/database/src/seed-roles.ts`
-  - `apps/api/src/controllers/products.controller.ts`
-  - `apps/api/src/validators/products.validators.ts`
-  - `apps/api/src/routes/cms/index.ts`
-  - `apps/api/src/routes/web/index.ts`
-  - `apps/api/src/swagger.ts`
-  - `apps/cms/app/dashboard/products/page.tsx`
-  - `apps/cms/app/dashboard/products/[id]/page.tsx`
-  - `apps/cms/components/sidebar.tsx`
-  - `apps/cms/components/builder/theme-picker.tsx`
-  - `apps/cms/lib/media-upload.ts`
+  - `apps/website-builder-api/src/controllers/products.controller.ts`
+  - `apps/website-builder-api/src/validators/products.validators.ts`
+  - `apps/website-builder-api/src/routes/cms/index.ts`
+  - `apps/website-builder-api/src/routes/web/index.ts`
+  - `apps/website-builder-api/src/swagger.ts`
+  - `apps/website-builder-web/app/dashboard/products/page.tsx`
+  - `apps/website-builder-web/app/dashboard/products/[id]/page.tsx`
+  - `apps/website-builder-web/components/sidebar.tsx`
+  - `apps/website-builder-web/components/builder/theme-picker.tsx`
+  - `apps/website-builder-web/lib/media-upload.ts`
   - `packages/themes/src/components/shared/public-web.ts`
   - `packages/themes/src/components/product/shared.ts`
   - `packages/themes/src/components/product/v1.tsx`
@@ -1407,9 +1404,9 @@ If tests are skipped, explicitly record why and residual risk.
   - auto-contrast text fallback when only background override is set
 - Added integration coverage for section-level color override and auto-contrast rendering.
 - Impacted modules/files:
-  - `apps/cms/components/builder/section-renderer.tsx`
-  - `apps/cms/app/dashboard/builder/page.tsx`
-  - `apps/cms/app/__tests__/section-renderer.integration.test.ts`
+  - `apps/website-builder-web/components/builder/section-renderer.tsx`
+  - `apps/website-builder-web/app/dashboard/builder/page.tsx`
+  - `apps/website-builder-web/app/__tests__/section-renderer.integration.test.ts`
   - `docs/CLAUDE.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -1417,11 +1414,11 @@ If tests are skipped, explicitly record why and residual risk.
 
 ### 2026-04-03 (CMS Docker pnpm Bootstrap Hardening)
 
-- Hardened `apps/cms/Dockerfile` pnpm activation in the base stage to reduce transient deployment failures from `corepack prepare` network socket interruptions.
+- Hardened `apps/website-builder-web/Dockerfile` pnpm activation in the base stage to reduce transient deployment failures from `corepack prepare` network socket interruptions.
 - Added retry logic for `corepack prepare pnpm@10.30.3 --activate` and a fallback path to `npm install -g pnpm@10.30.3` after repeated failures.
 - Added explicit `pnpm --version` verification after activation.
 - Impacted modules/files:
-  - `apps/cms/Dockerfile`
+  - `apps/website-builder-web/Dockerfile`
   - `docs/CLAUDE.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -1438,9 +1435,9 @@ If tests are skipped, explicitly record why and residual risk.
 - Removed dependency on hardcoded page-name variants for published root routing.
 - Added and updated resolver tests for `defaultPageSlug` behavior.
 - Impacted modules/files:
-  - `apps/api/src/controllers/builder.controller.ts`
-  - `apps/cms/lib/published-site.ts`
-  - `apps/cms/lib/__tests__/published-site.seo.test.ts`
+  - `apps/website-builder-api/src/controllers/builder.controller.ts`
+  - `apps/website-builder-web/lib/published-site.ts`
+  - `apps/website-builder-web/lib/__tests__/published-site.seo.test.ts`
   - `docs/CLAUDE.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -1456,8 +1453,8 @@ If tests are skipped, explicitly record why and residual risk.
   - fallback to first page in manifest
 - Added resolver tests for root fallback scenarios.
 - Impacted modules/files:
-  - `apps/cms/lib/published-site.ts`
-  - `apps/cms/lib/__tests__/published-site.seo.test.ts`
+  - `apps/website-builder-web/lib/published-site.ts`
+  - `apps/website-builder-web/lib/__tests__/published-site.seo.test.ts`
   - `docs/CLAUDE.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -1472,7 +1469,7 @@ If tests are skipped, explicitly record why and residual risk.
   - one-click "Create Home + Template" flow from template buttons when no page is selected
 - Updated no-selection/no-sections messaging so users are guided to create/select a page first before adding sections.
 - Impacted modules/files:
-  - `apps/cms/app/dashboard/builder/page.tsx`
+  - `apps/website-builder-web/app/dashboard/builder/page.tsx`
   - `docs/CLAUDE.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -1487,7 +1484,7 @@ If tests are skipped, explicitly record why and residual risk.
   - show global warning with "Stay signed in" and "Sign out" actions
   - auto-logout only when countdown expires without activity
 - Impacted modules/files:
-  - `apps/cms/contexts/auth-context.tsx`
+  - `apps/website-builder-web/contexts/auth-context.tsx`
   - `docs/CLAUDE.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -1501,7 +1498,7 @@ If tests are skipped, explicitly record why and residual risk.
   - `Product-based business` -> redirect to external registration URL (`https://easyonlineweb.com/user/admin/auth/view/register.php`)
 - Existing register API contract (`POST /auth/register`) is unchanged; this is a frontend flow gate.
 - Impacted modules/files:
-  - `apps/cms/app/register/page.tsx`
+  - `apps/website-builder-web/app/register/page.tsx`
   - `docs/CLAUDE.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -1512,7 +1509,7 @@ If tests are skipped, explicitly record why and residual risk.
 - Simplified dashboard custom-domain support area by removing the separate "Domain connection status" check panel.
 - Dashboard now shows only the shared support contact block (WhatsApp + QR + contact tagline) when a custom domain is pending.
 - Impacted modules/files:
-  - `apps/cms/app/dashboard/page.tsx`
+  - `apps/website-builder-web/app/dashboard/page.tsx`
   - `docs/CLAUDE.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -1528,11 +1525,11 @@ If tests are skipped, explicitly record why and residual risk.
 - Updated domain connection check messaging from nameserver-specific copy to generic connected/pending status copy.
 - Applied the same support block across onboarding and dashboard instance/domain screens for consistency.
 - Impacted modules/files:
-  - `apps/cms/components/domain-support-contact.tsx`
-  - `apps/cms/app/dashboard/page.tsx`
-  - `apps/cms/app/onboarding/custom-domain/setup/page.tsx`
-  - `apps/cms/app/dashboard/instances/new/page.tsx`
-  - `apps/cms/app/dashboard/instances/page.tsx`
+  - `apps/website-builder-web/components/domain-support-contact.tsx`
+  - `apps/website-builder-web/app/dashboard/page.tsx`
+  - `apps/website-builder-web/app/onboarding/custom-domain/setup/page.tsx`
+  - `apps/website-builder-web/app/dashboard/instances/new/page.tsx`
+  - `apps/website-builder-web/app/dashboard/instances/page.tsx`
   - `docs/CLAUDE.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -1545,7 +1542,7 @@ If tests are skipped, explicitly record why and residual risk.
   - `Create Organization` -> onboarding route when tenant context is missing
 - This removes the dead-end state in Builder and makes instance creation discoverable from the exact blocked screen.
 - Impacted modules/files:
-  - `apps/cms/app/dashboard/builder/page.tsx`
+  - `apps/website-builder-web/app/dashboard/builder/page.tsx`
   - `docs/CLAUDE.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -1561,11 +1558,11 @@ If tests are skipped, explicitly record why and residual risk.
 - Added delete-response storage cleanup summary and OpenAPI documentation for 502 storage failure behavior.
 - Added controller tests for successful storage-first deletion and failure when storage is unavailable.
 - Impacted modules/files:
-  - `apps/api/src/controllers/instances.controller.ts`
-  - `apps/api/src/services/s3.service.ts`
-  - `apps/api/src/swagger.ts`
-  - `apps/api/src/__tests__/controllers/instances.controller.full-domain.test.ts`
-  - `apps/api/src/__tests__/services/s3.service.test.ts`
+  - `apps/website-builder-api/src/controllers/instances.controller.ts`
+  - `apps/website-builder-api/src/services/s3.service.ts`
+  - `apps/website-builder-api/src/swagger.ts`
+  - `apps/website-builder-api/src/__tests__/controllers/instances.controller.full-domain.test.ts`
+  - `apps/website-builder-api/src/__tests__/services/s3.service.test.ts`
   - `docs/CLAUDE.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -1579,11 +1576,11 @@ If tests are skipped, explicitly record why and residual risk.
 - Updated builder template preview to use hosted-font loading logic instead of a fixed hardcoded font import list.
 - Added focused utility tests for hosted font request resolution and input validation.
 - Impacted modules/files:
-  - `apps/cms/lib/hosted-font-utils.ts`
-  - `apps/cms/lib/use-hosted-font.ts`
-  - `apps/cms/app/preview/[subdomain]/[[...slug]]/page.tsx`
-  - `apps/cms/app/builder-preview/[name]/page.tsx`
-  - `apps/cms/lib/__tests__/hosted-font-utils.test.ts`
+  - `apps/website-builder-web/lib/hosted-font-utils.ts`
+  - `apps/website-builder-web/lib/use-hosted-font.ts`
+  - `apps/website-builder-web/app/preview/[subdomain]/[[...slug]]/page.tsx`
+  - `apps/website-builder-web/app/builder-preview/[name]/page.tsx`
+  - `apps/website-builder-web/lib/__tests__/hosted-font-utils.test.ts`
   - `docs/CLAUDE.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -1595,10 +1592,10 @@ If tests are skipped, explicitly record why and residual risk.
 - Added `PUBLISHED_SITES_PRUNE_OLD_VERSIONS` environment toggle (`true` by default) for retention behavior control.
 - Added service-level tests for prune-on-publish behavior and toggle/override behavior.
 - Impacted modules/files:
-  - `apps/api/src/services/s3.service.ts`
-  - `apps/api/src/__tests__/services/s3.service.test.ts`
+  - `apps/website-builder-api/src/services/s3.service.ts`
+  - `apps/website-builder-api/src/__tests__/services/s3.service.test.ts`
   - `.env.example`
-  - `apps/api/.env.example`
+  - `apps/website-builder-api/.env.example`
   - `docs/CLAUDE.md`
 - Migration/rollout implications:
   - No database migration required.
@@ -1614,10 +1611,10 @@ If tests are skipped, explicitly record why and residual risk.
 - Simplified builder page creation UX to a single generic "Add Page" flow and removed the "Create Home first" requirement from the UI.
 - Hardened page deletion by removing page sections in a transaction before deleting the page row.
 - Impacted modules/files:
-  - `apps/api/src/controllers/pages.controller.ts`
-  - `apps/api/src/controllers/instances.controller.ts`
-  - `apps/cms/app/dashboard/builder/page.tsx`
-  - `apps/api/src/__tests__/controllers/instances.controller.full-domain.test.ts`
+  - `apps/website-builder-api/src/controllers/pages.controller.ts`
+  - `apps/website-builder-api/src/controllers/instances.controller.ts`
+  - `apps/website-builder-web/app/dashboard/builder/page.tsx`
+  - `apps/website-builder-api/src/__tests__/controllers/instances.controller.full-domain.test.ts`
   - `docs/CLAUDE.md`
   - `docs/website-builder-template-domain-technical-architecture.md`
 - Migration/rollout implications:
@@ -1631,10 +1628,10 @@ If tests are skipped, explicitly record why and residual risk.
 - Generalized shared layout synchronization from exact `header/v1` and `footer/v1` keys to all `header/*` and `footer/*` theme variants.
 - Updated builder-side header schema normalization and global-layout duplicate blocking to work across all header/footer component versions.
 - Impacted modules/files:
-  - `apps/api/src/controllers/pages.controller.ts`
-  - `apps/api/src/controllers/sections.controller.ts`
-  - `apps/cms/app/dashboard/builder/page.tsx`
-  - `apps/cms/components/builder/theme-picker.tsx`
+  - `apps/website-builder-api/src/controllers/pages.controller.ts`
+  - `apps/website-builder-api/src/controllers/sections.controller.ts`
+  - `apps/website-builder-web/app/dashboard/builder/page.tsx`
+  - `apps/website-builder-web/components/builder/theme-picker.tsx`
   - `docs/CLAUDE.md`
 - Migration/rollout implications:
   - No database migration required.

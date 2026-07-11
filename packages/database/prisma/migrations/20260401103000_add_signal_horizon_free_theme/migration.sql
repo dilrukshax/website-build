@@ -256,7 +256,7 @@ VALUES (
           "proofItems": [
             { "label": "Response time", "value": "< 2 min", "tone": "cyan" },
             { "label": "Completion rate", "value": "98%", "tone": "green" },
-            { "label": "Team coverage", "value": "24/7", "tone": "purple" }
+            { "label": "Team coverage", "value": "24/7", "tone": "red" }
           ]
         },
         "defaultStyles": {}

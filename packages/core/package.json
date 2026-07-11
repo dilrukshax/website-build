@@ -1,5 +1,5 @@
 {
-    "name": "@booking-engine/core",
+    "name": "@project-aurora/core",
     "version": "1.0.0",
     "private": true,
     "main": "dist/index.js",
@@ -15,7 +15,7 @@
         "uuid": "^9.0.0"
     },
     "devDependencies": {
-        "@booking-engine/config": "workspace:*",
+        "@project-aurora/config": "workspace:*",
         "@types/uuid": "^9.0.0",
         "typescript": "^5.3.0",
         "rimraf": "^5.0.0"

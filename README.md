@@ -1,12 +1,29 @@
-# buildmyonlineweb CMS
+# Iroh — SaaS Booking & Website Builder
 
-Multi-tenant SaaS booking and website management platform for service-based businesses.
+![Iroh Website Builder](docs/images/screenshot.png)
+
+Iroh is a modern, production-ready multi-tenant SaaS website builder and booking platform designed for service-based businesses. It enables users to create beautiful websites, manage blog content, accept online bookings/inquiries, and go live on their own custom domains.
+
+---
+
+## Key Features
+
+- **Multi-Tenancy**: Complete isolation of organizations (tenants) and website instances.
+- **Visual Section Builder**: Edit pages using schema-driven sections, theme component layouts, and customize styles with background and text color controls.
+- **TipTap Blog Editor**: A rich Word-style blog editor with auto-saving, draft/publish workflows, and built-in SEO metadata and OG image controls.
+- **Booking Engine**: Integrated customer booking calendar, booking slots, stats, and automatic customer profile creation.
+- **Role-Based Access Control (RBAC)**: Define custom staff roles and assign granular permissions across 7 system modules.
+- **Static Website Publishing**: Publishes website manifests to Cloudflare R2 / S3-compatible object storage.
+- **Custom Domain Routing**: Resolve custom domains and subdomains dynamically, including nameserver validation and CDN cache purging.
+- **Device Fingerprinting**: Fraud risk scoring for bookings and referrals.
+
+---
 
 ## Tech Stack
 
 - **Monorepo**: Turborepo + pnpm workspaces
 - **API**: Node.js + Express (TypeScript)
-- **CMS**: Next.js 14 (App Router)
+- **Frontend / Website Builder**: Next.js 14 (App Router)
 - **Database**: PostgreSQL + Prisma ORM
 - **Auth**: Custom JWT (session + tenant-scoped tokens)
 - **Styling**: Tailwind CSS v4
@@ -72,7 +89,7 @@ DEVICE_CHECK_RATE_LIMIT_PER_MIN=10
 IPINFO_TOKEN=
 ```
 
-`SITE_DOMAIN` is used by the API to persist each instance primary full domain (`{subdomain}.{SITE_DOMAIN}`), and `NEXT_PUBLIC_SITE_DOMAIN` is used by the CMS to render subdomain domain suffixes in UI. `PLATFORM_HOST_BYPASS` (and optional `NEXT_PUBLIC_PLATFORM_HOST_BYPASS`) lets you reserve platform hosts (for example `staging.buildmyonlineweb.site,staging-api.buildmyonlineweb.site`) so they are never treated as tenant published hosts. By default, `staging.{SITE_DOMAIN}` and `staging-api.{SITE_DOMAIN}` are already treated as reserved platform hosts. `WEB_PROXY_SHARED_SECRET` must match in API + CMS runtimes for trusted `/web` host routing. `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ZONE_ID` are optional and used only for CDN cache purge operations.
+`SITE_DOMAIN` is used by the API to persist each instance primary full domain (`{subdomain}.{SITE_DOMAIN}`), and `NEXT_PUBLIC_SITE_DOMAIN` is used by the Website Builder Web App to render subdomain suffixes in the UI. `PLATFORM_HOST_BYPASS` (and optional `NEXT_PUBLIC_PLATFORM_HOST_BYPASS`) lets you reserve platform hosts (for example `staging.buildmyonlineweb.site,staging-api.buildmyonlineweb.site`) so they are never treated as tenant published hosts. By default, `staging.{SITE_DOMAIN}` and `staging-api.{SITE_DOMAIN}` are already treated as reserved platform hosts. `WEB_PROXY_SHARED_SECRET` must match in the API and Website Builder Web runtimes for trusted `/web` host routing. `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ZONE_ID` are optional and used only for CDN cache purge operations.
 
 > **Note**: If your database password contains special characters like `@`, URL-encode them (e.g., `@` becomes `%40`).
 
@@ -88,12 +105,12 @@ Prisma needs its own `.env` file next to the schema:
 DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@localhost:5432/booking_engine
 ```
 
-### 3. CMS `.env.local`
+### 3. Website Builder Web `.env.local`
 
 Next.js loads environment variables from its own directory:
 
 ```bash
-# Create file: apps/cms/.env.local
+# Create file: apps/website-builder-web/.env.local
 ```
 
 ```env
@@ -158,17 +175,16 @@ Execute deletion:
 pnpm db:cleanup-users -- --execute
 ```
 
-Optional: preserve additional users with `DB_CLEANUP_KEEP_EMAILS` in `.env`
-(comma-separated), or pass `--keep-email=<email>`.
+Optional: preserve additional users with `DB_CLEANUP_KEEP_EMAILS` in `.env` (comma-separated), or pass `--keep-email=<email>`.
 
 ### 6. Build packages (in order)
 
 Packages must be built in dependency order:
 
 ```bash
-pnpm --filter @booking-engine/core build
-pnpm --filter @booking-engine/database build
-pnpm --filter @booking-engine/auth build
+pnpm --filter @project-aurora/core build
+pnpm --filter @project-aurora/database build
+pnpm --filter @project-aurora/auth build
 ```
 
 ---
@@ -178,13 +194,13 @@ pnpm --filter @booking-engine/auth build
 ### Start API server
 
 ```bash
-pnpm --filter @booking-engine/api dev
+pnpm --filter @project-aurora/website-builder-api dev
 ```
 
-### Start CMS frontend
+### Start Website Builder Web App
 
 ```bash
-pnpm --filter @booking-engine/cms dev
+pnpm --filter @project-aurora/website-builder-web dev
 ```
 
 > Run each command in a separate terminal window.
@@ -195,7 +211,7 @@ pnpm --filter @booking-engine/cms dev
 
 | Service | URL | Description |
 |---------|-----|-------------|
-| CMS Panel | http://localhost:3001 | Admin dashboard (Next.js) |
+| Website Builder Dashboard | http://localhost:3001 | Web Admin dashboard (Next.js) |
 | API Server | http://localhost:3002 | Backend API (Express) |
 | API Docs (Swagger) | http://localhost:3002/docs | Interactive API documentation |
 | API Spec (JSON) | http://localhost:3002/docs.json | OpenAPI JSON specification |
@@ -217,13 +233,13 @@ cd packages/database && npx prisma db push && cd ../..
 pnpm db:seed
 
 # 4. Build packages
-pnpm --filter @booking-engine/core build
-pnpm --filter @booking-engine/database build
-pnpm --filter @booking-engine/auth build
+pnpm --filter @project-aurora/core build
+pnpm --filter @project-aurora/database build
+pnpm --filter @project-aurora/auth build
 
 # 5. Start servers (each in separate terminal)
-pnpm --filter @booking-engine/api dev       # API  → http://localhost:3002
-pnpm --filter @booking-engine/cms dev       # CMS  → http://localhost:3001
+pnpm --filter @project-aurora/website-builder-api dev       # API      → http://localhost:3002
+pnpm --filter @project-aurora/website-builder-web dev       # Web App  → http://localhost:3001
 ```
 
 ---
@@ -243,7 +259,7 @@ pnpm --filter @booking-engine/cms dev       # CMS  → http://localhost:3001
 | GET | `/auth/me` | Required | Get current user and tenants |
 | POST | `/auth/switch-tenant` | Required | Switch active business instance |
 
-### CMS — Instances (`/cms/instances`)
+### Website Builder — Instances (`/cms/instances`)
 
 | Method | Endpoint | Permission | Description |
 |--------|----------|------------|-------------|
@@ -255,7 +271,7 @@ pnpm --filter @booking-engine/cms dev       # CMS  → http://localhost:3001
 | PUT | `/cms/instances/:id/domain-route` | Auth only | Map host route to an instance |
 | DELETE | `/cms/instances/:id/domain-route/:host` | Auth only | Remove mapped host route |
 
-### CMS — Roles (`/cms/roles`)
+### Website Builder — Roles (`/cms/roles`)
 
 | Method | Endpoint | Permission | Description |
 |--------|----------|------------|-------------|
@@ -265,7 +281,7 @@ pnpm --filter @booking-engine/cms dev       # CMS  → http://localhost:3001
 | PUT | `/cms/roles/:id` | `roles.update` | Update role and permissions |
 | DELETE | `/cms/roles/:id` | `roles.delete` | Delete custom role |
 
-### CMS — Staff (`/cms/staff`)
+### Website Builder — Staff (`/cms/staff`)
 
 | Method | Endpoint | Permission | Description |
 |--------|----------|------------|-------------|
@@ -275,13 +291,13 @@ pnpm --filter @booking-engine/cms dev       # CMS  → http://localhost:3001
 | PUT | `/cms/staff/:id` | `staff.update` | Update staff role/status |
 | DELETE | `/cms/staff/:id` | `staff.delete` | Remove staff member |
 
-### CMS — Permissions (`/cms/permissions`)
+### Website Builder — Permissions (`/cms/permissions`)
 
 | Method | Endpoint | Permission | Description |
 |--------|----------|------------|-------------|
 | GET | `/cms/permissions` | Auth required | List all permissions by module |
 
-### CMS — Other Routes
+### Website Builder — Other Routes
 
 | Method | Endpoint | Permission | Description |
 |--------|----------|------------|-------------|
@@ -305,10 +321,10 @@ pnpm --filter @booking-engine/cms dev       # CMS  → http://localhost:3001
 
 ## Testing Flow
 
-1. Open the **CMS** at http://localhost:3001
+1. Open the **Website Builder Dashboard** at http://localhost:3001
 2. You'll be redirected to the **Register** page
 3. **Register** with your email, password, full name, business name, and subdomain
-4. After registration you'll land on the **Dashboard**
+4. After registration, you'll land on the **Dashboard**
 5. From the sidebar, navigate to:
    - **Instances** — view and create business instances
    - **Roles** — create custom roles with specific permissions
@@ -322,14 +338,14 @@ pnpm --filter @booking-engine/cms dev       # CMS  → http://localhost:3001
 
 ```
 ├── apps/
-│   ├── api/                  # Express API server (port 3002)
+│   ├── website-builder-api/  # Express API server (port 3002)
 │   │   └── src/
 │   │       ├── controllers/  # Route handlers
-│   │       ├── middleware/    # Auth, tenant, error handling
+│   │       ├── middleware/   # Auth, tenant, error handling
 │   │       ├── routes/       # Route definitions (cms/, web/, auth/)
 │   │       └── validators/   # Zod request validation
 │   │
-│   └── cms/                  # Next.js CMS panel (port 3001)
+│   └── website-builder-web/  # Next.js Website Builder web app (port 3001)
 │       ├── app/              # App Router pages
 │       │   ├── login/
 │       │   ├── register/
@@ -398,7 +414,7 @@ CORS_ORIGIN=http://localhost:3001,http://localhost:3002
 
 ### Tailwind styles not loading
 
-Ensure `apps/cms/postcss.config.js` uses `@tailwindcss/postcss` (not `tailwindcss` directly):
+Ensure `apps/website-builder-web/postcss.config.js` uses `@tailwindcss/postcss` (not `tailwindcss` directly):
 
 ```js
 module.exports = {
@@ -408,9 +424,9 @@ module.exports = {
 };
 ```
 
-### CMS can't reach the API
+### Website Builder Web App can't reach the API
 
-Ensure `apps/cms/.env.local` has:
+Ensure `apps/website-builder-web/.env.local` has:
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3002

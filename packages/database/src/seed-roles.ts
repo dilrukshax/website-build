@@ -12,6 +12,7 @@ const ALL_PERMISSION_KEYS = [
     'staff.view', 'staff.create', 'staff.update', 'staff.delete',
     'roles.view', 'roles.create', 'roles.update', 'roles.delete',
     'website.view', 'website.edit', 'website.publish', 'website.settings',
+    'analytics.view',
 ];
 
 const ADMIN_EXCLUDED = ['staff.delete', 'roles.delete'];
@@ -25,6 +26,7 @@ const STAFF_PERMISSIONS = [
     'inquiries.view', 'inquiries.update', 'inquiries.update_status',
     'settings.view',
     'website.view', 'website.edit',
+    'analytics.view',
 ];
 
 const READONLY_PERMISSIONS = [
@@ -38,6 +40,7 @@ const READONLY_PERMISSIONS = [
     'staff.view',
     'roles.view',
     'website.view',
+    'analytics.view',
 ];
 
 interface DefaultRole {

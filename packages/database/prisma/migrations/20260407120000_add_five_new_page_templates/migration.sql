@@ -184,7 +184,7 @@ VALUES
             "text": "#ffffff",
             "primary": "#f97316",
             "secondary": "#1e293b",
-            "accent": "#38bdf8",
+            "accent": "#f87171",
             "font": "\"Inter\", sans-serif"
           }
         }
@@ -311,7 +311,7 @@ VALUES
           "themeTokens": {
             "background": "#ffffff",
             "text": "#0f172a",
-            "primary": "#0ea5e9",
+            "primary": "#ef4444",
             "secondary": "#e2e8f0",
             "accent": "#16a34a",
             "font": "\"Inter\", sans-serif"
