@@ -956,6 +956,19 @@ If tests are skipped, explicitly record why and residual risk.
 
 ## 23) Change Log
 
+### 2026-07-11 (Remove Registration Business Type Pre-Step)
+
+- Removed the "Choose your business type" pre-step (which asked whether the user's business is service-based or product-based) on the register page.
+- Removed the external redirection logic to `PRODUCT_BASED_REGISTER_URL` for product-based registrations.
+- Configured the registration page to directly render the service registration form (the current project's primary registration flow) upon landing.
+- Impacted modules/files:
+  - `apps/website-builder-web/app/register/page.tsx`
+  - `AGENTS.md`
+- Verification:
+  - Ensured code compiles cleanly.
+- Migration/rollout implications:
+  - No database changes. Immediate frontend UX simplification.
+
 ### 2026-07-11 (Page Template Visibility & Database Scoping Fixes)
 
 - Added a self-healing check in `PageTemplatesController.list` (`apps/website-builder-api/src/controllers/page-templates.controller.ts`) that automatically updates curated template IDs to `isActive = true` in the database if they drift or are disabled during schema sync/seeding.
