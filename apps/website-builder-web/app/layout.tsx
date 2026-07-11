@@ -5,8 +5,8 @@ import './globals.css';
 
 export const metadata: Metadata = {
     title: {
-        template: '%s | iroh.domman',
-        default: 'iroh.domman',
+        template: '%s | iroh',
+        default: 'iroh',
     },
     description:
         'A multi-tenant website builder for creating, managing, and publishing websites.',
@@ -21,14 +21,14 @@ export const metadata: Metadata = {
         apple: '/favicon.svg',
     },
     openGraph: {
-        title: 'iroh.domman',
+        title: 'iroh',
         description:
-            'Create, manage, and publish websites with iroh.domman.',
+            'Create, manage, and publish websites with iroh.',
         url: '/',
-        siteName: 'iroh.domman',
+        siteName: 'iroh',
         locale: 'en_US',
         type: 'website',
-        images: [{ url: '/logo.svg', width: 320, height: 80, alt: 'iroh.domman' }],
+        images: [{ url: '/logo.svg', width: 320, height: 80, alt: 'iroh' }],
     },
     robots: {
         index: true,
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
         },
     },
     twitter: {
-        title: 'iroh.domman',
+        title: 'iroh',
         card: 'summary_large_image',
         images: ['/logo.svg'],
     },

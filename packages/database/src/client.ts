@@ -60,6 +60,8 @@ const TENANT_EXEMPT_MODELS = new Set([
     'Feature',
     'IndustryFeature',
     'Theme',
+    'PageTemplate',
+    'CustomDomainAccountHistory',
     'DeviceFingerprint',
     'AccountDevice',
     'ReferralProfile',

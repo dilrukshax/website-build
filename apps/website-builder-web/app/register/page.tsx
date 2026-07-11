@@ -264,7 +264,7 @@ export default function RegisterPage() {
 
                     <Link href="/" className="relative z-10 inline-flex items-center gap-2 text-white/95">
                         <Sparkles className="h-5 w-5" />
-                        <span className="text-lg font-semibold">iroh.domman</span>
+                        <span className="text-lg font-semibold">iroh</span>
                     </Link>
 
                     <div className="relative z-10">
@@ -284,7 +284,7 @@ export default function RegisterPage() {
                         </p>
                         <p className="inline-flex items-center gap-2">
                             <CheckCircle2 className="h-4 w-4" />
-                            Built-in iroh.domman workflows and backend APIs
+                            Built-in iroh workflows and backend APIs
                         </p>
                         <p className="inline-flex items-center gap-2">
                             <CheckCircle2 className="h-4 w-4" />
@@ -302,7 +302,7 @@ export default function RegisterPage() {
                         <div className="mb-8">
                             <Link href="/" className="inline-flex items-center gap-2 text-[#dc2626] lg:hidden">
                                 <Sparkles className="h-5 w-5" />
-                                <span className="text-base font-semibold">iroh.domman</span>
+                                <span className="text-base font-semibold">iroh</span>
                             </Link>
                             <h2 className="mt-4 text-3xl font-black text-slate-900 dark:text-white">
                                 {registrationMode === 'service' ? 'Create account' : 'Choose your business type'}

@@ -378,7 +378,7 @@ export default function CreateOrganizationPage() {
                                 <div>
                                     <Link href="/" className="inline-flex items-center gap-2 text-white/95">
                                         <Sparkles className="h-5 w-5" />
-                                        <span className="text-base font-semibold">iroh.domman</span>
+                                        <span className="text-base font-semibold">iroh</span>
                                     </Link>
 
                                     <p className="mt-8 text-xs font-semibold uppercase tracking-[0.2em] text-white/70">Onboarding</p>

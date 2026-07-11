@@ -4,8 +4,8 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 export const metadata: Metadata = {
-    title: 'Create account | iroh.domman',
-    description: 'Create your iroh.domman account.',
+    title: 'Create account | iroh',
+    description: 'Create your iroh account.',
 };
 
 export default function RegisterLayout({

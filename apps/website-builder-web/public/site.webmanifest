@@ -1,6 +1,6 @@
 {
-  "name": "iroh.domman",
-  "short_name": "iroh.domman",
+  "name": "iroh",
+  "short_name": "iroh",
   "icons": [
     {
       "src": "/favicon.svg",

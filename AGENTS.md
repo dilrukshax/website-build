@@ -956,6 +956,19 @@ If tests are skipped, explicitly record why and residual risk.
 
 ## 23) Change Log
 
+### 2026-07-11 (Page Template Visibility & Database Scoping Fixes)
+
+- Added a self-healing check in `PageTemplatesController.list` (`apps/website-builder-api/src/controllers/page-templates.controller.ts`) that automatically updates curated template IDs to `isActive = true` in the database if they drift or are disabled during schema sync/seeding.
+- Added `PageTemplate` and `CustomDomainAccountHistory` to the `TENANT_EXEMPT_MODELS` set in Prisma client (`packages/database/src/client.ts`) to prevent Prisma middleware from incorrectly appending non-existent `tenantId` columns to database queries when executed under a tenant context (e.g. during `applyTemplate`).
+- Impacted modules/files:
+  - `apps/website-builder-api/src/controllers/page-templates.controller.ts`
+  - `packages/database/src/client.ts`
+- Verification:
+  - Built `@project-aurora/database` and `@project-aurora/website-builder-api` packages.
+  - Ran vitest template application tests: `pages.controller.apply-template.test.ts`.
+- Migration/rollout implications:
+  - No manual database migrations or schema upgrades required; the API automatically heals database template visibility on startup/list query.
+
 ### 2026-07-11 (Landing Page: Animated Hero + Product Capability Section)
 
 - Replaced the static `HeroIllustration` SVG on the public landing page (`apps/website-builder-web/app/page.tsx`) with an animated `AnimatedHero` component: a floating browser/builder mockup with a live build progress bar, shimmering section placeholders, ambient morphing blobs, and floating "New booking" / "Blog published" / "Live" cards (including a pulsing confirmed-booking indicator).

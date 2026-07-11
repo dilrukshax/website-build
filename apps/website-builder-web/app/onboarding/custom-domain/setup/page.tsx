@@ -134,7 +134,7 @@ export default function CustomDomainSetupPage() {
                 <div className="w-full rounded-3xl border border-slate-200 bg-white p-8 shadow-xl sm:p-10 dark:border-slate-800 dark:bg-slate-900">
                     <Link href="/" className="inline-flex items-center gap-2 text-[#dc2626]">
                         <Sparkles className="h-5 w-5" />
-                        <span className="text-base font-semibold">iroh.domman</span>
+                        <span className="text-base font-semibold">iroh</span>
                     </Link>
 
                     <h1 className="mt-4 text-3xl font-black text-slate-900 dark:text-white">Connect your domain</h1>

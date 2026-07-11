@@ -42,6 +42,38 @@ export class PageTemplatesController {
         try {
             const { allowPremiumTemplates } = await PageTemplatesController.resolveTemplateAccess(req);
 
+            const curatedTemplateIds = [
+                'template-2026-clean-appointments',
+                'template-2026-elegant-concierge',
+                'template-2026-motion-studio',
+                'template-2026-signal-horizon',
+                'template-2026-acquisition-shop',
+                'template-2026-fusion-growth',
+                'template-2026-editorial-pulse',
+                'template-2026-harmozi-vsl',
+            ];
+
+            // Self-healing check: ensure curated templates are active in the database
+            const activeCuratedCount = await db.pageTemplate.count({
+                where: {
+                    id: { in: curatedTemplateIds },
+                    isActive: true,
+                },
+            });
+
+            if (activeCuratedCount < curatedTemplateIds.length) {
+                const existingCount = await db.pageTemplate.count({
+                    where: { id: { in: curatedTemplateIds } },
+                });
+
+                if (existingCount > 0) {
+                    await db.pageTemplate.updateMany({
+                        where: { id: { in: curatedTemplateIds } },
+                        data: { isActive: true },
+                    });
+                }
+            }
+
             const templates = await db.pageTemplate.findMany({
                 where: {
                     isActive: true,
