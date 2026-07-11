@@ -171,57 +171,53 @@ const PRICING_FACTS = [
 
 function HeroIllustration() {
     return (
-        <svg viewBox="0 0 760 520" className="h-full w-full" role="img" aria-label="Website builder and booking illustration">
+        <svg viewBox="0 0 760 460" className="h-full w-full" role="img" aria-label="Website builder and booking illustration">
             <defs>
                 <linearGradient id="hero-bg" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#f4f2ff" />
-                    <stop offset="100%" stopColor="#ebe8ff" />
-                </linearGradient>
-                <linearGradient id="hero-card" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#ffffff" />
-                    <stop offset="100%" stopColor="#f8f7ff" />
+                    <stop offset="0%" stopColor="#fff5f5" />
+                    <stop offset="100%" stopColor="#fee2e2" />
                 </linearGradient>
                 <linearGradient id="hero-cta" x1="0%" y1="0%" x2="100%" y2="0%">
                     <stop offset="0%" stopColor="#dc2626" />
-                    <stop offset="100%" stopColor="#6a63ff" />
+                    <stop offset="100%" stopColor="#b91c1c" />
                 </linearGradient>
             </defs>
 
-            <rect x="0" y="0" width="760" height="520" rx="28" fill="url(#hero-bg)" />
+            <rect x="0" y="0" width="760" height="460" rx="28" fill="url(#hero-bg)" />
 
-            <g opacity="0.35">
-                <circle cx="92" cy="88" r="44" fill="#d8d4ff" />
-                <circle cx="682" cy="98" r="56" fill="#d8d4ff" />
-                <circle cx="660" cy="430" r="68" fill="#d8d4ff" />
+            <g opacity="0.4">
+                <circle cx="96" cy="78" r="46" fill="#fecaca" />
+                <circle cx="676" cy="92" r="58" fill="#fecaca" />
+                <circle cx="652" cy="392" r="70" fill="#fecaca" />
             </g>
 
-            <rect x="84" y="72" width="592" height="362" rx="24" fill="url(#hero-card)" stroke="#d5d0ff" strokeWidth="2" />
-            <rect x="84" y="72" width="592" height="52" rx="24" fill="#f2f0ff" />
-            <circle cx="122" cy="98" r="7" fill="#bcb6ff" />
-            <circle cx="146" cy="98" r="7" fill="#bcb6ff" />
-            <circle cx="170" cy="98" r="7" fill="#bcb6ff" />
-            <rect x="212" y="90" width="240" height="16" rx="8" fill="#d5d0ff" />
+            <rect x="92" y="64" width="576" height="332" rx="22" fill="#ffffff" stroke="#fecaca" strokeWidth="2" />
+            <rect x="92" y="64" width="576" height="48" rx="22" fill="#fef2f2" />
+            <circle cx="128" cy="88" r="6" fill="#fca5a5" />
+            <circle cx="150" cy="88" r="6" fill="#fca5a5" />
+            <circle cx="172" cy="88" r="6" fill="#fca5a5" />
+            <rect x="214" y="80" width="236" height="16" rx="8" fill="#fecaca" />
 
-            <rect x="116" y="148" width="220" height="248" rx="16" fill="#ffffff" stroke="#e5e1ff" />
-            <rect x="140" y="176" width="150" height="18" rx="9" fill="#d7d2ff" />
-            <rect x="140" y="208" width="170" height="11" rx="5.5" fill="#ece9ff" />
-            <rect x="140" y="228" width="156" height="11" rx="5.5" fill="#ece9ff" />
-            <rect x="140" y="248" width="132" height="11" rx="5.5" fill="#ece9ff" />
-            <rect x="140" y="282" width="170" height="44" rx="12" fill="url(#hero-cta)" />
-            <text x="176" y="309" fill="#ffffff" fontFamily="Arial, sans-serif" fontSize="13" fontWeight="700">Book Now</text>
+            <rect x="122" y="136" width="208" height="228" rx="16" fill="#ffffff" stroke="#fecaca" />
+            <rect x="146" y="164" width="140" height="18" rx="9" fill="#fca5a5" />
+            <rect x="146" y="196" width="160" height="10" rx="5" fill="#fee2e2" />
+            <rect x="146" y="214" width="148" height="10" rx="5" fill="#fee2e2" />
+            <rect x="146" y="232" width="124" height="10" rx="5" fill="#fee2e2" />
+            <rect x="146" y="266" width="160" height="44" rx="12" fill="url(#hero-cta)" />
+            <text x="190" y="293" fill="#ffffff" fontFamily="Arial, sans-serif" fontSize="13" fontWeight="700">Book Now</text>
 
-            <rect x="356" y="148" width="290" height="154" rx="16" fill="#ffffff" stroke="#e5e1ff" />
-            <rect x="380" y="176" width="150" height="16" rx="8" fill="#d7d2ff" />
-            <rect x="380" y="206" width="236" height="10" rx="5" fill="#ece9ff" />
-            <rect x="380" y="224" width="220" height="10" rx="5" fill="#ece9ff" />
-            <rect x="380" y="242" width="168" height="10" rx="5" fill="#ece9ff" />
-            <rect x="380" y="266" width="104" height="24" rx="12" fill="#f1eeff" />
+            <rect x="350" y="136" width="270" height="146" rx="16" fill="#ffffff" stroke="#fecaca" />
+            <rect x="374" y="164" width="146" height="16" rx="8" fill="#fca5a5" />
+            <rect x="374" y="194" width="226" height="10" rx="5" fill="#fee2e2" />
+            <rect x="374" y="212" width="210" height="10" rx="5" fill="#fee2e2" />
+            <rect x="374" y="230" width="160" height="10" rx="5" fill="#fee2e2" />
+            <rect x="374" y="252" width="96" height="22" rx="11" fill="#fef2f2" />
 
-            <rect x="356" y="318" width="290" height="78" rx="16" fill="#ffffff" stroke="#e5e1ff" />
-            <rect x="380" y="342" width="144" height="12" rx="6" fill="#d7d2ff" />
-            <rect x="380" y="362" width="110" height="10" rx="5" fill="#ece9ff" />
-            <rect x="512" y="338" width="112" height="36" rx="10" fill="url(#hero-cta)" />
-            <text x="540" y="360" fill="#ffffff" fontFamily="Arial, sans-serif" fontSize="12" fontWeight="700">Publish</text>
+            <rect x="350" y="298" width="270" height="66" rx="16" fill="#ffffff" stroke="#fecaca" />
+            <rect x="374" y="322" width="140" height="12" rx="6" fill="#fca5a5" />
+            <rect x="374" y="342" width="104" height="10" rx="5" fill="#fee2e2" />
+            <rect x="500" y="318" width="100" height="34" rx="10" fill="url(#hero-cta)" />
+            <text x="526" y="340" fill="#ffffff" fontFamily="Arial, sans-serif" fontSize="12" fontWeight="700">Publish</text>
         </svg>
     );
 }
@@ -266,42 +262,37 @@ export default function HomePage() {
                 </header>
 
                 <main className="flex-1">
-                    <section id="product" className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-6 py-16 md:px-20 md:py-24 lg:grid-cols-2">
-                        <div className="flex flex-col gap-8">
-                            <div className="flex flex-col gap-4">
-                                <span className="text-sm font-bold uppercase tracking-[0.2em] text-[#dc2626]">DB-driven plans, billing, and referrals</span>
-                                <h1 className="text-5xl font-black leading-[1.1] tracking-tight text-slate-900 md:text-6xl dark:text-white">
-                                    Run website growth with <span className="text-[#dc2626]">clear limits, verified referrals, and controlled billing.</span>
-                                </h1>
-                                <p className="max-w-xl text-lg font-normal leading-relaxed text-slate-600 md:text-xl dark:text-slate-400">
-                                    Project Aurora now enforces each plan directly in API and CMS: usage caps, add-on bundles, manual charge approval, point wallet credits, and fraud-proof referral claims.
-                                </p>
-                            </div>
-                            <div className="flex flex-col gap-4 sm:flex-row">
+                    <section id="product" className="relative overflow-hidden">
+                        <div className="pointer-events-none absolute left-1/2 top-0 h-72 w-[42rem] -translate-x-1/2 rounded-full bg-[#dc2626]/10 blur-3xl" />
+                        <div className="relative mx-auto max-w-3xl px-6 py-20 text-center md:py-28">
+                            <span className="inline-flex items-center gap-2 rounded-full border border-[#dc2626]/20 bg-[#dc2626]/5 px-4 py-1.5 text-sm font-semibold text-[#dc2626]">
+                                <span className="h-1.5 w-1.5 rounded-full bg-[#dc2626]" />
+                                DB-driven plans, billing &amp; referrals
+                            </span>
+                            <h1 className="mx-auto mt-6 max-w-2xl text-4xl font-bold leading-[1.12] tracking-tight text-slate-900 sm:text-5xl md:text-6xl dark:text-white">
+                                Run website growth with{' '}
+                                <span className="text-[#dc2626]">clear limits, verified referrals, and controlled billing.</span>
+                            </h1>
+                            <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-slate-600 dark:text-slate-400">
+                                Project Aurora enforces every plan directly in API and CMS — usage caps, add-on bundles, manual charge approval, wallet credits, and fraud-proof referral claims.
+                            </p>
+                            <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
                                 <Link
                                     href="/register"
-                                    className="flex h-14 min-w-[180px] items-center justify-center rounded-xl bg-[#dc2626] px-8 text-lg font-bold text-white shadow-xl shadow-[#dc2626]/30 transition-all hover:-translate-y-0.5"
+                                    className="flex h-14 min-w-[170px] items-center justify-center rounded-xl bg-[#dc2626] px-8 text-base font-bold text-white shadow-xl shadow-[#dc2626]/30 transition-all hover:-translate-y-0.5 hover:opacity-90"
                                 >
-                                    Start on Free
+                                    Start Free
                                 </Link>
                                 <Link
                                     href="#pricing"
-                                    className="flex h-14 min-w-[180px] items-center justify-center rounded-xl border-2 border-slate-200 bg-transparent px-8 text-lg font-bold text-slate-700 transition-all hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                                    className="flex min-w-[170px] items-center justify-center rounded-xl border border-slate-200 bg-white px-8 py-3.5 text-base font-bold text-slate-700 transition-all hover:border-[#dc2626]/40 hover:text-[#dc2626] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
                                 >
                                     View Pricing
                                 </Link>
                             </div>
-                            <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
-                                <div className="flex -space-x-2">
-                                    <div className="h-8 w-8 rounded-full border-2 border-white bg-slate-300 dark:border-slate-900" />
-                                    <div className="h-8 w-8 rounded-full border-2 border-white bg-[#dc2626]/40 dark:border-slate-900" />
-                                    <div className="h-8 w-8 rounded-full border-2 border-white bg-slate-400 dark:border-slate-900" />
-                                </div>
-                                <span>Grandfather-safe migration: existing over-limit assets stay active, new over-limit actions are blocked.</span>
-                            </div>
+                            <p className="mt-5 text-sm text-slate-500 dark:text-slate-400">No credit card required · Grandfather-safe migration</p>
                         </div>
-                        <div className="relative">
-                            <div className="absolute -inset-4 rounded-3xl bg-[#dc2626]/10 blur-3xl" />
+                        <div className="relative mx-auto max-w-6xl px-6 pb-20">
                             <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl dark:border-slate-700 dark:bg-slate-800">
                                 <div className="aspect-video w-full overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-900">
                                     <HeroIllustration />

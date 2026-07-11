@@ -56,6 +56,12 @@ const NAV_ITEMS: NavItem[] = [
         permission: 'website.view',
     },
     {
+        label: 'Analytics',
+        href: '/dashboard/analytics',
+        icon: Globe2,
+        permission: 'analytics.view',
+    },
+    {
         label: 'Bookings',
         href: '/dashboard/bookings',
         icon: Calendar,

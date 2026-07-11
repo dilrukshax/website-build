@@ -345,6 +345,11 @@ export class BuilderController {
                         header: settings.header || DEFAULT_WEBSITE_SETTINGS.header,
                         footer: settings.footer || DEFAULT_WEBSITE_SETTINGS.footer,
                         customCode: settings.customCode,
+                        analytics: settings.analytics
+                            ? {
+                                  ga4MeasurementId: settings.analytics.ga4MeasurementId || null,
+                              }
+                            : null,
                         pages: fullManifest,
                     })),
                 },

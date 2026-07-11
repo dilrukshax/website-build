@@ -802,6 +802,13 @@ for server-only values have been removed from code — they are no longer needed
 - `DEVICE_CHECK_RATE_LIMIT_PER_MIN`, `IPINFO_TOKEN`
 - `REFERRAL_PROOF_TTL_MINUTES`
 
+### 17.7 Analytics (GA4)
+
+- `GA4_SERVICE_ACCOUNT_JSON` — server-side GA4 Data API service-account JSON (canonical, API runtime only). Read by `apps/website-builder-api/src/lib/env.ts` (`ga4ServiceAccountJson()`). The service account must be granted Viewer access to each GA4 property referenced by `settingsJsonb.analytics.ga4PropertyId`.
+- Per-site GA4 identifiers are stored in `Instance.settingsJsonb.analytics`:
+  - `ga4MeasurementId` (e.g. `G-XXXXXXX`) — injected as the gtag collection script on the published site (`app/layout.tsx`) and persisted into the published manifest `analytics.ga4MeasurementId`.
+  - `ga4PropertyId` (numeric) — used by the dashboard proxy (`GET /cms/analytics/summary`) to query the GA4 Data API.
+
 ---
 
 ## 18) Validation, Error Model, and Security Surfaces
@@ -948,6 +955,17 @@ If tests are skipped, explicitly record why and residual risk.
 ---
 
 ## 23) Change Log
+
+### 2026-07-10 (Landing Hero Redesign: Modern Minimal)
+
+- Redesigned the public landing hero (`apps/website-builder-web/app/page.tsx`) from a two-column split into a centered modern-minimal layout: eyebrow pill, large headline with red accent, supporting copy, primary/secondary CTAs, and a trust line, followed by a full-width product mockup.
+- Recolored the `HeroIllustration` SVG from leftover lavender/purple tones (`#f4f2ff`, `#ebe8ff`, `#d8d4ff`, `#d5d0ff`, `#bcb6ff`, `#d7d2ff`, `#ece9ff`, `#e5e1ff`, `#f2f0ff`, `#f1eeff`, `#6a63ff`) to the red family (`#fff5f5`, `#fee2e2`, `#fecaca`, `#fca5a5`, `#fef2f2`) so it matches the global red rebrand.
+- Kept dark-mode and red-accent behavior consistent with the rest of the landing page.
+- Impacted modules/files:
+  - `apps/website-builder-web/app/page.tsx`
+- Migration/rollout implications:
+  - No database migration required.
+  - Visual-only change; redeploy the CMS runtime to see the updated landing hero.
 
 ### 2026-07-10 (Global Red Rebrand — Every Blue → Red)
 
@@ -2912,6 +2930,38 @@ If tests are skipped, explicitly record why and residual risk.
 - Rewrote handbook to align with actual runtime architecture.
 - Replaced outdated assumptions with current JWT + refresh-cookie auth model.
 - Added password/token back-and-forth flow and baseline guardrails.
+
+### 2026-07-11 (GA4 Traffic Analytics Dashboard)
+
+- Added a GA4-based traffic analytics dashboard so tenants can see Google traffic for their published website as charts.
+- Per-site GA4 config stored in `Instance.settingsJsonb.analytics` (`ga4MeasurementId`, `ga4PropertyId`):
+  - `ga4MeasurementId` is injected as the gtag collection script on the published site (`apps/website-builder-web/app/layout.tsx`) and persisted into the published manifest (`analytics.ga4MeasurementId`).
+  - `ga4PropertyId` is used by the server-side dashboard proxy to query the GA4 Data API.
+- Server-side GA4 Data API proxy (dependency-free: Node `crypto` for service-account JWT + `fetch` to the REST endpoint, no gRPC SDK):
+  - `apps/website-builder-api/src/services/ga4.service.ts` (`getAnalyticsSummary`, `isGa4ConfiguredServerSide`)
+  - reads credentials from `GA4_SERVICE_ACCOUNT_JSON` via `apps/website-builder-api/src/lib/env.ts` (`ga4ServiceAccountJson()`)
+- New API endpoint `GET /cms/analytics/summary` (instance-scoped, `requirePermission('analytics.view')`, query params `startDate`/`endDate` with 30-day default):
+  - `apps/website-builder-api/src/controllers/analytics.controller.ts`
+  - `apps/website-builder-api/src/validators/analytics.validators.ts`
+  - route registered in `apps/website-builder-api/src/routes/cms/index.ts`
+- New `analytics.view` permission (Owner/Admin/Staff/Read Only), seeded via migration `20260711000000_add_analytics_permission` and `packages/database/src/seed-roles.ts`.
+- New CMS dashboard page `apps/website-builder-web/app/dashboard/analytics/page.tsx` renders charts (sessions/users over time, traffic by channel, sessions by device, top pages) via `recharts` (added to `apps/website-builder-web/package.json`), with range selector (7/30/90 days) and a setup CTA when GA4 is unconfigured.
+- Website Settings page now includes a Google Analytics (GA4) section that persists `analytics.ga4MeasurementId`/`ga4PropertyId` via `PUT /cms/builder/settings` (validator extended in `apps/website-builder-api/src/validators/builder.validators.ts`).
+- `WebsiteAnalyticsSettings` added to `packages/core/src/types/index.ts` and `WebsiteSettings.analytics`; published manifest type extended in `apps/website-builder-web/lib/published-site.ts`; publish builder now includes `analytics` in `apps/website-builder-api/src/controllers/builder.controller.ts`.
+- Swagger docs for `AnalyticsSummary` + `/cms/analytics/summary` added in `apps/website-builder-api/src/swagger.ts`; `GA4_SERVICE_ACCOUNT_JSON` documented in `.env.example` + AGENTS.md §17.7.
+- Impacted modules/files:
+  - `apps/website-builder-web/app/layout.tsx`, `app/dashboard/analytics/page.tsx`, `app/dashboard/website-settings/page.tsx`, `components/sidebar.tsx`, `lib/published-site.ts`, `package.json`
+  - `apps/website-builder-api/src/controllers/analytics.controller.ts`, `src/validators/analytics.validators.ts`, `src/validators/builder.validators.ts`, `src/routes/cms/index.ts`, `src/lib/env.ts`, `src/services/ga4.service.ts`, `src/swagger.ts`, `package.json`, `.env.example`
+  - `packages/core/src/types/index.ts`
+  - `packages/database/prisma/migrations/20260711000000_add_analytics_permission/migration.sql`, `packages/database/src/seed-roles.ts`
+  - `AGENTS.md`
+- Verification:
+  - `pnpm --filter @project-aurora/website-builder-api exec tsc -p tsconfig.json --noEmit`
+  - `pnpm --filter @project-aurora/website-builder-web exec tsc -p tsconfig.json --noEmit`
+- Migration/rollout implications:
+  - Run `pnpm --filter @project-aurora/database prisma migrate deploy` to add the `analytics.view` permission.
+  - Set `GA4_SERVICE_ACCOUNT_JSON` in the API runtime (service account with Viewer access to each GA4 property).
+  - Tenants add their GA4 Measurement ID + Property ID in Website Settings and publish; charts appear on `/dashboard/analytics`.
 
 ### 2026-07-10 (Environment Variable Consolidation: Single Source of Truth)
 

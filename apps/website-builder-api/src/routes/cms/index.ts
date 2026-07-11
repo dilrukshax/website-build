@@ -40,9 +40,11 @@ import {
 } from '../../validators/pages.validators';
 import { createSectionSchema, updateSectionSchema, reorderSectionsSchema } from '../../validators/sections.validators';
 import { updateWebsiteSettingsSchema } from '../../validators/builder.validators';
+import { analyticsSummaryQuery } from '../../validators/analytics.validators';
 import { PagesController } from '../../controllers/pages.controller';
 import { SectionsController } from '../../controllers/sections.controller';
 import { BuilderController } from '../../controllers/builder.controller';
+import { AnalyticsController } from '../../controllers/analytics.controller';
 import { FeatureTogglesController } from '../../controllers/feature-toggles.controller';
 import { upsertFeatureToggleSchema, bulkUpdateFeatureTogglesSchema } from '../../validators/feature-toggles.validators';
 import { presignUploadSchema, completeUploadSchema } from '../../validators/media.validators';
@@ -210,6 +212,9 @@ instanceRouter.get('/bookings/:id', requirePermission('bookings.view'), Bookings
 instanceRouter.post('/bookings/:id/confirm', requirePermission('bookings.confirm'), BookingsController.confirm);
 instanceRouter.post('/bookings/:id/complete', requirePermission('bookings.complete'), BookingsController.complete);
 instanceRouter.delete('/bookings/:id', requirePermission('bookings.delete'), validate(cancelBookingSchema), BookingsController.cancel);
+
+// --- Analytics (instance-scoped) ---
+instanceRouter.get('/analytics/summary', requirePermission('analytics.view'), validate(analyticsSummaryQuery, 'query'), AnalyticsController.getSummary);
 
 // --- Inquiries (instance-scoped) ---
 instanceRouter.get('/inquiries', requirePermission('inquiries.view'), InquiriesController.list);

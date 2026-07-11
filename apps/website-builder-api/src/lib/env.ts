@@ -61,4 +61,9 @@ export const env = {
     webProxySharedSecret(): string {
         return (process.env.WEB_PROXY_SHARED_SECRET || '').trim();
     },
+
+    /** GA4 Data API service-account JSON for server-side analytics proxy. Canonical: GA4_SERVICE_ACCOUNT_JSON */
+    ga4ServiceAccountJson(): string {
+        return (process.env.GA4_SERVICE_ACCOUNT_JSON || '').trim();
+    },
 };

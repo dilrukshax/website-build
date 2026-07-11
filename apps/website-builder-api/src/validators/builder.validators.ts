@@ -39,4 +39,8 @@ export const updateWebsiteSettingsSchema = z.object({
         bodyTop: z.string().optional(),
         bodyBottom: z.string().optional(),
     }).optional(),
+    analytics: z.object({
+        ga4MeasurementId: z.string().trim().regex(/^G-[A-Z0-9]+$/, 'GA4 Measurement ID must look like G-XXXXXXX').optional().nullable(),
+        ga4PropertyId: z.string().trim().regex(/^\d{1,12}$/, 'GA4 Property ID must be numeric').optional().nullable(),
+    }).optional(),
 });

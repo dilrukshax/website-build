@@ -112,6 +112,9 @@ export interface PublishedManifest {
         bodyTop?: string | null;
         bodyBottom?: string | null;
     } | null;
+    analytics?: {
+        ga4MeasurementId?: string | null;
+    } | null;
     pages: PublishedManifestPage[];
 }
 

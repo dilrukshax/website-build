@@ -8,6 +8,7 @@ import {
     Code2,
     ExternalLink,
     FileCode2,
+    Globe2,
     Loader2,
     Save,
     Settings2,
@@ -22,8 +23,14 @@ interface WebsiteCustomCodeSettings {
     bodyBottom?: string | null;
 }
 
+interface WebsiteAnalyticsSettings {
+    ga4MeasurementId?: string | null;
+    ga4PropertyId?: string | null;
+}
+
 interface WebsiteSettings {
     customCode?: WebsiteCustomCodeSettings | null;
+    analytics?: WebsiteAnalyticsSettings | null;
 }
 
 const EMPTY_CUSTOM_CODE: Required<Record<keyof WebsiteCustomCodeSettings, string>> = {
@@ -64,11 +71,28 @@ const CODE_FIELDS = [
 type CodeFieldKey = (typeof CODE_FIELDS)[number]['key'];
 type CustomCodeForm = Record<CodeFieldKey, string>;
 
+interface AnalyticsForm {
+    ga4MeasurementId: string;
+    ga4PropertyId: string;
+}
+
+const EMPTY_ANALYTICS: AnalyticsForm = {
+    ga4MeasurementId: '',
+    ga4PropertyId: '',
+};
+
 function normalizeCustomCodeForForm(settings: WebsiteSettings | null): CustomCodeForm {
     return {
         head: settings?.customCode?.head || '',
         bodyTop: settings?.customCode?.bodyTop || '',
         bodyBottom: settings?.customCode?.bodyBottom || '',
+    };
+}
+
+function normalizeAnalyticsForForm(settings: WebsiteSettings | null): AnalyticsForm {
+    return {
+        ga4MeasurementId: settings?.analytics?.ga4MeasurementId || '',
+        ga4PropertyId: settings?.analytics?.ga4PropertyId || '',
     };
 }
 
@@ -100,6 +124,8 @@ export default function WebsiteSettingsPage() {
     const { currentInstance } = useAuth();
     const [customCode, setCustomCode] = useState<CustomCodeForm>(EMPTY_CUSTOM_CODE);
     const [lastSavedCustomCode, setLastSavedCustomCode] = useState<CustomCodeForm>(EMPTY_CUSTOM_CODE);
+    const [analytics, setAnalytics] = useState<AnalyticsForm>(EMPTY_ANALYTICS);
+    const [lastSavedAnalytics, setLastSavedAnalytics] = useState<AnalyticsForm>(EMPTY_ANALYTICS);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [message, setMessage] = useState('');
@@ -107,7 +133,9 @@ export default function WebsiteSettingsPage() {
 
     const displayDomain = getInstanceDisplayDomain(currentInstance);
     const liveSiteUrl = getLiveSiteUrl(displayDomain);
-    const isDirty = JSON.stringify(customCode) !== JSON.stringify(lastSavedCustomCode);
+    const isDirty =
+        JSON.stringify(customCode) !== JSON.stringify(lastSavedCustomCode) ||
+        JSON.stringify(analytics) !== JSON.stringify(lastSavedAnalytics);
 
     const bodyMetaWarnings = useMemo(() => {
         const warnings: Partial<Record<CodeFieldKey, string>> = {};
@@ -146,8 +174,11 @@ export default function WebsiteSettingsPage() {
             if (res.success && res.data) {
                 const nextSettings = res.data.settings || {};
                 const nextCustomCode = normalizeCustomCodeForForm(nextSettings);
+                const nextAnalytics = normalizeAnalyticsForForm(nextSettings);
                 setCustomCode(nextCustomCode);
                 setLastSavedCustomCode(nextCustomCode);
+                setAnalytics(nextAnalytics);
+                setLastSavedAnalytics(nextAnalytics);
             } else {
                 setError(res.error?.message || 'Failed to load website settings.');
             }
@@ -160,6 +191,8 @@ export default function WebsiteSettingsPage() {
         } else {
             setCustomCode(EMPTY_CUSTOM_CODE);
             setLastSavedCustomCode(EMPTY_CUSTOM_CODE);
+            setAnalytics(EMPTY_ANALYTICS);
+            setLastSavedAnalytics(EMPTY_ANALYTICS);
             setIsLoading(false);
         }
 
@@ -177,8 +210,18 @@ export default function WebsiteSettingsPage() {
         setError('');
     }
 
+    function updateAnalyticsField(key: keyof AnalyticsForm, value: string) {
+        setAnalytics((prev) => ({
+            ...prev,
+            [key]: value,
+        }));
+        setMessage('');
+        setError('');
+    }
+
     function resetChanges() {
         setCustomCode(lastSavedCustomCode);
+        setAnalytics(lastSavedAnalytics);
         setMessage('');
         setError('');
     }
@@ -189,15 +232,23 @@ export default function WebsiteSettingsPage() {
         setError('');
 
         const nextCustomCode = trimCustomCodeForSave(customCode);
+        const nextAnalytics: WebsiteAnalyticsSettings = {
+            ga4MeasurementId: analytics.ga4MeasurementId.trim() || null,
+            ga4PropertyId: analytics.ga4PropertyId.trim() || null,
+        };
         const res = await api.put<{ settings: WebsiteSettings }>('/cms/builder/settings', {
             customCode: nextCustomCode,
+            analytics: nextAnalytics,
         });
 
         if (res.success && res.data) {
             const nextSettings = res.data.settings || {};
             const savedCustomCode = normalizeCustomCodeForForm(nextSettings);
+            const savedAnalytics = normalizeAnalyticsForForm(nextSettings);
             setCustomCode(savedCustomCode);
             setLastSavedCustomCode(savedCustomCode);
+            setAnalytics(savedAnalytics);
+            setLastSavedAnalytics(savedAnalytics);
             setMessage('Website settings saved. Republish the website to update the live source.');
         } else {
             setError(res.error?.message || 'Failed to save website settings.');
@@ -266,6 +317,47 @@ export default function WebsiteSettingsPage() {
                     </div>
                     <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
                         Save changes, then publish to update live HTML.
+                    </div>
+                </div>
+            </section>
+
+            <section className="be-card p-5">
+                <div className="mb-4 flex items-center gap-2">
+                    <Globe2 className="h-5 w-5 text-[#dc2626]" />
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">Google Analytics (GA4)</h2>
+                </div>
+                <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
+                    Connect a GA4 property to collect traffic and view charts on the Analytics dashboard. The gtag script is injected on the published site after you publish.
+                </p>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                        <label htmlFor="analytics-measurement-id" className="text-sm font-bold text-slate-900 dark:text-white">
+                            GA4 Measurement ID
+                        </label>
+                        <p className="mb-2 text-xs text-slate-500 dark:text-slate-400">Looks like G-XXXXXXX. Used for on-site collection.</p>
+                        <input
+                            id="analytics-measurement-id"
+                            value={analytics.ga4MeasurementId}
+                            onChange={(event) => updateAnalyticsField('ga4MeasurementId', event.target.value)}
+                            placeholder="G-XXXXXXX"
+                            spellCheck={false}
+                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 font-mono text-sm text-slate-900 outline-none transition focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="analytics-property-id" className="text-sm font-bold text-slate-900 dark:text-white">
+                            GA4 Property ID
+                        </label>
+                        <p className="mb-2 text-xs text-slate-500 dark:text-slate-400">Numeric, e.g. 123456789. Used by the dashboard to read reports.</p>
+                        <input
+                            id="analytics-property-id"
+                            value={analytics.ga4PropertyId}
+                            onChange={(event) => updateAnalyticsField('ga4PropertyId', event.target.value)}
+                            placeholder="123456789"
+                            inputMode="numeric"
+                            spellCheck={false}
+                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 font-mono text-sm text-slate-900 outline-none transition focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                        />
                     </div>
                 </div>
             </section>

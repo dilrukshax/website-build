@@ -56,6 +56,7 @@ export default async function RootLayout({
     let customHeadCode: string | null = null;
     let customBodyTopCode: string | null = null;
     let customBodyBottomCode: string | null = null;
+    let ga4MeasurementId: string | null = null;
 
     if (!isCmsHost(host)) {
         const { manifest } = await resolvePublishedManifest({
@@ -70,6 +71,9 @@ export default async function RootLayout({
         }
         if (manifest?.customCode?.bodyBottom) {
             customBodyBottomCode = manifest.customCode.bodyBottom;
+        }
+        if (manifest?.analytics?.ga4MeasurementId) {
+            ga4MeasurementId = manifest.analytics.ga4MeasurementId;
         }
     }
 
@@ -233,12 +237,23 @@ export default async function RootLayout({
   y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
 })(window, document, "clarity", "script", "${clarityId}");` : '';
 
+    const ga4InitScript = ga4MeasurementId ? `(function(){
+  var id="${ga4MeasurementId}";
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', id);
+  var s=document.createElement('script');s.async=true;s.src="https://www.googletagmanager.com/gtag/js?id="+id;
+  var x=document.getElementsByTagName('script')[0];x.parentNode.insertBefore(s,x);
+})();` : '';
+
     return (
         <html lang="en" suppressHydrationWarning>
             <head>
                 <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
                 <script dangerouslySetInnerHTML={{ __html: chunkRecoveryScript }} />
                 {clarityInitScript ? <script dangerouslySetInnerHTML={{ __html: clarityInitScript }} /> : null}
+                {ga4InitScript ? <script dangerouslySetInnerHTML={{ __html: ga4InitScript }} /> : null}
                 {ecommexMerchantId ? (
                     <script
                         src="https://inbox-backend-fignp.sevalla.app/widget/ecommex-widget.js"

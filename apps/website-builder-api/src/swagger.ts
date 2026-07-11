@@ -326,6 +326,70 @@ const schemas = {
         },
     },
 
+    AnalyticsSummary: {
+        type: 'object',
+        properties: {
+            configured: { type: 'boolean' },
+            reason: { type: 'string', nullable: true },
+            range: {
+                type: 'object',
+                properties: {
+                    startDate: { type: 'string' },
+                    endDate: { type: 'string' },
+                },
+            },
+            totals: {
+                type: 'object',
+                properties: {
+                    sessions: { type: 'integer' },
+                    users: { type: 'integer' },
+                    avgSessionDuration: { type: 'number' },
+                },
+            },
+            byDate: {
+                type: 'array',
+                items: {
+                    type: 'object',
+                    properties: {
+                        date: { type: 'string' },
+                        sessions: { type: 'integer' },
+                        users: { type: 'integer' },
+                    },
+                },
+            },
+            bySource: {
+                type: 'array',
+                items: {
+                    type: 'object',
+                    properties: {
+                        channel: { type: 'string' },
+                        sessions: { type: 'integer' },
+                    },
+                },
+            },
+            topPages: {
+                type: 'array',
+                items: {
+                    type: 'object',
+                    properties: {
+                        path: { type: 'string' },
+                        views: { type: 'integer' },
+                    },
+                },
+            },
+            byDevice: {
+                type: 'array',
+                items: {
+                    type: 'object',
+                    properties: {
+                        device: { type: 'string' },
+                        sessions: { type: 'integer' },
+                    },
+                },
+            },
+        },
+    },
+
     // --- Inquiry ---
     InquiryCustomerSummary: {
         type: 'object',
@@ -1338,6 +1402,24 @@ const paths = {
             security: [{ bearerAuth: [] }],
             responses: {
                 200: singleResponse('BookingStats', 'Booking statistics'),
+                401: errors[401],
+                500: errors[500],
+            },
+        },
+    },
+    '/cms/analytics/summary': {
+        get: {
+            tags: ['CMS / Analytics'],
+            summary: 'Get GA4 traffic summary',
+            description:
+                'Returns GA4 traffic analytics for the active instance website. Fails open with configured:false when GA4 is not set up.',
+            security: [{ bearerAuth: [] }],
+            parameters: [
+                { name: 'startDate', in: 'query', required: false, schema: { type: 'string', format: 'date' } },
+                { name: 'endDate', in: 'query', required: false, schema: { type: 'string', format: 'date' } },
+            ],
+            responses: {
+                200: singleResponse('AnalyticsSummary', 'GA4 traffic analytics'),
                 401: errors[401],
                 500: errors[500],
             },

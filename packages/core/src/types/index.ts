@@ -468,6 +468,11 @@ export interface WebsiteCustomCodeSettings {
   bodyBottom?: string;
 }
 
+export interface WebsiteAnalyticsSettings {
+  ga4MeasurementId?: string;
+  ga4PropertyId?: string;
+}
+
 export interface WebsiteSettings {
   tokens: WebsiteTokens;
   features: Record<string, boolean>;
@@ -475,6 +480,7 @@ export interface WebsiteSettings {
   footer: WebsiteFooterSettings;
   seo?: WebsiteSEOSettings;
   customCode?: WebsiteCustomCodeSettings;
+  analytics?: WebsiteAnalyticsSettings;
 }
 
 export interface WebsiteTokens {
