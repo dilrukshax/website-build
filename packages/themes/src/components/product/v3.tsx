@@ -27,8 +27,8 @@ export default function ProductV3({ content, styles, tokens, context }: ThemeCom
         defaultFeaturedCount: 4,
     });
 
-    const primary = tokens.primary || '#0ea5e9';
-    const secondary = tokens.secondary || '#e0f2fe';
+    const primary = tokens.primary || '#ef4444';
+    const secondary = tokens.secondary || '#fee2e2';
     const accent = tokens.accent || '#22d3ee';
 
     return (

@@ -270,7 +270,7 @@ export default function InstancesPage() {
                     className={`px-4 py-2 text-sm font-medium rounded-lg shadow-sm transition-colors ${
                         instanceLimitReached
                             ? 'pointer-events-none bg-slate-300 text-slate-600'
-                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                            : 'bg-red-600 text-white hover:bg-red-700'
                     }`}
                 >
                     {instanceLimitReached ? 'Instance limit reached' : 'Create website'}
@@ -313,7 +313,7 @@ export default function InstancesPage() {
                             <tr key={instance.id} className="hover:bg-gray-50">
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-md bg-blue-100 text-blue-700 flex items-center justify-center font-semibold text-sm">
+                                        <div className="w-8 h-8 rounded-md bg-red-100 text-red-700 flex items-center justify-center font-semibold text-sm">
                                             {instance.name.charAt(0).toUpperCase()}
                                         </div>
                                         <p className="font-medium text-gray-900">{instance.name}</p>
@@ -399,7 +399,7 @@ export default function InstancesPage() {
                                     type="text"
                                     value={editForm.name}
                                     onChange={(e) => updateEditField('name', e.target.value)}
-                                    className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 ${
+                                    className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 ${
                                         editErrors.name ? 'border-red-300' : 'border-slate-300'
                                     }`}
                                 />
@@ -416,7 +416,7 @@ export default function InstancesPage() {
                                         type="text"
                                         value={editForm.businessType}
                                         onChange={(e) => updateEditField('businessType', e.target.value)}
-                                        className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 ${
+                                        className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 ${
                                             editErrors.businessType ? 'border-red-300' : 'border-slate-300'
                                         }`}
                                     />
@@ -433,7 +433,7 @@ export default function InstancesPage() {
                                         list="instance-timezone-suggestions"
                                         value={editForm.timezone}
                                         onChange={(e) => updateEditField('timezone', e.target.value)}
-                                        className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 ${
+                                        className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 ${
                                             editErrors.timezone ? 'border-red-300' : 'border-slate-300'
                                         }`}
                                     />
@@ -457,7 +457,7 @@ export default function InstancesPage() {
                                 <div className="grid gap-2 sm:grid-cols-2">
                                     <label className={`flex cursor-pointer gap-2 rounded-lg border px-3 py-2 text-sm transition ${
                                         editForm.domainMode === 'subdomain'
-                                            ? 'border-[#2563eb] bg-[#2563eb]/10 text-[#2563eb]'
+                                            ? 'border-[#dc2626] bg-[#dc2626]/10 text-[#dc2626]'
                                             : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
                                     }`}>
                                         <input
@@ -466,7 +466,7 @@ export default function InstancesPage() {
                                             value="subdomain"
                                             checked={editForm.domainMode === 'subdomain'}
                                             onChange={() => updateEditField('domainMode', 'subdomain')}
-                                            className="mt-0.5 h-4 w-4 border-slate-300 text-[#2563eb] focus:ring-[#2563eb]"
+                                            className="mt-0.5 h-4 w-4 border-slate-300 text-[#dc2626] focus:ring-[#dc2626]"
                                         />
                                         <span>
                                             <p className="font-semibold">Subdomain only</p>
@@ -476,7 +476,7 @@ export default function InstancesPage() {
 
                                     <label className={`flex cursor-pointer gap-2 rounded-lg border px-3 py-2 text-sm transition ${
                                         editForm.domainMode === 'customDomain'
-                                            ? 'border-[#2563eb] bg-[#2563eb]/10 text-[#2563eb]'
+                                            ? 'border-[#dc2626] bg-[#dc2626]/10 text-[#dc2626]'
                                             : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
                                     }`}>
                                         <input
@@ -485,7 +485,7 @@ export default function InstancesPage() {
                                             value="customDomain"
                                             checked={editForm.domainMode === 'customDomain'}
                                             onChange={() => updateEditField('domainMode', 'customDomain')}
-                                            className="mt-0.5 h-4 w-4 border-slate-300 text-[#2563eb] focus:ring-[#2563eb]"
+                                            className="mt-0.5 h-4 w-4 border-slate-300 text-[#dc2626] focus:ring-[#dc2626]"
                                         />
                                         <span>
                                             <p className="font-semibold">Custom domain</p>
@@ -506,7 +506,7 @@ export default function InstancesPage() {
                                         value={editForm.customDomain}
                                         onChange={(e) => updateEditField('customDomain', e.target.value)}
                                         placeholder="example.com"
-                                        className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 ${
+                                        className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 ${
                                             editErrors.customDomain ? 'border-red-300' : 'border-slate-300'
                                         }`}
                                     />
@@ -533,7 +533,7 @@ export default function InstancesPage() {
                                 type="button"
                                 onClick={() => void handleSaveEdit()}
                                 disabled={isSavingEdit}
-                                className="rounded-lg bg-[#2563eb] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-60"
+                                className="rounded-lg bg-[#dc2626] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#b91c1c] disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {isSavingEdit ? 'Saving...' : 'Save changes'}
                             </button>

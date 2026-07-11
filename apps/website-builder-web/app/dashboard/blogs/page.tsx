@@ -202,7 +202,7 @@ export default function BlogsPage() {
         <button
           type="button"
           onClick={openCreate}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+          className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
         >
           + Add Blog
         </button>
@@ -214,7 +214,7 @@ export default function BlogsPage() {
           placeholder="Search by title, slug, or excerpt..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
         />
       </div>
 
@@ -266,7 +266,7 @@ export default function BlogsPage() {
                       <button
                         type="button"
                         onClick={() => openPreview(blog)}
-                        className="rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
+                        className="rounded-md border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100"
                         title="Open preview in popup"
                       >
                         Preview
@@ -280,7 +280,7 @@ export default function BlogsPage() {
                             ? "Select an active website instance to use preview."
                             : "Publish this post first to preview it."
                         }
-                        className="cursor-not-allowed rounded-md border border-blue-100 bg-blue-50 px-2.5 py-1.5 text-xs font-medium text-blue-300"
+                        className="cursor-not-allowed rounded-md border border-red-100 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-300"
                       >
                         Preview
                       </button>
@@ -362,7 +362,7 @@ export default function BlogsPage() {
                         onClick={() => setPreviewMode("desktop")}
                         className={`rounded-md px-2.5 py-1 text-xs font-semibold transition ${
                           previewMode === "desktop"
-                            ? "bg-[#2563eb] text-white"
+                            ? "bg-[#dc2626] text-white"
                             : "text-slate-600 hover:bg-slate-100"
                         }`}
                       >
@@ -373,7 +373,7 @@ export default function BlogsPage() {
                         onClick={() => setPreviewMode("mobile")}
                         className={`rounded-md px-2.5 py-1 text-xs font-semibold transition ${
                           previewMode === "mobile"
-                            ? "bg-[#2563eb] text-white"
+                            ? "bg-[#dc2626] text-white"
                             : "text-slate-600 hover:bg-slate-100"
                         }`}
                       >
@@ -407,7 +407,7 @@ export default function BlogsPage() {
 
                       {isPreviewFrameLoading && !isPreviewFrameError && (
                         <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60 backdrop-blur-sm">
-                          <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-[#2563eb]" />
+                          <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-[#dc2626]" />
                         </div>
                       )}
                     </div>
@@ -449,7 +449,7 @@ export default function BlogsPage() {
                       slug: slugTouched ? current.slug : slugify(nextTitle),
                     }));
                   }}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
                   placeholder="e.g. How to Prepare for Your First Visit"
                 />
               </div>
@@ -465,7 +465,7 @@ export default function BlogsPage() {
                     setSlugTouched(true);
                     setForm((current) => ({ ...current, slug: slugify(e.target.value) }));
                   }}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
                   placeholder="how-to-prepare-for-your-first-visit"
                 />
               </div>
@@ -476,7 +476,7 @@ export default function BlogsPage() {
                   rows={3}
                   value={form.excerpt}
                   onChange={(e) => setForm((current) => ({ ...current, excerpt: e.target.value }))}
-                  className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
                   placeholder="Short summary shown in cards..."
                 />
               </div>
@@ -520,7 +520,7 @@ export default function BlogsPage() {
                   type="checkbox"
                   checked={form.isPublished}
                   onChange={(e) => setForm((current) => ({ ...current, isPublished: e.target.checked }))}
-                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
                 />
                 Publish immediately
               </label>
@@ -531,7 +531,7 @@ export default function BlogsPage() {
                 type="button"
                 onClick={() => void handleCreate()}
                 disabled={isSaving || isUploadingImage}
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-60"
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:opacity-60"
               >
                 {isSaving ? "Creating..." : "Create & Edit"}
               </button>

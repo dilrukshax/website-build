@@ -45,7 +45,7 @@ export function ThemeToggle({ className = '', align = 'left', fullWidth = true }
             <button
                 type="button"
                 onClick={() => setIsOpen((prev) => !prev)}
-                className={`flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-left transition-colors hover:border-[#2563eb]/30 hover:bg-[#2563eb]/5 dark:border-slate-700 dark:bg-slate-800/70 ${fullWidth ? 'w-full' : ''}`}
+                className={`flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-left transition-colors hover:border-[#dc2626]/30 hover:bg-[#dc2626]/5 dark:border-slate-700 dark:bg-slate-800/70 ${fullWidth ? 'w-full' : ''}`}
                 aria-label="Change theme"
                 aria-expanded={isOpen}
             >
@@ -71,7 +71,7 @@ export function ThemeToggle({ className = '', align = 'left', fullWidth = true }
                                     setTheme(option.value);
                                     setIsOpen(false);
                                 }}
-                                className={`flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-[#2563eb]/5 ${selected ? 'bg-[#2563eb]/10' : ''}`}
+                                className={`flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-[#dc2626]/5 ${selected ? 'bg-[#dc2626]/10' : ''}`}
                             >
                                 <OptionIcon size={14} className="text-slate-500 dark:text-slate-300" />
                                 <div className="min-w-0 flex-1">
@@ -82,7 +82,7 @@ export function ThemeToggle({ className = '', align = 'left', fullWidth = true }
                                         </p>
                                     )}
                                 </div>
-                                {selected && <Check size={14} className="shrink-0 text-[#2563eb]" />}
+                                {selected && <Check size={14} className="shrink-0 text-[#dc2626]" />}
                             </button>
                         );
                     })}

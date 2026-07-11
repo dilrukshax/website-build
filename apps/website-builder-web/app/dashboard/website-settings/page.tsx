@@ -210,7 +210,7 @@ export default function WebsiteSettingsPage() {
         return (
             <div className="be-card flex min-h-[320px] items-center justify-center p-6 text-center">
                 <div>
-                    <Settings2 className="mx-auto mb-3 h-8 w-8 text-[#2563eb]" />
+                    <Settings2 className="mx-auto mb-3 h-8 w-8 text-[#dc2626]" />
                     <h1 className="text-xl font-bold text-slate-900 dark:text-white">Select a website</h1>
                     <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
                         Choose an active website from the switcher before editing custom code.
@@ -224,7 +224,7 @@ export default function WebsiteSettingsPage() {
         <div className="space-y-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                    <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#2563eb]/15 bg-[#2563eb]/5 px-3 py-1 text-xs font-semibold text-[#2563eb]">
+                    <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#dc2626]/15 bg-[#dc2626]/5 px-3 py-1 text-xs font-semibold text-[#dc2626]">
                         <Settings2 className="h-3.5 w-3.5" />
                         Website Settings
                     </div>
@@ -274,7 +274,7 @@ export default function WebsiteSettingsPage() {
                 <section className="be-card overflow-hidden">
                     <div className="border-b border-slate-200 px-5 py-4 dark:border-slate-700">
                         <div className="flex items-center gap-2">
-                            <Code2 className="h-5 w-5 text-[#2563eb]" />
+                            <Code2 className="h-5 w-5 text-[#dc2626]" />
                             <h2 className="text-lg font-bold text-slate-900 dark:text-white">Published HTML Slots</h2>
                         </div>
                     </div>
@@ -307,7 +307,7 @@ export default function WebsiteSettingsPage() {
                                         rows={field.rows}
                                         spellCheck={false}
                                         placeholder={field.placeholder}
-                                        className="min-h-[132px] w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2 font-mono text-sm leading-6 text-slate-900 outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                                        className="min-h-[132px] w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2 font-mono text-sm leading-6 text-slate-900 outline-none transition focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
                                     />
                                     {bodyMetaWarnings[field.key] && (
                                         <div className="mt-2 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
@@ -350,7 +350,7 @@ export default function WebsiteSettingsPage() {
                                     type="button"
                                     onClick={() => void saveSettings()}
                                     disabled={isSaving || !isDirty}
-                                    className="inline-flex items-center gap-2 rounded-lg bg-[#2563eb] px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-[#2563eb]/25 transition hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-60"
+                                    className="inline-flex items-center gap-2 rounded-lg bg-[#dc2626] px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-[#dc2626]/25 transition hover:bg-[#b91c1c] disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                                     {isSaving ? 'Saving...' : 'Save Settings'}

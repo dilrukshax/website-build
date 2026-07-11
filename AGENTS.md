@@ -949,6 +949,29 @@ If tests are skipped, explicitly record why and residual risk.
 
 ## 23) Change Log
 
+### 2026-07-10 (Global Red Rebrand — Every Blue → Red)
+
+- Superseded the earlier purple→blue pass: the entire project color system is now red.
+- Replaced every blue value in the codebase with the red family, including the sky/cyan and indigo families, so the whole UI renders red.
+- Brand primary `--be-primary` is now `#dc2626` (red-600) in:
+  - `apps/website-builder-web/app/globals.css`
+  - `apps/website-builder-web/app/layout.tsx`
+  - `apps/website-builder-web/contexts/theme-context.tsx`
+- Hex mappings applied repo-wide (shade-for-shade onto the red palette), e.g.:
+  - `#2563eb` → `#dc2626`, `#1d4ed8` → `#b91c1c`, `#1e3a8a` → `#7f1d1d`
+  - `#3b82f6` → `#ef4444`, `#eff6ff` → `#fef2f2`, `#93c5fd` → `#fca5a5`
+  - `#0ea5e9` (sky) → `#ef4444`, `#0284c7` → `#b91c1c`, `#0369a1` → `#991b1b`
+  - `#6366f1`/`#4f46e5` (indigo) → `#ef4444`/`#dc2626`
+- Tailwind class prefixes `blue-*`, `sky-*`, `indigo-*` rewritten to `red-*` across all dashboard/onboarding/builder/theme components.
+- Auth UI brand `--brand-primary` is now `#ef4444` in `packages/auth-ui/styles.css`.
+- Theme template seed defaults and `tone`/`color` tokens previously set to blue were rewritten to red in theme components and Prisma seed migrations.
+- Webflow-style utility classes (`text-color-blue`, `background-color-blue`) rewritten to `text-color-red`/`background-color-red` in Harmozi VSL theme components.
+- Impacted modules/files: all CMS/API/theme source touched by the blue pass, plus Prisma seed migrations and `packages/auth-ui/styles.css`.
+- Migration/rollout implications:
+  - No schema migration required.
+  - Existing published sites keep their stored `tokens.primary`; only default/fallback values and new installs now use red.
+  - Restart/redeploy CMS and API runtimes so updated brand colors and compiled CSS take effect.
+
 ### 2026-07-10 (Global Purple → Blue Rebrand)
 
 - Replaced the global purple brand/primary color with blue across the entire codebase.

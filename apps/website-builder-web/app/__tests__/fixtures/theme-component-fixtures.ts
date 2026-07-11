@@ -1,7 +1,7 @@
 import type { ThemeComponentProps } from '@project-aurora/themes';
 
 export const TEST_TOKENS: ThemeComponentProps['tokens'] = {
-    primary: '#2563eb',
+    primary: '#dc2626',
     secondary: '#0f766e',
     accent: '#f59e0b',
     text: '#0f172a',

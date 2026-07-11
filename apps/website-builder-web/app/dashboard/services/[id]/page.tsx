@@ -117,7 +117,7 @@ export default function ServiceDetailsPage({
       <div className="legacy-theme space-y-4">
         <Link
           href="/dashboard/services"
-          className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800"
+          className="inline-flex items-center text-sm font-medium text-red-600 hover:text-red-800"
         >
           ← Back to services
         </Link>
@@ -138,7 +138,7 @@ export default function ServiceDetailsPage({
         <div className="flex items-start gap-4">
           <Link
             href="/dashboard/services"
-            className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 mt-1"
+            className="inline-flex items-center text-sm font-medium text-red-600 hover:text-red-800 mt-1"
           >
             ← Back
           </Link>
@@ -178,7 +178,7 @@ export default function ServiceDetailsPage({
                 type="text"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
               />
             </div>
 
@@ -190,7 +190,7 @@ export default function ServiceDetailsPage({
                 rows={4}
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
               />
             </div>
 
@@ -204,7 +204,7 @@ export default function ServiceDetailsPage({
                 step="0.01"
                 value={form.price}
                 onChange={(e) => setForm({ ...form, price: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
               />
             </div>
 
@@ -215,7 +215,7 @@ export default function ServiceDetailsPage({
               <select
                 value={form.currency}
                 onChange={(e) => setForm({ ...form, currency: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
               >
                 <option value="USD">USD ($)</option>
                 <option value="EUR">EUR (€)</option>
@@ -237,7 +237,7 @@ export default function ServiceDetailsPage({
                 step="5"
                 value={form.duration}
                 onChange={(e) => setForm({ ...form, duration: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
               />
             </div>
           </div>
@@ -250,7 +250,7 @@ export default function ServiceDetailsPage({
               <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="w-full px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-60"
+                className="w-full px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-60"
               >
                 {isSaving ? "Saving..." : "Save Changes"}
               </button>

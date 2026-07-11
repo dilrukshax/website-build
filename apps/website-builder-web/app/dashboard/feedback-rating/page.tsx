@@ -101,8 +101,8 @@ export default function FeedbackRatingPage() {
                                 onClick={() => setScore(value)}
                                 className={`inline-flex items-center gap-1 rounded-lg border px-3 py-2 text-sm font-semibold transition ${
                                     score === value
-                                        ? 'border-[#2563eb] bg-[#2563eb] text-white'
-                                        : 'border-slate-200 bg-white text-slate-700 hover:border-[#2563eb]/40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
+                                        ? 'border-[#dc2626] bg-[#dc2626] text-white'
+                                        : 'border-slate-200 bg-white text-slate-700 hover:border-[#dc2626]/40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
                                 }`}
                             >
                                 <Star className="h-4 w-4" />
@@ -123,7 +123,7 @@ export default function FeedbackRatingPage() {
                         rows={4}
                         maxLength={2000}
                         placeholder="Tell us what works well or what can be better."
-                        className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:border-slate-700 dark:bg-slate-900"
+                        className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 dark:border-slate-700 dark:bg-slate-900"
                     />
                 </div>
 
@@ -143,7 +143,7 @@ export default function FeedbackRatingPage() {
                     <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="rounded-lg bg-[#2563eb] px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-[#2563eb]/25 transition hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-60"
+                        className="rounded-lg bg-[#dc2626] px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-[#dc2626]/25 transition hover:bg-[#b91c1c] disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         {isSubmitting ? 'Submitting...' : 'Submit Rating'}
                     </button>
@@ -173,9 +173,9 @@ export default function FeedbackRatingPage() {
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                 {entries.map((entry) => (
-                                    <tr key={entry.id} className="hover:bg-[#2563eb]/5">
+                                    <tr key={entry.id} className="hover:bg-[#dc2626]/5">
                                         <td className="px-5 py-4">
-                                            <span className="inline-flex items-center gap-1 rounded-full bg-[#2563eb]/10 px-2.5 py-1 text-xs font-semibold text-[#2563eb]">
+                                            <span className="inline-flex items-center gap-1 rounded-full bg-[#dc2626]/10 px-2.5 py-1 text-xs font-semibold text-[#dc2626]">
                                                 <Star className="h-3.5 w-3.5" />
                                                 {entry.score ?? '-'} / 5
                                             </span>

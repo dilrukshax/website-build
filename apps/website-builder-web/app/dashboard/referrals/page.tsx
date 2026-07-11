@@ -176,7 +176,7 @@ export default function ReferralsPage() {
                         type="button"
                         onClick={copyReferralLink}
                         disabled={!data?.referralLink}
-                        className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#2563eb] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#dc2626] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#b91c1c] disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         <Copy className="h-4 w-4" />
                         {copied ? 'Copied' : 'Copy link'}
@@ -186,7 +186,7 @@ export default function ReferralsPage() {
 
             <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
                 <div className="mb-4 flex items-center gap-2">
-                    <Wallet className="h-5 w-5 text-[#2563eb]" />
+                    <Wallet className="h-5 w-5 text-[#dc2626]" />
                     <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Redeem Points</h2>
                 </div>
 
@@ -203,7 +203,7 @@ export default function ReferralsPage() {
                         <select
                             value={redeemTenantId}
                             onChange={(event) => setRedeemTenantId(event.target.value)}
-                            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:border-slate-700 dark:bg-slate-950"
+                            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 dark:border-slate-700 dark:bg-slate-950"
                         >
                             {ownerTenants.map((tenant) => (
                                 <option key={tenant.id} value={tenant.id}>{tenant.businessName}</option>
@@ -216,14 +216,14 @@ export default function ReferralsPage() {
                             step={1}
                             value={redeemPoints}
                             onChange={(event) => setRedeemPoints(event.target.value)}
-                            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:border-slate-700 dark:bg-slate-950"
+                            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 dark:border-slate-700 dark:bg-slate-950"
                         />
 
                         <button
                             type="button"
                             onClick={redeem}
                             disabled={redeemSubmitting || isLoading}
-                            className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#2563eb] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-60"
+                            className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#dc2626] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#b91c1c] disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             <Gift className="h-4 w-4" />
                             {redeemSubmitting ? 'Redeeming...' : 'Redeem'}

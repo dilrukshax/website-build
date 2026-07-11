@@ -84,7 +84,7 @@ export default function CustomersPage() {
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         placeholder="Search by name, email, phone, or source page..."
-                        className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:border-slate-700 dark:bg-slate-900"
+                        className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm outline-none transition focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 dark:border-slate-700 dark:bg-slate-900"
                     />
                 </div>
             </div>
@@ -112,7 +112,7 @@ export default function CustomersPage() {
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                             {filteredCustomers.map((customer) => (
-                                <tr key={customer.id} className="transition-colors hover:bg-[#2563eb]/5">
+                                <tr key={customer.id} className="transition-colors hover:bg-[#dc2626]/5">
                                     <td className="px-6 py-4">
                                         <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                                             {customer.firstName} {customer.lastName}
@@ -131,7 +131,7 @@ export default function CustomersPage() {
                                     <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
                                         <Link
                                             href={`/dashboard/inquiries?search=${encodeURIComponent(customer.email)}`}
-                                            className="font-medium text-[#2563eb] hover:underline"
+                                            className="font-medium text-[#dc2626] hover:underline"
                                         >
                                             View Inquiries
                                         </Link>

@@ -202,7 +202,7 @@ export default function BlogV2({ content, styles, tokens, context, isEditor }: T
                                                     style={{ width: '100%', height: '100%', minHeight: '240px', objectFit: 'cover', display: 'block' }}
                                                 />
                                             ) : (
-                                                <div style={{ background: 'linear-gradient(140deg, #dbeafe 0%, #e2e8f0 100%)', minHeight: '240px' }} />
+                                                <div style={{ background: 'linear-gradient(140deg, #fee2e2 0%, #e2e8f0 100%)', minHeight: '240px' }} />
                                             )
                                         ) : null}
 

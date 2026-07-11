@@ -641,7 +641,7 @@ export default function BlogDetailsPage({
 
   const saveStatusTone = (() => {
     if (isSaving || isAutoSaving) {
-      return { dot: "bg-blue-500", text: "text-blue-700", label: "Saving..." };
+      return { dot: "bg-red-500", text: "text-red-700", label: "Saving..." };
     }
     if (autoSaveState === "error") {
       return { dot: "bg-red-500", text: "text-red-700", label: "Auto-save failed" };
@@ -665,7 +665,7 @@ export default function BlogDetailsPage({
       <div className="legacy-theme space-y-4">
         <Link
           href="/dashboard/blogs"
-          className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800"
+          className="inline-flex items-center text-sm font-medium text-red-600 hover:text-red-800"
         >
           ← Back to blogs
         </Link>
@@ -696,7 +696,7 @@ export default function BlogDetailsPage({
                 event.preventDefault();
               }
             }}
-            className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800"
+            className="inline-flex items-center text-sm font-medium text-red-600 hover:text-red-800"
           >
             ← Back
           </Link>
@@ -745,7 +745,7 @@ export default function BlogDetailsPage({
                       return applySeoAutoSync(nextForm, { title: nextTitle });
                     });
                   }}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
                 />
               </div>
 
@@ -760,7 +760,7 @@ export default function BlogDetailsPage({
                     setSlugTouched(true);
                     updateFormFromUser((current) => ({ ...current, slug: slugify(e.target.value) }));
                   }}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
                 />
                 <p className="mt-1 text-xs text-gray-500">Public URL: /blog/{form.slug || "your-slug"}</p>
               </div>
@@ -771,7 +771,7 @@ export default function BlogDetailsPage({
                   rows={3}
                   value={form.excerpt}
                   onChange={(e) => updateFormFromUser((current) => ({ ...current, excerpt: e.target.value }))}
-                  className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
                   placeholder="Summary text for blog cards..."
                 />
               </div>
@@ -855,7 +855,7 @@ export default function BlogDetailsPage({
                   type="checkbox"
                   checked={form.isPublished}
                   onChange={(e) => updateFormFromUser((current) => ({ ...current, isPublished: e.target.checked }))}
-                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
                 />
                 Published
               </label>
@@ -866,7 +866,7 @@ export default function BlogDetailsPage({
                   type="datetime-local"
                   value={form.publishedAt}
                   onChange={(e) => updateFormFromUser((current) => ({ ...current, publishedAt: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
                 />
               </div>
             </div>
@@ -885,7 +885,7 @@ export default function BlogDetailsPage({
                     type="checkbox"
                     checked={autoSaveEnabled}
                     onChange={(event) => setAutoSaveEnabled(event.target.checked)}
-                    className="h-3.5 w-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    className="h-3.5 w-3.5 rounded border-slate-300 text-red-600 focus:ring-red-500"
                   />
                   Auto-save 5 seconds after new changes
                 </label>
@@ -894,7 +894,7 @@ export default function BlogDetailsPage({
                 type="button"
                 onClick={() => void handleSave()}
                 disabled={isSaving || isAutoSaving || isUploadingInlineImage || isUploadingFeaturedImage || isUploadingOgImage}
-                className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-60"
+                className="w-full rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:opacity-60"
               >
                 {isSaving ? "Saving..." : "Save Changes (Manual)"}
               </button>
@@ -921,11 +921,11 @@ export default function BlogDetailsPage({
 
           <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
             <h2 className="mb-4 text-lg font-semibold text-gray-900">SEO</h2>
-            <div className="mb-4 rounded-lg border border-blue-100 bg-blue-50/70 p-3">
-              <p className="text-xs text-blue-800">
+            <div className="mb-4 rounded-lg border border-red-100 bg-red-50/70 p-3">
+              <p className="text-xs text-red-800">
                 On page open, empty Meta/OG title + description fields are auto-filled from blog title and the first 100 characters of content body text.
               </p>
-              <label className="mt-2 inline-flex items-center gap-2 text-xs text-blue-800">
+              <label className="mt-2 inline-flex items-center gap-2 text-xs text-red-800">
                 <input
                   type="checkbox"
                   checked={seoAutoSyncEnabled}
@@ -936,17 +936,17 @@ export default function BlogDetailsPage({
                       setSeoAutoSyncState({ ...DEFAULT_SEO_AUTO_SYNC });
                     }
                   }}
-                  className="h-3.5 w-3.5 rounded border-blue-300 text-blue-600 focus:ring-blue-500"
+                  className="h-3.5 w-3.5 rounded border-red-300 text-red-600 focus:ring-red-500"
                 />
                 Auto-sync Meta/OG title + description while editing title/body
               </label>
-              <p className="mt-1 text-[11px] text-blue-700">
+              <p className="mt-1 text-[11px] text-red-700">
                 Manual typing in Meta/OG title or description pauses sync for that field. Click Auto Fill SEO to re-enable.
               </p>
               <button
                 type="button"
                 onClick={handleAutoFillSeo}
-                className="mt-2 rounded-md border border-blue-200 bg-white px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
+                className="mt-2 rounded-md border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100"
               >
                 Auto Fill SEO
               </button>
@@ -961,7 +961,7 @@ export default function BlogDetailsPage({
                     setSeoAutoSyncState((current) => ({ ...current, metaTitle: false }));
                     updateFormFromUser((current) => ({ ...current, seo: { ...current.seo, metaTitle: e.target.value } }));
                   }}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
                 />
               </div>
               <div>
@@ -973,7 +973,7 @@ export default function BlogDetailsPage({
                     setSeoAutoSyncState((current) => ({ ...current, metaDescription: false }));
                     updateFormFromUser((current) => ({ ...current, seo: { ...current.seo, metaDescription: e.target.value } }));
                   }}
-                  className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
                 />
               </div>
               <div>
@@ -982,7 +982,7 @@ export default function BlogDetailsPage({
                   type="text"
                   value={form.seo.metaKeywords || ""}
                   onChange={(e) => updateFormFromUser((current) => ({ ...current, seo: { ...current.seo, metaKeywords: e.target.value } }))}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
                   placeholder="keyword1, keyword2"
                 />
               </div>
@@ -992,7 +992,7 @@ export default function BlogDetailsPage({
                   type="text"
                   value={form.seo.canonicalPath || ""}
                   onChange={(e) => updateFormFromUser((current) => ({ ...current, seo: { ...current.seo, canonicalPath: e.target.value } }))}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
                   placeholder={`/blog/${form.slug || "your-slug"}`}
                 />
               </div>
@@ -1005,7 +1005,7 @@ export default function BlogDetailsPage({
                     setSeoAutoSyncState((current) => ({ ...current, ogTitle: false }));
                     updateFormFromUser((current) => ({ ...current, seo: { ...current.seo, ogTitle: e.target.value } }));
                   }}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
                 />
               </div>
               <div>
@@ -1017,7 +1017,7 @@ export default function BlogDetailsPage({
                     setSeoAutoSyncState((current) => ({ ...current, ogDescription: false }));
                     updateFormFromUser((current) => ({ ...current, seo: { ...current.seo, ogDescription: e.target.value } }));
                   }}
-                  className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
                 />
               </div>
               <div>
@@ -1026,7 +1026,7 @@ export default function BlogDetailsPage({
                   type="url"
                   value={form.seo.ogImageUrl || ""}
                   onChange={(e) => updateFormFromUser((current) => ({ ...current, seo: { ...current.seo, ogImageUrl: e.target.value } }))}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
                 />
                 {ogImagePreviewUrl && (
                   <div className="mt-2 overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
@@ -1081,7 +1081,7 @@ export default function BlogDetailsPage({
                   type="text"
                   value={form.seo.ogImageAlt || ""}
                   onChange={(e) => updateFormFromUser((current) => ({ ...current, seo: { ...current.seo, ogImageAlt: e.target.value } }))}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
                 />
               </div>
             </div>

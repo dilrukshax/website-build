@@ -71,7 +71,7 @@ export default function StaffPage() {
                 {hasPermission('staff.create') && staffCreationAllowed && (
                     <button
                         onClick={() => setShowCreateForm(true)}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
+                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
                     >
                         Add staff member
                     </button>
@@ -173,7 +173,7 @@ function CreateStaffForm({
                         required
                         value={formData.fullName}
                         onChange={(e) => setFormData((p) => ({ ...p, fullName: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
                         placeholder="Jane Smith"
                     />
                 </div>
@@ -185,7 +185,7 @@ function CreateStaffForm({
                         required
                         value={formData.email}
                         onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
                         placeholder="jane@example.com"
                     />
                 </div>
@@ -197,7 +197,7 @@ function CreateStaffForm({
                         required
                         value={formData.password}
                         onChange={(e) => setFormData((p) => ({ ...p, password: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
                         placeholder="Min 8 characters"
                     />
                 </div>
@@ -207,7 +207,7 @@ function CreateStaffForm({
                         id="staffRole"
                         value={formData.roleId}
                         onChange={(e) => setFormData((p) => ({ ...p, roleId: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
                     >
                         {roles.map((role) => (
                             <option key={role.id} value={role.id}>{role.name}</option>
@@ -220,7 +220,7 @@ function CreateStaffForm({
                 <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-md shadow-sm transition-colors"
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white font-medium rounded-md shadow-sm transition-colors"
                 >
                     {isSubmitting ? 'Adding...' : 'Add member'}
                 </button>
@@ -284,7 +284,7 @@ function StaffRow({
                         <p className="font-medium text-gray-900">
                             {member.fullName}
                             {member.isOwner && (
-                                <span className="ml-2 px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">Owner</span>
+                                <span className="ml-2 px-1.5 py-0.5 bg-red-100 text-red-700 text-xs rounded">Owner</span>
                             )}
                         </p>
                         <p className="text-sm text-gray-500">{member.email}</p>
@@ -297,7 +297,7 @@ function StaffRow({
                         <select
                             value={selectedRoleId}
                             onChange={(e) => setSelectedRoleId(e.target.value)}
-                            className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-red-500"
                         >
                             {roles.map((r) => (
                                 <option key={r.id} value={r.id}>{r.name}</option>
@@ -306,7 +306,7 @@ function StaffRow({
                         <button
                             onClick={handleRoleChange}
                             disabled={isSaving}
-                            className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                            className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
                         >
                             Save
                         </button>

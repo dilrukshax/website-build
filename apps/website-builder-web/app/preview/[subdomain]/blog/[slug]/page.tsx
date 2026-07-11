@@ -20,7 +20,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const DEFAULT_TOKENS = {
-    primary: '#3b82f6',
+    primary: '#ef4444',
     secondary: '#10b981',
     accent: '#f59e0b',
     text: '#1f2937',

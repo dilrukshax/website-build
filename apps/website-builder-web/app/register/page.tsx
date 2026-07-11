@@ -258,7 +258,7 @@ export default function RegisterPage() {
     return (
         <div className={`${inter.className} min-h-screen bg-[#f6f6f8] text-slate-900 dark:bg-[#121121] dark:text-slate-100`}>
             <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[1.05fr_0.95fr]">
-                <section className="relative hidden overflow-hidden bg-gradient-to-br from-[#2563eb] via-[#1d4ed8] to-[#1e3a8a] p-12 text-white lg:flex lg:flex-col lg:justify-between">
+                <section className="relative hidden overflow-hidden bg-gradient-to-br from-[#dc2626] via-[#b91c1c] to-[#7f1d1d] p-12 text-white lg:flex lg:flex-col lg:justify-between">
                     <div className="pointer-events-none absolute -left-24 top-16 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
                     <div className="pointer-events-none absolute -right-24 bottom-8 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
 
@@ -300,7 +300,7 @@ export default function RegisterPage() {
                     <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(80,72,229,0.12),transparent_45%),radial-gradient(circle_at_80%_80%,rgba(80,72,229,0.08),transparent_45%)]" />
                     <div className="relative w-full max-w-xl rounded-3xl border border-slate-200 bg-white p-8 shadow-xl sm:p-10 dark:border-slate-800 dark:bg-slate-900">
                         <div className="mb-8">
-                            <Link href="/" className="inline-flex items-center gap-2 text-[#2563eb] lg:hidden">
+                            <Link href="/" className="inline-flex items-center gap-2 text-[#dc2626] lg:hidden">
                                 <Sparkles className="h-5 w-5" />
                                 <span className="text-base font-semibold">Project Aurora</span>
                             </Link>
@@ -319,7 +319,7 @@ export default function RegisterPage() {
                                 <button
                                     type="button"
                                     onClick={() => setRegistrationMode('service')}
-                                    className="inline-flex w-full items-center justify-between rounded-xl border border-[#2563eb]/35 bg-[#2563eb]/10 px-4 py-3 text-left text-sm font-semibold text-[#2563eb] transition hover:bg-[#2563eb]/15"
+                                    className="inline-flex w-full items-center justify-between rounded-xl border border-[#dc2626]/35 bg-[#dc2626]/10 px-4 py-3 text-left text-sm font-semibold text-[#dc2626] transition hover:bg-[#dc2626]/15"
                                 >
                                     Service-based business
                                     <ArrowRight className="h-4 w-4" />
@@ -340,7 +340,7 @@ export default function RegisterPage() {
 
                                 <p className="pt-2 text-center text-sm text-slate-600 dark:text-slate-400">
                                     Already have an account?{' '}
-                                    <Link href="/login" className="font-semibold text-[#2563eb] hover:text-[#3e38b6]">
+                                    <Link href="/login" className="font-semibold text-[#dc2626] hover:text-[#3e38b6]">
                                         Sign in
                                     </Link>
                                 </p>
@@ -382,7 +382,7 @@ export default function RegisterPage() {
                                             required
                                             value={formData.fullName}
                                             onChange={(e) => updateField('fullName', e.target.value)}
-                                            className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:bg-slate-950 dark:text-slate-100 ${fieldErrors.fullName ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
+                                            className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 dark:bg-slate-950 dark:text-slate-100 ${fieldErrors.fullName ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
                                             placeholder="John Doe"
                                         />
                                         {fieldErrors.fullName && (
@@ -401,7 +401,7 @@ export default function RegisterPage() {
                                             autoComplete="tel"
                                             value={formData.whatsappNumber}
                                             onChange={(e) => updateField('whatsappNumber', e.target.value)}
-                                            className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:bg-slate-950 dark:text-slate-100 ${fieldErrors.whatsappNumber ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
+                                            className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 dark:bg-slate-950 dark:text-slate-100 ${fieldErrors.whatsappNumber ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
                                             placeholder="+94 77 123 4567"
                                         />
                                         {fieldErrors.whatsappNumber && (
@@ -420,7 +420,7 @@ export default function RegisterPage() {
                                             autoComplete="email"
                                             value={formData.email}
                                             onChange={(e) => updateField('email', e.target.value)}
-                                            className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:bg-slate-950 dark:text-slate-100 ${fieldErrors.email ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
+                                            className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 dark:bg-slate-950 dark:text-slate-100 ${fieldErrors.email ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
                                             placeholder="you@example.com"
                                         />
                                         {fieldErrors.email && (
@@ -440,7 +440,7 @@ export default function RegisterPage() {
                                                 autoComplete="new-password"
                                                 value={formData.password}
                                                 onChange={(e) => updateField('password', e.target.value)}
-                                                className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:bg-slate-950 dark:text-slate-100 ${fieldErrors.password ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
+                                                className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 dark:bg-slate-950 dark:text-slate-100 ${fieldErrors.password ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
                                                 placeholder="Min 8 characters"
                                             />
                                             {fieldErrors.password && (
@@ -469,7 +469,7 @@ export default function RegisterPage() {
                                                 autoComplete="new-password"
                                                 value={formData.confirmPassword}
                                                 onChange={(e) => updateField('confirmPassword', e.target.value)}
-                                                className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:bg-slate-950 dark:text-slate-100 ${fieldErrors.confirmPassword ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
+                                                className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 dark:bg-slate-950 dark:text-slate-100 ${fieldErrors.confirmPassword ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
                                                 placeholder="Re-enter password"
                                             />
                                             {fieldErrors.confirmPassword && (
@@ -481,7 +481,7 @@ export default function RegisterPage() {
                                     <button
                                         type="submit"
                                         disabled={isSubmitting}
-                                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#2563eb]/25 transition hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-60"
+                                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#dc2626] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#dc2626]/25 transition hover:bg-[#b91c1c] disabled:cursor-not-allowed disabled:opacity-60"
                                     >
                                         {isSubmitting ? 'Creating account...' : 'Create account'}
                                         {!isSubmitting && <ArrowRight className="h-4 w-4" />}
@@ -490,7 +490,7 @@ export default function RegisterPage() {
 
                                 <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
                                     Already have an account?{' '}
-                                    <Link href="/login" className="font-semibold text-[#2563eb] hover:text-[#3e38b6]">
+                                    <Link href="/login" className="font-semibold text-[#dc2626] hover:text-[#3e38b6]">
                                         Sign in
                                     </Link>
                                 </p>

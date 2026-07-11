@@ -143,7 +143,7 @@ interface PublishReadinessSnapshot {
 }
 
 const DEFAULT_TOKENS = {
-    primary: '#3b82f6',
+    primary: '#ef4444',
     secondary: '#10b981',
     accent: '#f59e0b',
     text: '#1f2937',
@@ -1655,7 +1655,7 @@ export default function BuilderPage() {
                     <button
                         type="button"
                         onClick={() => router.push(currentTenant ? '/dashboard/instances/new' : '/onboarding/create-organization?domainMode=subdomain')}
-                        className="inline-flex items-center gap-2 rounded-lg bg-[#2563eb] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1d4ed8]"
+                        className="inline-flex items-center gap-2 rounded-lg bg-[#dc2626] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#b91c1c]"
                     >
                         <Plus className="h-4 w-4" />
                         {currentTenant ? 'Create Website' : 'Create Organization'}
@@ -1674,14 +1674,14 @@ export default function BuilderPage() {
     }
 
     return (
-        <div className="relative flex h-full overflow-hidden rounded-none border-y border-[#2563eb]/10 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+        <div className="relative flex h-full overflow-hidden rounded-none border-y border-[#dc2626]/10 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <aside className={`${isLeftPanelOpen ? 'w-72' : 'w-14'} flex shrink-0 flex-col border-r border-slate-200 bg-white transition-all duration-300 dark:border-slate-700 dark:bg-slate-900`}>
                 <div className="flex items-center justify-between border-b border-slate-200 p-3 dark:border-slate-700">
                     {isLeftPanelOpen && <h2 className="text-sm font-bold text-slate-700 dark:text-slate-200">Builder</h2>}
                     <button
                         type="button"
                         onClick={() => setIsLeftPanelOpen((prev) => !prev)}
-                        className="rounded-md p-1 text-slate-500 transition-colors hover:bg-slate-100 hover:text-[#2563eb] dark:hover:bg-slate-800"
+                        className="rounded-md p-1 text-slate-500 transition-colors hover:bg-slate-100 hover:text-[#dc2626] dark:hover:bg-slate-800"
                         title={isLeftPanelOpen ? 'Collapse left panel' : 'Expand left panel'}
                     >
                         {isLeftPanelOpen ? <ChevronsLeft className="h-4 w-4" /> : <ChevronsRight className="h-4 w-4" />}
@@ -1702,7 +1702,7 @@ export default function BuilderPage() {
                                         setShowNewPage(true);
                                     }}
                                     disabled={isOperationInProgress || !canCreatePages}
-                                    className="rounded-md p-1 text-[#2563eb] transition-colors hover:bg-[#2563eb]/10 disabled:cursor-not-allowed disabled:opacity-40"
+                                    className="rounded-md p-1 text-[#dc2626] transition-colors hover:bg-[#dc2626]/10 disabled:cursor-not-allowed disabled:opacity-40"
                                     title={
                                         pageLimitReached
                                             ? 'Page limit reached for this plan'
@@ -1727,7 +1727,7 @@ export default function BuilderPage() {
                                             }
                                         }}
                                         autoFocus
-                                        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                                        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                                     />
                                     <div className="flex flex-wrap gap-1.5">
                                         {PAGE_TITLE_SUGGESTIONS.map((suggestedTitle) => (
@@ -1735,7 +1735,7 @@ export default function BuilderPage() {
                                                 key={suggestedTitle}
                                                 type="button"
                                                 onClick={() => setNewPageTitle(suggestedTitle)}
-                                                className="rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-[#2563eb]/40 hover:text-[#2563eb] dark:border-slate-700 dark:text-slate-300"
+                                                className="rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-[#dc2626]/40 hover:text-[#dc2626] dark:border-slate-700 dark:text-slate-300"
                                             >
                                                 {suggestedTitle}
                                             </button>
@@ -1746,7 +1746,7 @@ export default function BuilderPage() {
                                             type="button"
                                             onClick={handleCreatePage}
                                             disabled={!canCreatePages || isOperationInProgress}
-                                            className="rounded-lg bg-[#2563eb] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#1d4ed8]"
+                                            className="rounded-lg bg-[#dc2626] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#b91c1c]"
                                         >
                                             {pageLimitReached
                                                 ? 'Page Limit Reached'
@@ -1784,7 +1784,7 @@ export default function BuilderPage() {
                                                 type="button"
                                                 onClick={() => { void handleCreateHomePage(); }}
                                                 disabled={!canCreatePages || isOperationInProgress}
-                                                className="rounded-lg bg-[#2563eb] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-60"
+                                                className="rounded-lg bg-[#dc2626] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#b91c1c] disabled:cursor-not-allowed disabled:opacity-60"
                                             >
                                                 Create Home Page
                                             </button>
@@ -1809,7 +1809,7 @@ export default function BuilderPage() {
                                             key={page.id}
                                             className={`flex items-center gap-1 rounded-lg border px-2 py-1.5 transition-colors ${
                                                 active
-                                                    ? 'border-[#2563eb]/30 bg-[#2563eb]/10 text-[#2563eb]'
+                                                    ? 'border-[#dc2626]/30 bg-[#dc2626]/10 text-[#dc2626]'
                                                     : 'border-transparent text-slate-600 hover:border-slate-200 hover:bg-slate-50 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:bg-slate-800'
                                             }`}
                                         >
@@ -1827,7 +1827,7 @@ export default function BuilderPage() {
                                                         {isHomePage ? '/' : `/${page.slug}`}
                                                     </p>
                                                 </div>
-                                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${active ? 'bg-[#2563eb]/20 text-[#2563eb]' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300'}`}>
+                                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${active ? 'bg-[#dc2626]/20 text-[#dc2626]' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300'}`}>
                                                     {isSwitchingToThisPage ? (
                                                         <span className="inline-flex h-3 w-3 animate-spin rounded-full border-[1.5px] border-current border-t-transparent" />
                                                     ) : (
@@ -1840,7 +1840,7 @@ export default function BuilderPage() {
                                                 onClick={() => handleDeletePage(page.id)}
                                                 disabled={isOperationInProgress}
                                                 className={`rounded-md p-1 transition-colors ${
-                                                    active ? 'text-[#2563eb] hover:bg-[#2563eb]/15' : 'text-slate-400 hover:bg-slate-100 hover:text-red-500 dark:hover:bg-slate-700'
+                                                    active ? 'text-[#dc2626] hover:bg-[#dc2626]/15' : 'text-slate-400 hover:bg-slate-100 hover:text-red-500 dark:hover:bg-slate-700'
                                                 }`}
                                                 title="Delete page"
                                             >
@@ -1859,7 +1859,7 @@ export default function BuilderPage() {
                                     type="button"
                                     onClick={openAddSectionThemePicker}
                                     disabled={!selectedPageId || isOperationInProgress}
-                                    className="rounded-md p-1 text-[#2563eb] transition-colors hover:bg-[#2563eb]/10 disabled:cursor-not-allowed disabled:opacity-40"
+                                    className="rounded-md p-1 text-[#dc2626] transition-colors hover:bg-[#dc2626]/10 disabled:cursor-not-allowed disabled:opacity-40"
                                     title="Add section"
                                 >
                                     <Plus className="h-4 w-4" />
@@ -1883,8 +1883,8 @@ export default function BuilderPage() {
                                                 key={section.id}
                                                 className={`rounded-xl border p-2 transition-colors ${
                                                     active
-                                                        ? 'border-[#2563eb]/30 bg-[#2563eb]/10'
-                                                        : 'border-slate-200 bg-slate-50 hover:border-[#2563eb]/20 hover:bg-[#2563eb]/5 dark:border-slate-700 dark:bg-slate-800'
+                                                        ? 'border-[#dc2626]/30 bg-[#dc2626]/10'
+                                                        : 'border-slate-200 bg-slate-50 hover:border-[#dc2626]/20 hover:bg-[#dc2626]/5 dark:border-slate-700 dark:bg-slate-800'
                                                 }`}
                                             >
                                                 <div className="flex items-center gap-1">
@@ -1893,8 +1893,8 @@ export default function BuilderPage() {
                                                         onClick={() => openSectionInspector(section.id)}
                                                         className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-1 py-1 text-left"
                                                     >
-                                                        <GripVertical className={`h-4 w-4 shrink-0 ${active ? 'text-[#2563eb]' : 'text-slate-400'}`} />
-                                                        <FileText className={`h-4 w-4 shrink-0 ${active ? 'text-[#2563eb]' : 'text-slate-400'}`} />
+                                                        <GripVertical className={`h-4 w-4 shrink-0 ${active ? 'text-[#dc2626]' : 'text-slate-400'}`} />
+                                                        <FileText className={`h-4 w-4 shrink-0 ${active ? 'text-[#dc2626]' : 'text-slate-400'}`} />
                                                         <span className="truncate text-sm font-medium text-slate-700 dark:text-slate-200">
                                                             {section.theme.name}
                                                         </span>
@@ -1932,7 +1932,7 @@ export default function BuilderPage() {
                                 disabled={isOperationInProgress}
                                 className={`inline-flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition ${
                                     showSettings
-                                        ? 'bg-[#2563eb] text-white'
+                                        ? 'bg-[#dc2626] text-white'
                                         : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800'
                                 }`}
                             >
@@ -1958,7 +1958,7 @@ export default function BuilderPage() {
                                 type="button"
                                 onClick={handlePublish}
                                 disabled={publishing || publishBlockedByPlan || isOperationInProgress}
-                                className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#2563eb] px-3 py-2 text-sm font-semibold text-white shadow-md shadow-[#2563eb]/20 transition hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-60"
+                                className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#dc2626] px-3 py-2 text-sm font-semibold text-white shadow-md shadow-[#dc2626]/20 transition hover:bg-[#b91c1c] disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 <Upload className="h-4 w-4" />
                                 {publishing ? 'Publishing...' : publishBlockedByPlan ? 'Publish Blocked' : 'Publish Website'}
@@ -2017,7 +2017,7 @@ export default function BuilderPage() {
                 <div className="border-b border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#2563eb]">Editing Page</p>
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#dc2626]">Editing Page</p>
                             <h2 className="text-xl font-black text-slate-900 dark:text-white">{selectedPage?.title || 'Select a Page'}</h2>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
@@ -2027,7 +2027,7 @@ export default function BuilderPage() {
                                     onClick={() => setPreviewMode('desktop')}
                                     className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-semibold transition ${
                                         previewMode === 'desktop'
-                                            ? 'bg-[#2563eb] text-white'
+                                            ? 'bg-[#dc2626] text-white'
                                             : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
                                     }`}
                                     title="Desktop preview"
@@ -2040,7 +2040,7 @@ export default function BuilderPage() {
                                     onClick={() => setPreviewMode('mobile')}
                                     className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-semibold transition ${
                                         previewMode === 'mobile'
-                                            ? 'bg-[#2563eb] text-white'
+                                            ? 'bg-[#dc2626] text-white'
                                             : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
                                     }`}
                                     title="Mobile preview"
@@ -2067,7 +2067,7 @@ export default function BuilderPage() {
                                 type="button"
                                 onClick={openAddSectionThemePicker}
                                 disabled={!selectedPageId || isOperationInProgress}
-                                className="rounded-md bg-[#2563eb] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-50"
+                                className="rounded-md bg-[#dc2626] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#b91c1c] disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 Add Section
                             </button>
@@ -2111,7 +2111,7 @@ export default function BuilderPage() {
                                             type="button"
                                             onClick={() => { void handleCreateHomePage(); }}
                                             disabled={!canCreatePages || isOperationInProgress}
-                                            className="rounded-lg bg-[#2563eb] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-60"
+                                            className="rounded-lg bg-[#dc2626] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#b91c1c] disabled:cursor-not-allowed disabled:opacity-60"
                                         >
                                             Create Home Page
                                         </button>
@@ -2144,7 +2144,7 @@ export default function BuilderPage() {
                                         type="button"
                                         onClick={openAddSectionThemePicker}
                                         disabled={isOperationInProgress}
-                                        className="rounded-lg bg-[#2563eb] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1d4ed8]"
+                                        className="rounded-lg bg-[#dc2626] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#b91c1c]"
                                     >
                                         Add First Section
                                     </button>
@@ -2157,8 +2157,8 @@ export default function BuilderPage() {
                                 key={section.id}
                                 className={`group relative cursor-pointer outline outline-2 transition-all ${
                                     selectedSectionId === section.id
-                                        ? 'outline-[#2563eb] ring-2 ring-[#2563eb]/20'
-                                        : 'outline-transparent hover:outline-[#2563eb]/35'
+                                        ? 'outline-[#dc2626] ring-2 ring-[#dc2626]/20'
+                                        : 'outline-transparent hover:outline-[#dc2626]/35'
                                 }`}
                                 onClick={() => openSectionInspector(section.id)}
                             >
@@ -2230,7 +2230,7 @@ export default function BuilderPage() {
                                     type="button"
                                     onClick={openAddSectionThemePicker}
                                     disabled={isOperationInProgress}
-                                    className="rounded-lg border-2 border-dashed border-[#2563eb]/40 bg-[#2563eb]/5 px-5 py-2 text-sm font-semibold text-[#2563eb] transition hover:bg-[#2563eb]/10"
+                                    className="rounded-lg border-2 border-dashed border-[#dc2626]/40 bg-[#dc2626]/5 px-5 py-2 text-sm font-semibold text-[#dc2626] transition hover:bg-[#dc2626]/10"
                                 >
                                     Add New Section
                                 </button>
@@ -2273,7 +2273,7 @@ export default function BuilderPage() {
                                     onClick={() => setShowSettings(false)}
                                     className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
                                         !showSettings
-                                            ? 'bg-white text-[#2563eb] shadow-sm dark:bg-slate-700'
+                                            ? 'bg-white text-[#dc2626] shadow-sm dark:bg-slate-700'
                                             : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                                     }`}
                                 >
@@ -2284,7 +2284,7 @@ export default function BuilderPage() {
                                     onClick={() => setShowSettings(true)}
                                     className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
                                         showSettings
-                                            ? 'bg-white text-[#2563eb] shadow-sm dark:bg-slate-700'
+                                            ? 'bg-white text-[#dc2626] shadow-sm dark:bg-slate-700'
                                             : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                                     }`}
                                 >
@@ -2377,7 +2377,7 @@ export default function BuilderPage() {
                                 </div>
                             ) : (
                                 <div className="flex h-full flex-col items-center justify-center px-6 text-center">
-                                    <div className="mb-3 rounded-full bg-[#2563eb]/10 p-3 text-[#2563eb]">
+                                    <div className="mb-3 rounded-full bg-[#dc2626]/10 p-3 text-[#dc2626]">
                                         <FileText className="h-5 w-5" />
                                     </div>
                                     <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">No section selected</p>
@@ -2706,9 +2706,9 @@ const THEME_TEMPLATES: ThemeTemplate[] = [
     {
         id: 'ocean-breeze',
         name: 'Ocean Breeze',
-        description: 'Fresh blue-green palette for clean, modern brands.',
+        description: 'Fresh red-green palette for clean, modern brands.',
         tokens: {
-            primary: '#2563eb',
+            primary: '#dc2626',
             secondary: '#0d9488',
             accent: '#f59e0b',
             text: '#0f172a',
@@ -2752,7 +2752,7 @@ const THEME_TEMPLATES: ThemeTemplate[] = [
         tokens: {
             primary: '#111827',
             secondary: '#475569',
-            accent: '#3b82f6',
+            accent: '#ef4444',
             text: '#0f172a',
             background: '#f8fafc',
         },
@@ -3008,9 +3008,9 @@ function SettingsPanel({ settings, pages, onSave, onSavePageSeo, saving, initial
                         onClick={() => setWebsiteSettingsTab('themes')}
                         style={{
                             ...actionBtnStyle,
-                            backgroundColor: websiteSettingsTab === 'themes' ? 'var(--be-form-active-bg, #eff6ff)' : actionBtnStyle.backgroundColor,
-                            borderColor: websiteSettingsTab === 'themes' ? '#3b82f6' : 'var(--be-form-border, #cbd5e1)',
-                            color: websiteSettingsTab === 'themes' ? 'var(--be-form-active-text, #1d4ed8)' : 'var(--be-form-label, #475569)',
+                            backgroundColor: websiteSettingsTab === 'themes' ? 'var(--be-form-active-bg, #fef2f2)' : actionBtnStyle.backgroundColor,
+                            borderColor: websiteSettingsTab === 'themes' ? '#ef4444' : 'var(--be-form-border, #cbd5e1)',
+                            color: websiteSettingsTab === 'themes' ? 'var(--be-form-active-text, #b91c1c)' : 'var(--be-form-label, #475569)',
                         }}
                     >
                         Themes
@@ -3020,9 +3020,9 @@ function SettingsPanel({ settings, pages, onSave, onSavePageSeo, saving, initial
                         onClick={() => setWebsiteSettingsTab('metadata')}
                         style={{
                             ...actionBtnStyle,
-                            backgroundColor: websiteSettingsTab === 'metadata' ? 'var(--be-form-active-bg, #eff6ff)' : actionBtnStyle.backgroundColor,
-                            borderColor: websiteSettingsTab === 'metadata' ? '#3b82f6' : 'var(--be-form-border, #cbd5e1)',
-                            color: websiteSettingsTab === 'metadata' ? 'var(--be-form-active-text, #1d4ed8)' : 'var(--be-form-label, #475569)',
+                            backgroundColor: websiteSettingsTab === 'metadata' ? 'var(--be-form-active-bg, #fef2f2)' : actionBtnStyle.backgroundColor,
+                            borderColor: websiteSettingsTab === 'metadata' ? '#ef4444' : 'var(--be-form-border, #cbd5e1)',
+                            color: websiteSettingsTab === 'metadata' ? 'var(--be-form-active-text, #b91c1c)' : 'var(--be-form-label, #475569)',
                         }}
                     >
                         Metadata
@@ -3032,9 +3032,9 @@ function SettingsPanel({ settings, pages, onSave, onSavePageSeo, saving, initial
                         onClick={() => setWebsiteSettingsTab('code')}
                         style={{
                             ...actionBtnStyle,
-                            backgroundColor: websiteSettingsTab === 'code' ? 'var(--be-form-active-bg, #eff6ff)' : actionBtnStyle.backgroundColor,
-                            borderColor: websiteSettingsTab === 'code' ? '#3b82f6' : 'var(--be-form-border, #cbd5e1)',
-                            color: websiteSettingsTab === 'code' ? 'var(--be-form-active-text, #1d4ed8)' : 'var(--be-form-label, #475569)',
+                            backgroundColor: websiteSettingsTab === 'code' ? 'var(--be-form-active-bg, #fef2f2)' : actionBtnStyle.backgroundColor,
+                            borderColor: websiteSettingsTab === 'code' ? '#ef4444' : 'var(--be-form-border, #cbd5e1)',
+                            color: websiteSettingsTab === 'code' ? 'var(--be-form-active-text, #b91c1c)' : 'var(--be-form-label, #475569)',
                         }}
                     >
                         Custom Code
@@ -3058,8 +3058,8 @@ function SettingsPanel({ settings, pages, onSave, onSavePageSeo, saving, initial
                                             style={{
                                                 width: '100%',
                                                 textAlign: 'left',
-                                                border: `1px solid ${isActive ? '#3b82f6' : 'var(--be-form-border, #cbd5e1)'}`,
-                                                backgroundColor: isActive ? 'var(--be-form-active-bg, #eff6ff)' : 'var(--be-form-bg, #ffffff)',
+                                                border: `1px solid ${isActive ? '#ef4444' : 'var(--be-form-border, #cbd5e1)'}`,
+                                                backgroundColor: isActive ? 'var(--be-form-active-bg, #fef2f2)' : 'var(--be-form-bg, #ffffff)',
                                                 borderRadius: '8px',
                                                 padding: '10px',
                                                 cursor: 'pointer',
@@ -3068,7 +3068,7 @@ function SettingsPanel({ settings, pages, onSave, onSavePageSeo, saving, initial
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
                                                 <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--be-form-heading, #0f172a)' }}>{template.name}</div>
                                                 {isActive && (
-                                                    <span style={{ fontSize: '11px', color: '#2563eb', fontWeight: 600 }}>Applied</span>
+                                                    <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: 600 }}>Applied</span>
                                                 )}
                                             </div>
                                             <div style={{ fontSize: '12px', color: 'var(--be-form-muted, #64748b)', marginTop: '2px' }}>{template.description}</div>
@@ -3114,9 +3114,9 @@ function SettingsPanel({ settings, pages, onSave, onSavePageSeo, saving, initial
                                             style={{
                                                 padding: '6px 10px',
                                                 borderRadius: '999px',
-                                                border: `1px solid ${isActive ? '#3b82f6' : 'var(--be-form-border, #cbd5e1)'}`,
-                                                backgroundColor: isActive ? 'var(--be-form-active-bg, #eff6ff)' : 'var(--be-form-bg, #ffffff)',
-                                                color: isActive ? 'var(--be-form-active-text, #1d4ed8)' : 'var(--be-form-label, #475569)',
+                                                border: `1px solid ${isActive ? '#ef4444' : 'var(--be-form-border, #cbd5e1)'}`,
+                                                backgroundColor: isActive ? 'var(--be-form-active-bg, #fef2f2)' : 'var(--be-form-bg, #ffffff)',
+                                                color: isActive ? 'var(--be-form-active-text, #b91c1c)' : 'var(--be-form-label, #475569)',
                                                 cursor: 'pointer',
                                                 fontSize: '12px',
                                                 fontFamily: fontName,
@@ -3206,9 +3206,9 @@ function SettingsPanel({ settings, pages, onSave, onSavePageSeo, saving, initial
                             onClick={() => setSeoMode('website')}
                             style={{
                                 ...actionBtnStyle,
-                                backgroundColor: seoMode === 'website' ? 'var(--be-form-active-bg, #eff6ff)' : actionBtnStyle.backgroundColor,
-                                borderColor: seoMode === 'website' ? '#3b82f6' : 'var(--be-form-border, #cbd5e1)',
-                                color: seoMode === 'website' ? 'var(--be-form-active-text, #1d4ed8)' : 'var(--be-form-label, #475569)',
+                                backgroundColor: seoMode === 'website' ? 'var(--be-form-active-bg, #fef2f2)' : actionBtnStyle.backgroundColor,
+                                borderColor: seoMode === 'website' ? '#ef4444' : 'var(--be-form-border, #cbd5e1)',
+                                color: seoMode === 'website' ? 'var(--be-form-active-text, #b91c1c)' : 'var(--be-form-label, #475569)',
                             }}
                         >
                             Website Defaults
@@ -3218,9 +3218,9 @@ function SettingsPanel({ settings, pages, onSave, onSavePageSeo, saving, initial
                             onClick={() => setSeoMode('page')}
                             style={{
                                 ...actionBtnStyle,
-                                backgroundColor: seoMode === 'page' ? 'var(--be-form-active-bg, #eff6ff)' : actionBtnStyle.backgroundColor,
-                                borderColor: seoMode === 'page' ? '#3b82f6' : 'var(--be-form-border, #cbd5e1)',
-                                color: seoMode === 'page' ? 'var(--be-form-active-text, #1d4ed8)' : 'var(--be-form-label, #475569)',
+                                backgroundColor: seoMode === 'page' ? 'var(--be-form-active-bg, #fef2f2)' : actionBtnStyle.backgroundColor,
+                                borderColor: seoMode === 'page' ? '#ef4444' : 'var(--be-form-border, #cbd5e1)',
+                                color: seoMode === 'page' ? 'var(--be-form-active-text, #b91c1c)' : 'var(--be-form-label, #475569)',
                             }}
                         >
                             Page Overrides
@@ -3787,7 +3787,7 @@ function SettingsPanel({ settings, pages, onSave, onSavePageSeo, saving, initial
                 disabled={saving}
                 style={{
                     width: '100%', marginTop: '16px', padding: '10px 16px',
-                    backgroundColor: saving ? '#9ca3af' : '#3b82f6',
+                    backgroundColor: saving ? '#9ca3af' : '#ef4444',
                     color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: 500,
                     flexShrink: 0,
                 }}

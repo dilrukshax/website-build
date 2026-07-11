@@ -43,7 +43,7 @@ export function DomainSupportContact({
 
     return (
         <section className={`rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900 ${className}`.trim()}>
-            <p className="inline-flex rounded-full bg-[#2563eb]/10 px-2.5 py-1 text-[11px] font-semibold text-[#2563eb] dark:bg-[#2563eb]/20 dark:text-[#beb9ff]">
+            <p className="inline-flex rounded-full bg-[#dc2626]/10 px-2.5 py-1 text-[11px] font-semibold text-[#dc2626] dark:bg-[#dc2626]/20 dark:text-[#beb9ff]">
                 Need to connect your domain? Contact support.
             </p>
             <h3 className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{title}</h3>

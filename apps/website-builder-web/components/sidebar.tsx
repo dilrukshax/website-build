@@ -196,10 +196,10 @@ export function Sidebar() {
     }
 
     return (
-        <aside className="h-screen w-64 shrink-0 border-r border-[#2563eb]/10 bg-white dark:bg-[#121121]/70">
+        <aside className="h-screen w-64 shrink-0 border-r border-[#dc2626]/10 bg-white dark:bg-[#121121]/70">
             <div className="flex h-full flex-col">
-                <div className="border-b border-[#2563eb]/10 p-5">
-                    <Link href="/dashboard" className="flex items-center gap-2 text-[#2563eb]">
+                <div className="border-b border-[#dc2626]/10 p-5">
+                    <Link href="/dashboard" className="flex items-center gap-2 text-[#dc2626]">
                         <Sparkles size={18} />
                         <span className="text-base font-bold tracking-tight text-slate-900 dark:text-white">
                             Project Aurora
@@ -207,7 +207,7 @@ export function Sidebar() {
                     </Link>
                 </div>
 
-                <div className="space-y-3 border-b border-[#2563eb]/10 p-4">
+                <div className="space-y-3 border-b border-[#dc2626]/10 p-4">
                     {!isSuperAdmin && <TenantSwitcher />}
                     {!isSuperAdmin && <InstanceSwitcher />}
                 </div>
@@ -227,8 +227,8 @@ export function Sidebar() {
                                         href={item.href}
                                         className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                                             active
-                                                ? 'bg-[#2563eb] text-white shadow-sm shadow-[#2563eb]/20'
-                                                : 'text-slate-600 hover:bg-[#2563eb]/5 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
+                                                ? 'bg-[#dc2626] text-white shadow-sm shadow-[#dc2626]/20'
+                                                : 'text-slate-600 hover:bg-[#dc2626]/5 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
                                         }`}
                                     >
                                         <Icon size={18} className={active ? 'text-white' : 'text-slate-500 dark:text-slate-400'} />
@@ -249,8 +249,8 @@ export function Sidebar() {
                                             href={item.href}
                                             className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                                                 active
-                                                    ? 'bg-[#2563eb] text-white shadow-sm shadow-[#2563eb]/20'
-                                                    : 'text-slate-600 hover:bg-[#2563eb]/5 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
+                                                    ? 'bg-[#dc2626] text-white shadow-sm shadow-[#dc2626]/20'
+                                                    : 'text-slate-600 hover:bg-[#dc2626]/5 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
                                             }`}
                                         >
                                             <Icon size={18} className={active ? 'text-white' : 'text-slate-500 dark:text-slate-400'} />
@@ -261,7 +261,7 @@ export function Sidebar() {
                             </div>
 
                             <div className="mt-auto pt-5">
-                                <div className="border-t border-[#2563eb]/10 pt-4">
+                                <div className="border-t border-[#dc2626]/10 pt-4">
                                     <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
                                         Administration
                                     </p>
@@ -274,8 +274,8 @@ export function Sidebar() {
                                                 href={item.href}
                                                 className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                                                     active
-                                                        ? 'bg-[#2563eb] text-white shadow-sm shadow-[#2563eb]/20'
-                                                        : 'text-slate-600 hover:bg-[#2563eb]/5 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
+                                                        ? 'bg-[#dc2626] text-white shadow-sm shadow-[#dc2626]/20'
+                                                        : 'text-slate-600 hover:bg-[#dc2626]/5 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
                                                 }`}
                                             >
                                                 <Icon size={18} className={active ? 'text-white' : 'text-slate-500 dark:text-slate-400'} />
@@ -289,9 +289,9 @@ export function Sidebar() {
                     )}
                 </nav>
 
-                <div className="border-t border-[#2563eb]/10 p-4">
+                <div className="border-t border-[#dc2626]/10 p-4">
                     <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#2563eb]/10 text-sm font-semibold text-[#2563eb]">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#dc2626]/10 text-sm font-semibold text-[#dc2626]">
                             {user?.fullName?.charAt(0).toUpperCase() || '?'}
                         </div>
                         <div className="min-w-0 flex-1">
@@ -300,7 +300,7 @@ export function Sidebar() {
                         </div>
                         <button
                             onClick={logout}
-                            className="rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-[#2563eb]/10 hover:text-[#2563eb]"
+                            className="rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-[#dc2626]/10 hover:text-[#dc2626]"
                             title="Sign out"
                         >
                             <LogOut size={18} />

@@ -139,7 +139,7 @@ export default function ProductDetailsPage({
       <div className="legacy-theme space-y-4">
         <Link
           href="/dashboard/products"
-          className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800"
+          className="inline-flex items-center text-sm font-medium text-red-600 hover:text-red-800"
         >
           ← Back to products
         </Link>
@@ -160,7 +160,7 @@ export default function ProductDetailsPage({
         <div className="flex items-start gap-4">
           <Link
             href="/dashboard/products"
-            className="mt-1 inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800"
+            className="mt-1 inline-flex items-center text-sm font-medium text-red-600 hover:text-red-800"
           >
             ← Back
           </Link>
@@ -201,7 +201,7 @@ export default function ProductDetailsPage({
                 type="text"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
               />
             </div>
 
@@ -211,7 +211,7 @@ export default function ProductDetailsPage({
                 rows={4}
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
-                className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
               />
             </div>
 
@@ -257,7 +257,7 @@ export default function ProductDetailsPage({
                 value={form.imageUrl}
                 onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
                 placeholder="Or paste image URL"
-                className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
               />
             </div>
 
@@ -271,7 +271,7 @@ export default function ProductDetailsPage({
                 step="0.01"
                 value={form.price}
                 onChange={(e) => setForm({ ...form, price: e.target.value })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
               />
             </div>
 
@@ -280,7 +280,7 @@ export default function ProductDetailsPage({
               <select
                 value={form.currency}
                 onChange={(e) => setForm({ ...form, currency: e.target.value })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
               >
                 <option value="USD">USD ($)</option>
                 <option value="EUR">EUR (€)</option>
@@ -301,7 +301,7 @@ export default function ProductDetailsPage({
               <button
                 onClick={() => void handleSave()}
                 disabled={isSaving || isUploadingImage}
-                className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+                className="w-full rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60"
               >
                 {isSaving ? "Saving..." : "Save Changes"}
               </button>

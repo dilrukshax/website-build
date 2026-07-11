@@ -360,8 +360,8 @@ export default function CreateOrganizationPage() {
     return (
         <>
             <div className={`${inter.className} relative min-h-screen overflow-hidden bg-[#f6f6f8] text-slate-900 dark:bg-[#121121] dark:text-slate-100`}>
-                <div className="pointer-events-none absolute -left-24 top-12 h-72 w-72 rounded-full bg-[#2563eb]/20 blur-3xl" />
-                <div className="pointer-events-none absolute -right-24 bottom-6 h-72 w-72 rounded-full bg-[#2563eb]/15 blur-3xl" />
+                <div className="pointer-events-none absolute -left-24 top-12 h-72 w-72 rounded-full bg-[#dc2626]/20 blur-3xl" />
+                <div className="pointer-events-none absolute -right-24 bottom-6 h-72 w-72 rounded-full bg-[#dc2626]/15 blur-3xl" />
 
             <div className="absolute right-5 top-5 z-30">
                 <ThemeToggle fullWidth={false} align="right" />
@@ -370,7 +370,7 @@ export default function CreateOrganizationPage() {
             <main className="relative flex min-h-screen items-center justify-center px-5 py-10 sm:px-8 lg:px-12">
                 <div className="w-full max-w-6xl overflow-hidden rounded-3xl border border-slate-200/90 bg-white/95 shadow-2xl backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/90">
                     <div className="grid min-h-[82vh] grid-cols-1 lg:grid-cols-[1.05fr_0.95fr]">
-                        <section className="relative overflow-hidden border-b border-slate-200 bg-gradient-to-br from-[#2563eb] via-[#1d4ed8] to-[#1e3a8a] p-8 text-white lg:border-b-0 lg:border-r lg:border-r-white/15 lg:p-10">
+                        <section className="relative overflow-hidden border-b border-slate-200 bg-gradient-to-br from-[#dc2626] via-[#b91c1c] to-[#7f1d1d] p-8 text-white lg:border-b-0 lg:border-r lg:border-r-white/15 lg:p-10">
                             <div className="pointer-events-none absolute -left-20 top-8 h-64 w-64 rounded-full bg-white/15 blur-3xl" />
                             <div className="pointer-events-none absolute -right-20 bottom-0 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
 
@@ -393,7 +393,7 @@ export default function CreateOrganizationPage() {
 
                                 <div className="space-y-4">
                                     <div className="inline-flex items-center gap-2 text-sm text-white/90">
-                                        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white text-xs font-bold text-[#2563eb]">1</span>
+                                        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white text-xs font-bold text-[#dc2626]">1</span>
                                         <span className="font-semibold">Website setup and create</span>
                                     </div>
                                     <p className="inline-flex items-center gap-2 text-sm text-white/85">
@@ -429,7 +429,7 @@ export default function CreateOrganizationPage() {
                                     className={`mb-4 rounded-xl border px-4 py-3 text-sm ${
                                         referralNotice.tone === 'warning'
                                             ? 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200'
-                                            : 'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900/40 dark:bg-sky-950/30 dark:text-sky-200'
+                                            : 'border-red-200 bg-red-50 text-red-700 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-200'
                                     }`}
                                 >
                                     {referralNotice.message}
@@ -449,7 +449,7 @@ export default function CreateOrganizationPage() {
                                         <label
                                             className={`flex cursor-pointer gap-2 rounded-xl border px-3 py-2 text-left text-sm transition ${
                                                 formData.domainMode === 'subdomain'
-                                                    ? 'border-[#2563eb] bg-[#2563eb]/10 text-[#2563eb]'
+                                                    ? 'border-[#dc2626] bg-[#dc2626]/10 text-[#dc2626]'
                                                     : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'
                                             }`}
                                         >
@@ -459,7 +459,7 @@ export default function CreateOrganizationPage() {
                                                 value="subdomain"
                                                 checked={formData.domainMode === 'subdomain'}
                                                 onChange={() => updateField('domainMode', 'subdomain')}
-                                                className="mt-0.5 h-4 w-4 border-slate-300 text-[#2563eb] focus:ring-[#2563eb]"
+                                                className="mt-0.5 h-4 w-4 border-slate-300 text-[#dc2626] focus:ring-[#dc2626]"
                                             />
                                             <span>
                                                 <p className="font-semibold">Subdomain</p>
@@ -469,7 +469,7 @@ export default function CreateOrganizationPage() {
                                         <label
                                             className={`flex cursor-pointer gap-2 rounded-xl border px-3 py-2 text-left text-sm transition ${
                                                 formData.domainMode === 'customDomain'
-                                                    ? 'border-[#2563eb] bg-[#2563eb]/10 text-[#2563eb]'
+                                                    ? 'border-[#dc2626] bg-[#dc2626]/10 text-[#dc2626]'
                                                     : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'
                                             }`}
                                         >
@@ -479,7 +479,7 @@ export default function CreateOrganizationPage() {
                                                 value="customDomain"
                                                 checked={formData.domainMode === 'customDomain'}
                                                 onChange={() => updateField('domainMode', 'customDomain')}
-                                                className="mt-0.5 h-4 w-4 border-slate-300 text-[#2563eb] focus:ring-[#2563eb]"
+                                                className="mt-0.5 h-4 w-4 border-slate-300 text-[#dc2626] focus:ring-[#dc2626]"
                                             />
                                             <span>
                                                 <p className="font-semibold">Custom domain</p>
@@ -500,7 +500,7 @@ export default function CreateOrganizationPage() {
                                         autoFocus
                                         value={formData.name}
                                         onChange={(e) => updateField('name', e.target.value)}
-                                        className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:bg-slate-900 dark:text-slate-100 ${fieldErrors.name ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
+                                        className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 dark:bg-slate-900 dark:text-slate-100 ${fieldErrors.name ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
                                         placeholder="Acme Booking Site"
                                     />
                                     {fieldErrors.name && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.name}</p>}
@@ -518,7 +518,7 @@ export default function CreateOrganizationPage() {
                                             required
                                             value={formData.subdomain}
                                             onChange={(e) => updateField('subdomain', e.target.value)}
-                                            className={`flex-1 rounded-l-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:z-10 focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:bg-slate-900 dark:text-slate-100 ${fieldErrors.subdomain ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
+                                            className={`flex-1 rounded-l-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:z-10 focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 dark:bg-slate-900 dark:text-slate-100 ${fieldErrors.subdomain ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
                                             placeholder="acme-bookings"
                                         />
                                         <span className="inline-flex items-center rounded-r-xl border border-l-0 border-slate-300 bg-slate-100 px-3 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
@@ -549,7 +549,7 @@ export default function CreateOrganizationPage() {
                                                 required
                                                 value={formData.customDomain}
                                                 onChange={(e) => updateField('customDomain', e.target.value)}
-                                                className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:bg-slate-900 dark:text-slate-100 ${fieldErrors.customDomain ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
+                                                className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 dark:bg-slate-900 dark:text-slate-100 ${fieldErrors.customDomain ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
                                                 placeholder="example.com"
                                             />
                                             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
@@ -564,15 +564,15 @@ export default function CreateOrganizationPage() {
                                     <p className="text-sm font-semibold text-slate-900 dark:text-white">What happens next?</p>
                                     <ul className="mt-2 space-y-1.5 text-sm text-slate-600 dark:text-slate-400">
                                         <li className="inline-flex items-center gap-2">
-                                            <Circle className="h-3.5 w-3.5 text-[#2563eb]" />
+                                            <Circle className="h-3.5 w-3.5 text-[#dc2626]" />
                                             We auto-create your workspace if it does not exist.
                                         </li>
                                         <li className="inline-flex items-center gap-2">
-                                            <Circle className="h-3.5 w-3.5 text-[#2563eb]" />
+                                            <Circle className="h-3.5 w-3.5 text-[#dc2626]" />
                                             Website is created directly using these values.
                                         </li>
                                         <li className="inline-flex items-center gap-2">
-                                            <Circle className="h-3.5 w-3.5 text-[#2563eb]" />
+                                            <Circle className="h-3.5 w-3.5 text-[#dc2626]" />
                                             Domain DNS/TLS is managed manually outside platform. We only map host routing after creation.
                                         </li>
                                     </ul>
@@ -581,7 +581,7 @@ export default function CreateOrganizationPage() {
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#2563eb]/25 transition hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-60"
+                                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#dc2626] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#dc2626]/25 transition hover:bg-[#b91c1c] disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     {isSubmitting ? 'Creating website...' : 'Create website'}
                                     {!isSubmitting && <ArrowRight className="h-4 w-4" />}

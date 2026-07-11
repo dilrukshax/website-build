@@ -496,7 +496,7 @@ const WordEditorField = forwardRef<WordEditorHandle, WordEditorFieldProps>(
                 value={activeHeading}
                 disabled={disabled}
                 onChange={(event) => setHeadingLevel(event.target.value)}
-                className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-700 outline-none focus:border-blue-500"
+                className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-700 outline-none focus:border-red-500"
               >
                 <option value="p">Normal</option>
                 <option value="1">Heading 1</option>
@@ -508,7 +508,7 @@ const WordEditorField = forwardRef<WordEditorHandle, WordEditorFieldProps>(
                 value={activeFontFamily}
                 disabled={disabled}
                 onChange={(event) => setFontFamily(event.target.value)}
-                className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-700 outline-none focus:border-blue-500"
+                className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-700 outline-none focus:border-red-500"
               >
                 {FONT_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -736,8 +736,8 @@ const WordEditorField = forwardRef<WordEditorHandle, WordEditorFieldProps>(
                 />
 
                 {isDragActive && (
-                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-blue-50/80">
-                    <div className="rounded-xl border border-blue-200 bg-white px-4 py-2 text-sm font-medium text-blue-700 shadow-sm">
+                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-red-50/80">
+                    <div className="rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-700 shadow-sm">
                       Drop image to insert at cursor position
                     </div>
                   </div>
@@ -780,9 +780,9 @@ const WordEditorField = forwardRef<WordEditorHandle, WordEditorFieldProps>(
           }
 
           .be-word-editor .be-word-btn:hover:not(:disabled) {
-            background: #eff6ff;
-            border-color: #93c5fd;
-            color: #1d4ed8;
+            background: #fef2f2;
+            border-color: #fca5a5;
+            color: #b91c1c;
           }
 
           .be-word-editor .be-word-btn.is-active {
@@ -843,7 +843,7 @@ const WordEditorField = forwardRef<WordEditorHandle, WordEditorFieldProps>(
           .be-word-editor .tiptap blockquote {
             margin: 1.15em 0;
             padding: 0.2em 0 0.2em 0.95em;
-            border-left: 4px solid #3b82f6;
+            border-left: 4px solid #ef4444;
             color: #475569;
           }
 
@@ -857,7 +857,7 @@ const WordEditorField = forwardRef<WordEditorHandle, WordEditorFieldProps>(
           }
 
           .be-word-editor .tiptap a {
-            color: #1d4ed8;
+            color: #b91c1c;
             text-decoration: underline;
           }
 

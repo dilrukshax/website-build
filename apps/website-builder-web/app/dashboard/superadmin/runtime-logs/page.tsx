@@ -190,7 +190,7 @@ export default function SuperAdminRuntimeLogsPage() {
                         <select
                             value={sourceFilter}
                             onChange={(event) => setSourceFilter(event.target.value as RuntimeLogSourceFilter)}
-                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:border-slate-700 dark:bg-slate-900"
+                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 dark:border-slate-700 dark:bg-slate-900"
                         >
                             <option value="all">Frontend + Backend</option>
                             <option value="frontend">Frontend only</option>
@@ -203,7 +203,7 @@ export default function SuperAdminRuntimeLogsPage() {
                         <select
                             value={String(lineLimit)}
                             onChange={(event) => setLineLimit(Number(event.target.value))}
-                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:border-slate-700 dark:bg-slate-900"
+                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 dark:border-slate-700 dark:bg-slate-900"
                         >
                             <option value="100">100 lines</option>
                             <option value="200">200 lines</option>
@@ -217,7 +217,7 @@ export default function SuperAdminRuntimeLogsPage() {
                             type="checkbox"
                             checked={autoRefresh}
                             onChange={(event) => setAutoRefresh(event.target.checked)}
-                            className="h-4 w-4 rounded border-slate-300 text-[#2563eb] focus:ring-[#2563eb]/30 dark:border-slate-600"
+                            className="h-4 w-4 rounded border-slate-300 text-[#dc2626] focus:ring-[#dc2626]/30 dark:border-slate-600"
                         />
                         Auto refresh (5s)
                     </label>
@@ -225,7 +225,7 @@ export default function SuperAdminRuntimeLogsPage() {
                     <button
                         type="button"
                         onClick={copyAllSources}
-                        className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#2563eb] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#dc2626] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#b91c1c] disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         {copiedKey === 'all' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                         {copiedKey === 'all' ? 'Copied all' : 'Copy all'}
@@ -248,7 +248,7 @@ export default function SuperAdminRuntimeLogsPage() {
                                 <div className="flex flex-wrap items-start justify-between gap-3">
                                     <div>
                                         <div className="flex items-center gap-2">
-                                            <TerminalSquare className="h-5 w-5 text-[#2563eb]" />
+                                            <TerminalSquare className="h-5 w-5 text-[#dc2626]" />
                                             <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
                                                 {source?.label || (sourceKey === 'frontend' ? 'Frontend (CMS)' : 'Backend (API)')}
                                             </h2>

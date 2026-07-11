@@ -57,7 +57,7 @@ export default function ResetPasswordPage() {
                         </p>
                         <Link
                             href="/forgot-password"
-                            className="text-blue-600 hover:text-blue-500 font-medium"
+                            className="text-red-600 hover:text-red-500 font-medium"
                         >
                             Request a new link
                         </Link>
@@ -79,7 +79,7 @@ export default function ResetPasswordPage() {
                         </p>
                         <Link
                             href="/login"
-                            className="inline-block py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow-sm transition-colors"
+                            className="inline-block py-2 px-4 bg-red-600 hover:bg-red-700 text-white font-medium rounded-md shadow-sm transition-colors"
                         >
                             Sign in
                         </Link>
@@ -115,7 +115,7 @@ export default function ResetPasswordPage() {
                                 autoComplete="new-password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
                                 placeholder="Min 8 characters"
                             />
                         </div>
@@ -131,7 +131,7 @@ export default function ResetPasswordPage() {
                                 autoComplete="new-password"
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
                                 placeholder="Re-enter password"
                             />
                         </div>
@@ -139,7 +139,7 @@ export default function ResetPasswordPage() {
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                            className="w-full py-2 px-4 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
                         >
                             {isSubmitting ? 'Resetting...' : 'Reset password'}
                         </button>

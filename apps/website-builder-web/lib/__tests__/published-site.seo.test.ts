@@ -33,7 +33,7 @@ function createManifest(overrides?: Partial<PublishedManifest>): PublishedManife
             sameAs: ['https://instagram.com/mysalon'],
         },
         tokens: {
-            primary: '#3b82f6',
+            primary: '#ef4444',
             secondary: '#10b981',
             accent: '#f59e0b',
             text: '#1f2937',

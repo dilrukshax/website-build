@@ -162,7 +162,7 @@ export default function ServicesPage() {
         </div>
         <button
           onClick={openCreate}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
         >
           + Add Service
         </button>
@@ -192,7 +192,7 @@ export default function ServicesPage() {
                   placeholder="e.g. Haircut, Consultation, Yoga Class"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                 />
               </div>
 
@@ -205,7 +205,7 @@ export default function ServicesPage() {
                   placeholder="Optional description..."
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
                 />
               </div>
 
@@ -221,7 +221,7 @@ export default function ServicesPage() {
                     placeholder="0.00"
                     value={form.price}
                     onChange={(e) => setForm({ ...form, price: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                 </div>
 
@@ -232,7 +232,7 @@ export default function ServicesPage() {
                   <select
                     value={form.currency}
                     onChange={(e) => setForm({ ...form, currency: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                   >
                     <option value="USD">USD ($)</option>
                     <option value="EUR">EUR (€)</option>
@@ -256,7 +256,7 @@ export default function ServicesPage() {
                   placeholder="60"
                   value={form.duration}
                   onChange={(e) => setForm({ ...form, duration: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                 />
                 <p className="text-xs text-gray-400 mt-1">The end time is auto-calculated from this duration when a booking is made.</p>
               </div>
@@ -272,7 +272,7 @@ export default function ServicesPage() {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-60"
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-60"
               >
                 {saving ? "Saving..." : editingId ? "Save Changes" : "Create Service"}
               </button>
@@ -354,7 +354,7 @@ export default function ServicesPage() {
                     </Link>
                     <button
                       onClick={() => openEdit(service)}
-                      className="text-blue-600 hover:text-blue-900 text-sm font-medium transition-colors"
+                      className="text-red-600 hover:text-red-900 text-sm font-medium transition-colors"
                     >
                       Edit
                     </button>
@@ -379,7 +379,7 @@ export default function ServicesPage() {
                     <p className="text-sm text-gray-400 mt-1">Create your first service to allow customers to book appointments.</p>
                     <button
                       onClick={openCreate}
-                      className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                      className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
                     >
                       + Add First Service
                     </button>

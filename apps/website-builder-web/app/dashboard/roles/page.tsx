@@ -58,7 +58,7 @@ export default function RolesPage() {
                 {hasPermission('roles.create') && (
                     <button
                         onClick={() => { setShowCreateForm(true); setEditingRole(null); }}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
+                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
                     >
                         Create role
                     </button>
@@ -106,7 +106,7 @@ export default function RolesPage() {
                         </div>
                         <div className="flex flex-wrap gap-1.5">
                             {role.permissions.map((perm) => (
-                                <span key={perm.id} className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded">
+                                <span key={perm.id} className="px-2 py-0.5 bg-red-50 text-red-700 text-xs rounded">
                                     {perm.key}
                                 </span>
                             ))}
@@ -208,7 +208,7 @@ function RoleForm({
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         disabled={role?.isSystemRole}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100"
                         placeholder="Role name"
                     />
                 </div>
@@ -219,7 +219,7 @@ function RoleForm({
                         type="text"
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
                         placeholder="Optional description"
                     />
                 </div>
@@ -235,7 +235,7 @@ function RoleForm({
                                     type="checkbox"
                                     checked={perms.every((p) => selectedPermissions.has(p.id))}
                                     onChange={() => toggleModule(perms)}
-                                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    className="rounded border-gray-300 text-red-600 focus:ring-red-500"
                                 />
                                 <span className="text-sm font-medium text-gray-800 capitalize">{module}</span>
                             </label>
@@ -246,7 +246,7 @@ function RoleForm({
                                             type="checkbox"
                                             checked={selectedPermissions.has(perm.id)}
                                             onChange={() => togglePermission(perm.id)}
-                                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                            className="rounded border-gray-300 text-red-600 focus:ring-red-500"
                                         />
                                         <span className="text-xs text-gray-600">{perm.name}</span>
                                     </label>
@@ -261,7 +261,7 @@ function RoleForm({
                 <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-md shadow-sm transition-colors"
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white font-medium rounded-md shadow-sm transition-colors"
                 >
                     {isSubmitting ? 'Saving...' : role ? 'Update role' : 'Create role'}
                 </button>

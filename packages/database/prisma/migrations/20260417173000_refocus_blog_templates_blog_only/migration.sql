@@ -35,11 +35,11 @@ VALUES
           "showReadMore": true,
           "readMoreText": "Read Article",
           "themeTokens": {
-            "background": "#f0f9ff",
+            "background": "#fef2f2",
             "text": "#082f49",
-            "primary": "#0284c7",
-            "secondary": "#e0f2fe",
-            "accent": "#0ea5e9",
+            "primary": "#b91c1c",
+            "secondary": "#fee2e2",
+            "accent": "#ef4444",
             "font": "Space Grotesk, sans-serif"
           }
         }

@@ -34,7 +34,7 @@ VALUES (
           "themeTokens": {
             "background": "#f8fafc",
             "text": "#0f172a",
-            "primary": "#2563eb",
+            "primary": "#dc2626",
             "secondary": "#e2e8f0",
             "accent": "#ea580c",
             "font": "\"Inter\", sans-serif"

@@ -73,7 +73,7 @@ const subtleButtonStyle: React.CSSProperties = {
 const primaryMiniButtonStyle: React.CSSProperties = {
     fontSize: '12px',
     padding: '4px 10px',
-    backgroundColor: '#3b82f6',
+    backgroundColor: '#ef4444',
     color: '#fff',
     border: 'none',
     borderRadius: '4px',

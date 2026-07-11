@@ -197,7 +197,7 @@ export default function DashboardPage() {
             )}
 
             <section className="be-card overflow-hidden p-0">
-                <div className="border-b border-slate-200 bg-gradient-to-r from-[#f2f1ff] to-[#eef2ff] px-5 py-4 dark:border-slate-700 dark:from-slate-900 dark:to-slate-900">
+                <div className="border-b border-slate-200 bg-gradient-to-r from-[#f2f1ff] to-[#fef2f2] px-5 py-4 dark:border-slate-700 dark:from-slate-900 dark:to-slate-900">
                     <div>
                         <h2 className="text-base font-bold text-slate-900 dark:text-white">Getting Started</h2>
                         <p className="text-sm text-slate-600 dark:text-slate-300">
@@ -221,7 +221,7 @@ export default function DashboardPage() {
                                     <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 text-lg font-black ${
                                         step.done
                                             ? 'border-emerald-500 bg-emerald-500 text-white'
-                                            : 'border-[#2563eb] bg-[#2563eb]/10 text-[#2563eb]'
+                                            : 'border-[#dc2626] bg-[#dc2626]/10 text-[#dc2626]'
                                     }`}>
                                         {step.done ? <Check className="h-6 w-6" /> : index + 1}
                                     </div>
@@ -235,14 +235,14 @@ export default function DashboardPage() {
                                         <span className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${
                                             step.done
                                                 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
-                                                : 'bg-[#2563eb]/10 text-[#2563eb] dark:bg-[#2563eb]/20 dark:text-[#a9a4ff]'
+                                                : 'bg-[#dc2626]/10 text-[#dc2626] dark:bg-[#dc2626]/20 dark:text-[#a9a4ff]'
                                         }`}>
                                             {step.done ? 'Completed' : 'Pending'}
                                         </span>
                                     </div>
                                     <Link
                                         href={step.href}
-                                        className="inline-flex items-center gap-1 self-start rounded-lg border border-[#2563eb]/25 bg-[#2563eb]/10 px-3 py-1.5 text-xs font-semibold text-[#2563eb] transition hover:bg-[#2563eb]/15 hover:text-[#1d4ed8] sm:self-center"
+                                        className="inline-flex items-center gap-1 self-start rounded-lg border border-[#dc2626]/25 bg-[#dc2626]/10 px-3 py-1.5 text-xs font-semibold text-[#dc2626] transition hover:bg-[#dc2626]/15 hover:text-[#b91c1c] sm:self-center"
                                     >
                                         Open
                                         <ArrowRight className="h-3.5 w-3.5" />

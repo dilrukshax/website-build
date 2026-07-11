@@ -132,7 +132,7 @@ export default function CustomDomainSetupPage() {
 
             <main className="mx-auto flex min-h-screen w-full max-w-4xl items-center px-5 py-10 sm:px-8 lg:px-12">
                 <div className="w-full rounded-3xl border border-slate-200 bg-white p-8 shadow-xl sm:p-10 dark:border-slate-800 dark:bg-slate-900">
-                    <Link href="/" className="inline-flex items-center gap-2 text-[#2563eb]">
+                    <Link href="/" className="inline-flex items-center gap-2 text-[#dc2626]">
                         <Sparkles className="h-5 w-5" />
                         <span className="text-base font-semibold">Project Aurora</span>
                     </Link>
@@ -173,7 +173,7 @@ export default function CustomDomainSetupPage() {
                                 </div>
                             </div>
 
-                            <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-xs text-sky-700 dark:border-sky-900/40 dark:bg-sky-950/30 dark:text-sky-200">
+                            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-200">
                                 DNS propagation can take a few minutes to several hours depending on your domain provider.
                             </div>
 
@@ -222,7 +222,7 @@ export default function CustomDomainSetupPage() {
                             type="button"
                             onClick={handleDone}
                             disabled={isLoading}
-                            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#2563eb]/25 transition hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-60"
+                            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#dc2626] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#dc2626]/25 transition hover:bg-[#b91c1c] disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             Done, go to dashboard
                             <ArrowRight className="h-4 w-4" />

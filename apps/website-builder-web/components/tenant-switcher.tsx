@@ -41,7 +41,7 @@ export function TenantSwitcher() {
                     setIsOpen(!isOpen);
                 }}
                 disabled={isSwitching || !hasMultipleTenants}
-                className="flex w-full items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-left transition-colors hover:border-[#2563eb]/30 hover:bg-[#2563eb]/5 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800/70"
+                className="flex w-full items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-left transition-colors hover:border-[#dc2626]/30 hover:bg-[#dc2626]/5 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800/70"
             >
                 <span className="flex-1 truncate text-xs font-medium text-slate-500 dark:text-slate-400">
                     {currentTenant?.businessName || 'Select org'}
@@ -58,14 +58,14 @@ export function TenantSwitcher() {
                         <button
                             key={tenant.id}
                             onClick={() => handleSwitch(tenant.id)}
-                            className={`flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-[#2563eb]/5 ${tenant.id === currentTenant?.id ? 'bg-[#2563eb]/10' : ''}`}
+                            className={`flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-[#dc2626]/5 ${tenant.id === currentTenant?.id ? 'bg-[#dc2626]/10' : ''}`}
                         >
                             <div className="flex-1 min-w-0">
                                 <p className="truncate text-sm text-slate-900 dark:text-slate-100">{tenant.businessName}</p>
                                 <p className="text-xs text-slate-500 dark:text-slate-400">{tenant.role}</p>
                             </div>
                             {tenant.id === currentTenant?.id && (
-                                <Check size={14} className="shrink-0 text-[#2563eb]" />
+                                <Check size={14} className="shrink-0 text-[#dc2626]" />
                             )}
                         </button>
                     ))}

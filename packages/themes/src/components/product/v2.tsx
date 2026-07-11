@@ -28,10 +28,10 @@ export default function ProductV2({ content, styles, tokens, context }: ThemeCom
     });
 
     return (
-        <section style={{ background: '#050a16', padding: 'clamp(68px, 10vw, 96px) 16px', fontFamily: tokens.font, color: '#dbeafe' }}>
+        <section style={{ background: '#050a16', padding: 'clamp(68px, 10vw, 96px) 16px', fontFamily: tokens.font, color: '#fee2e2' }}>
             <div style={{ maxWidth: '1120px', margin: '0 auto' }}>
                 <div style={{ marginBottom: 'clamp(22px, 6vw, 40px)' }}>
-                    <p style={{ margin: '0 0 10px', color: '#60a5fa', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', fontSize: '12px' }}>
+                    <p style={{ margin: '0 0 10px', color: '#f87171', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', fontSize: '12px' }}>
                         Product Catalog
                     </p>
                     <h2 style={{ margin: '0 0 12px', fontSize: 'clamp(28px, 7vw, 36px)', fontWeight: 800, color: '#f8fafc' }}>{title}</h2>
@@ -65,7 +65,7 @@ export default function ProductV2({ content, styles, tokens, context }: ThemeCom
                                     <h3 style={{ margin: '0 0 8px', color: '#f8fafc', fontSize: 'clamp(16px, 4.5vw, 18px)' }}>{product.title}</h3>
                                     <p style={{ margin: 0, color: '#cbd5e1', lineHeight: 1.6, fontSize: '14px' }}>{product.desc}</p>
                                     {product.priceText && (
-                                        <div style={{ marginTop: '14px', display: 'inline-block', borderRadius: '999px', background: 'rgba(96,165,250,0.18)', color: '#bfdbfe', padding: '6px 10px', fontWeight: 700, fontSize: '13px' }}>
+                                        <div style={{ marginTop: '14px', display: 'inline-block', borderRadius: '999px', background: 'rgba(96,165,250,0.18)', color: '#fecaca', padding: '6px 10px', fontWeight: 700, fontSize: '13px' }}>
                                             {product.priceText}
                                         </div>
                                     )}

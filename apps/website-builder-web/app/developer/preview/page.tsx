@@ -32,9 +32,9 @@ interface TemplateSectionConfig {
 }
 
 const DEFAULT_TOKENS: TokenMap = {
-    primary: '#0ea5e9',
+    primary: '#ef4444',
     secondary: '#f1f5f9',
-    accent: '#38bdf8',
+    accent: '#f87171',
     text: '#0f172a',
     background: '#ffffff',
     font: '"Inter", sans-serif',

@@ -122,7 +122,7 @@ export default function SuperAdminReferralsPage() {
                 <select
                     value={statusFilter}
                     onChange={(event) => setStatusFilter(event.target.value as ClaimRow['status'])}
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:border-slate-700 dark:bg-slate-900"
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 dark:border-slate-700 dark:bg-slate-900"
                 >
                     <option value="pending">Pending</option>
                     <option value="verify">Verify</option>
@@ -211,7 +211,7 @@ export default function SuperAdminReferralsPage() {
                                                             type="button"
                                                             onClick={() => approveEnterprise(claim.id)}
                                                             disabled={busyId === claim.id}
-                                                            className="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
+                                                            className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-60"
                                                         >
                                                             Approve Tier
                                                         </button>

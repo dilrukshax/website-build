@@ -38,7 +38,7 @@ export default function ForgotPasswordPage() {
                         </p>
                         <Link
                             href="/login"
-                            className="text-blue-600 hover:text-blue-500 font-medium"
+                            className="text-red-600 hover:text-red-500 font-medium"
                         >
                             Back to sign in
                         </Link>
@@ -77,7 +77,7 @@ export default function ForgotPasswordPage() {
                                 autoComplete="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
                                 placeholder="you@example.com"
                             />
                         </div>
@@ -85,7 +85,7 @@ export default function ForgotPasswordPage() {
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                            className="w-full py-2 px-4 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
                         >
                             {isSubmitting ? 'Sending...' : 'Send reset link'}
                         </button>
@@ -93,7 +93,7 @@ export default function ForgotPasswordPage() {
 
                     <p className="mt-6 text-center text-sm text-gray-600">
                         Remember your password?{' '}
-                        <Link href="/login" className="text-blue-600 hover:text-blue-500 font-medium">
+                        <Link href="/login" className="text-red-600 hover:text-red-500 font-medium">
                             Sign in
                         </Link>
                     </p>

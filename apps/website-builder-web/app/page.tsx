@@ -182,7 +182,7 @@ function HeroIllustration() {
                     <stop offset="100%" stopColor="#f8f7ff" />
                 </linearGradient>
                 <linearGradient id="hero-cta" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#2563eb" />
+                    <stop offset="0%" stopColor="#dc2626" />
                     <stop offset="100%" stopColor="#6a63ff" />
                 </linearGradient>
             </defs>
@@ -231,34 +231,34 @@ export default function HomePage() {
         <div className={`${inter.className} bg-[#f6f6f8] text-slate-900 dark:bg-[#121121] dark:text-slate-100`}>
             <div className="relative flex min-h-screen w-full flex-col">
                 <header className="sticky top-0 z-50 flex items-center justify-between border-b border-slate-200 bg-white/80 px-6 py-4 backdrop-blur-md md:px-20 dark:border-slate-800 dark:bg-[#121121]/80">
-                    <div className="flex items-center gap-2 text-[#2563eb]">
+                    <div className="flex items-center gap-2 text-[#dc2626]">
                         <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Project Aurora</h2>
                     </div>
                     <div className="flex flex-1 items-center justify-end gap-3 md:gap-8">
                         <nav className="hidden items-center gap-8 md:flex">
-                            <a className="text-sm font-medium text-slate-600 transition-colors hover:text-[#2563eb] dark:text-slate-300" href="#product">
+                            <a className="text-sm font-medium text-slate-600 transition-colors hover:text-[#dc2626] dark:text-slate-300" href="#product">
                                 Product
                             </a>
-                            <a className="text-sm font-medium text-slate-600 transition-colors hover:text-[#2563eb] dark:text-slate-300" href="#pricing">
+                            <a className="text-sm font-medium text-slate-600 transition-colors hover:text-[#dc2626] dark:text-slate-300" href="#pricing">
                                 Pricing
                             </a>
-                            <a className="text-sm font-medium text-slate-600 transition-colors hover:text-[#2563eb] dark:text-slate-300" href="#limits">
+                            <a className="text-sm font-medium text-slate-600 transition-colors hover:text-[#dc2626] dark:text-slate-300" href="#limits">
                                 Limits
                             </a>
-                            <a className="text-sm font-medium text-slate-600 transition-colors hover:text-[#2563eb] dark:text-slate-300" href="#billing-flow">
+                            <a className="text-sm font-medium text-slate-600 transition-colors hover:text-[#dc2626] dark:text-slate-300" href="#billing-flow">
                                 Billing Flow
                             </a>
-                            <a className="text-sm font-medium text-slate-600 transition-colors hover:text-[#2563eb] dark:text-slate-300" href="#referrals">
+                            <a className="text-sm font-medium text-slate-600 transition-colors hover:text-[#dc2626] dark:text-slate-300" href="#referrals">
                                 Referrals
                             </a>
                         </nav>
                         <ThemeToggle fullWidth={false} align="right" />
-                        <Link href="/login" className="text-sm font-medium text-slate-600 transition-colors hover:text-[#2563eb] dark:text-slate-300">
+                        <Link href="/login" className="text-sm font-medium text-slate-600 transition-colors hover:text-[#dc2626] dark:text-slate-300">
                             Sign In
                         </Link>
                         <Link
                             href="/register"
-                            className="hidden h-10 min-w-[120px] items-center justify-center rounded-lg bg-[#2563eb] px-5 text-sm font-bold text-white shadow-lg shadow-[#2563eb]/20 transition-all hover:opacity-90 active:scale-95 sm:flex"
+                            className="hidden h-10 min-w-[120px] items-center justify-center rounded-lg bg-[#dc2626] px-5 text-sm font-bold text-white shadow-lg shadow-[#dc2626]/20 transition-all hover:opacity-90 active:scale-95 sm:flex"
                         >
                             Start Free
                         </Link>
@@ -269,9 +269,9 @@ export default function HomePage() {
                     <section id="product" className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-6 py-16 md:px-20 md:py-24 lg:grid-cols-2">
                         <div className="flex flex-col gap-8">
                             <div className="flex flex-col gap-4">
-                                <span className="text-sm font-bold uppercase tracking-[0.2em] text-[#2563eb]">DB-driven plans, billing, and referrals</span>
+                                <span className="text-sm font-bold uppercase tracking-[0.2em] text-[#dc2626]">DB-driven plans, billing, and referrals</span>
                                 <h1 className="text-5xl font-black leading-[1.1] tracking-tight text-slate-900 md:text-6xl dark:text-white">
-                                    Run website growth with <span className="text-[#2563eb]">clear limits, verified referrals, and controlled billing.</span>
+                                    Run website growth with <span className="text-[#dc2626]">clear limits, verified referrals, and controlled billing.</span>
                                 </h1>
                                 <p className="max-w-xl text-lg font-normal leading-relaxed text-slate-600 md:text-xl dark:text-slate-400">
                                     Project Aurora now enforces each plan directly in API and CMS: usage caps, add-on bundles, manual charge approval, point wallet credits, and fraud-proof referral claims.
@@ -280,7 +280,7 @@ export default function HomePage() {
                             <div className="flex flex-col gap-4 sm:flex-row">
                                 <Link
                                     href="/register"
-                                    className="flex h-14 min-w-[180px] items-center justify-center rounded-xl bg-[#2563eb] px-8 text-lg font-bold text-white shadow-xl shadow-[#2563eb]/30 transition-all hover:-translate-y-0.5"
+                                    className="flex h-14 min-w-[180px] items-center justify-center rounded-xl bg-[#dc2626] px-8 text-lg font-bold text-white shadow-xl shadow-[#dc2626]/30 transition-all hover:-translate-y-0.5"
                                 >
                                     Start on Free
                                 </Link>
@@ -294,14 +294,14 @@ export default function HomePage() {
                             <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
                                 <div className="flex -space-x-2">
                                     <div className="h-8 w-8 rounded-full border-2 border-white bg-slate-300 dark:border-slate-900" />
-                                    <div className="h-8 w-8 rounded-full border-2 border-white bg-[#2563eb]/40 dark:border-slate-900" />
+                                    <div className="h-8 w-8 rounded-full border-2 border-white bg-[#dc2626]/40 dark:border-slate-900" />
                                     <div className="h-8 w-8 rounded-full border-2 border-white bg-slate-400 dark:border-slate-900" />
                                 </div>
                                 <span>Grandfather-safe migration: existing over-limit assets stay active, new over-limit actions are blocked.</span>
                             </div>
                         </div>
                         <div className="relative">
-                            <div className="absolute -inset-4 rounded-3xl bg-[#2563eb]/10 blur-3xl" />
+                            <div className="absolute -inset-4 rounded-3xl bg-[#dc2626]/10 blur-3xl" />
                             <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl dark:border-slate-700 dark:bg-slate-800">
                                 <div className="aspect-video w-full overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-900">
                                     <HeroIllustration />
@@ -321,8 +321,8 @@ export default function HomePage() {
                                 </p>
                             </div>
                             <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-4">
-                                <div className="group flex flex-col gap-6 rounded-2xl border border-slate-200 bg-[#f6f6f8] p-8 transition-all hover:border-[#2563eb]/30 hover:shadow-xl dark:border-slate-800 dark:bg-[#121121]">
-                                    <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#2563eb]/10 text-[#2563eb] transition-colors group-hover:bg-[#2563eb] group-hover:text-white">
+                                <div className="group flex flex-col gap-6 rounded-2xl border border-slate-200 bg-[#f6f6f8] p-8 transition-all hover:border-[#dc2626]/30 hover:shadow-xl dark:border-slate-800 dark:bg-[#121121]">
+                                    <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#dc2626]/10 text-[#dc2626] transition-colors group-hover:bg-[#dc2626] group-hover:text-white">
                                         <LayoutDashboard className="h-8 w-8" />
                                     </div>
                                     <div className="flex flex-col gap-2">
@@ -332,8 +332,8 @@ export default function HomePage() {
                                         </p>
                                     </div>
                                 </div>
-                                <div className="group flex flex-col gap-6 rounded-2xl border border-slate-200 bg-[#f6f6f8] p-8 transition-all hover:border-[#2563eb]/30 hover:shadow-xl dark:border-slate-800 dark:bg-[#121121]">
-                                    <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#2563eb]/10 text-[#2563eb] transition-colors group-hover:bg-[#2563eb] group-hover:text-white">
+                                <div className="group flex flex-col gap-6 rounded-2xl border border-slate-200 bg-[#f6f6f8] p-8 transition-all hover:border-[#dc2626]/30 hover:shadow-xl dark:border-slate-800 dark:bg-[#121121]">
+                                    <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#dc2626]/10 text-[#dc2626] transition-colors group-hover:bg-[#dc2626] group-hover:text-white">
                                         <CalendarDays className="h-8 w-8" />
                                     </div>
                                     <div className="flex flex-col gap-2">
@@ -343,8 +343,8 @@ export default function HomePage() {
                                         </p>
                                     </div>
                                 </div>
-                                <div className="group flex flex-col gap-6 rounded-2xl border border-slate-200 bg-[#f6f6f8] p-8 transition-all hover:border-[#2563eb]/30 hover:shadow-xl dark:border-slate-800 dark:bg-[#121121]">
-                                    <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#2563eb]/10 text-[#2563eb] transition-colors group-hover:bg-[#2563eb] group-hover:text-white">
+                                <div className="group flex flex-col gap-6 rounded-2xl border border-slate-200 bg-[#f6f6f8] p-8 transition-all hover:border-[#dc2626]/30 hover:shadow-xl dark:border-slate-800 dark:bg-[#121121]">
+                                    <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#dc2626]/10 text-[#dc2626] transition-colors group-hover:bg-[#dc2626] group-hover:text-white">
                                         <CircleDollarSign className="h-8 w-8" />
                                     </div>
                                     <div className="flex flex-col gap-2">
@@ -354,8 +354,8 @@ export default function HomePage() {
                                         </p>
                                     </div>
                                 </div>
-                                <div className="group flex flex-col gap-6 rounded-2xl border border-slate-200 bg-[#f6f6f8] p-8 transition-all hover:border-[#2563eb]/30 hover:shadow-xl dark:border-slate-800 dark:bg-[#121121]">
-                                    <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#2563eb]/10 text-[#2563eb] transition-colors group-hover:bg-[#2563eb] group-hover:text-white">
+                                <div className="group flex flex-col gap-6 rounded-2xl border border-slate-200 bg-[#f6f6f8] p-8 transition-all hover:border-[#dc2626]/30 hover:shadow-xl dark:border-slate-800 dark:bg-[#121121]">
+                                    <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#dc2626]/10 text-[#dc2626] transition-colors group-hover:bg-[#dc2626] group-hover:text-white">
                                         <ShieldCheck className="h-8 w-8" />
                                     </div>
                                     <div className="flex flex-col gap-2">
@@ -381,12 +381,12 @@ export default function HomePage() {
                                 <div
                                     key={plan.name}
                                     className={`relative flex flex-col gap-6 rounded-2xl border bg-white p-7 shadow-sm dark:bg-slate-900 ${plan.highlight
-                                        ? 'border-2 border-[#2563eb] shadow-xl'
+                                        ? 'border-2 border-[#dc2626] shadow-xl'
                                         : 'border-slate-200 dark:border-slate-800'
                                     }`}
                                 >
                                     {plan.highlight && (
-                                        <div className="absolute right-6 top-0 -translate-y-1/2 rounded-full bg-[#2563eb] px-3 py-1 text-xs font-bold uppercase tracking-wider text-white">
+                                        <div className="absolute right-6 top-0 -translate-y-1/2 rounded-full bg-[#dc2626] px-3 py-1 text-xs font-bold uppercase tracking-wider text-white">
                                             Popular Upgrade
                                         </div>
                                     )}
@@ -401,7 +401,7 @@ export default function HomePage() {
                                     <Link
                                         href="/register"
                                         className={`flex h-11 w-full items-center justify-center rounded-lg font-bold transition-opacity ${plan.highlight
-                                            ? 'bg-[#2563eb] text-white hover:opacity-90'
+                                            ? 'bg-[#dc2626] text-white hover:opacity-90'
                                             : 'bg-slate-100 text-slate-900 hover:bg-slate-200 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700'
                                         }`}
                                     >
@@ -410,14 +410,14 @@ export default function HomePage() {
                                     <ul className="flex flex-col gap-3">
                                         {plan.features.map((feature) => (
                                             <li key={`${plan.name}-${feature.label}`} className="flex items-start gap-3 text-sm text-slate-600 dark:text-slate-300">
-                                                <CheckCircle2 className="mt-0.5 h-4 w-4 flex-none text-[#2563eb]" />
+                                                <CheckCircle2 className="mt-0.5 h-4 w-4 flex-none text-[#dc2626]" />
                                                 <div className="flex items-start gap-1.5">
                                                     <span>{feature.label}</span>
                                                     {feature.tooltip && (
                                                         <span className="group/tooltip relative mt-0.5 inline-flex">
                                                             <button
                                                                 type="button"
-                                                                className="inline-flex h-4 w-4 items-center justify-center rounded-full text-slate-400 transition-colors hover:text-[#2563eb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]/40"
+                                                                className="inline-flex h-4 w-4 items-center justify-center rounded-full text-slate-400 transition-colors hover:text-[#dc2626] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#dc2626]/40"
                                                                 aria-label={`More information about ${feature.label}`}
                                                             >
                                                                 <CircleHelp className="h-3.5 w-3.5" />
@@ -508,7 +508,7 @@ export default function HomePage() {
                     <section id="referrals" className="mx-auto max-w-7xl px-6 pb-24 md:px-20">
                         <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:p-10">
                             <div className="mb-8 flex items-center gap-3">
-                                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#2563eb]/10 text-[#2563eb]">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#dc2626]/10 text-[#dc2626]">
                                     <Gift className="h-6 w-6" />
                                 </div>
                                 <div>
@@ -519,7 +519,7 @@ export default function HomePage() {
                             <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
                                 {REFERRAL_RULES.map((rule) => (
                                     <li key={rule} className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 dark:border-slate-800 dark:bg-[#121121] dark:text-slate-200">
-                                        <CheckCircle2 className="mt-0.5 h-4 w-4 flex-none text-[#2563eb]" />
+                                        <CheckCircle2 className="mt-0.5 h-4 w-4 flex-none text-[#dc2626]" />
                                         <span>{rule}</span>
                                     </li>
                                 ))}
@@ -530,7 +530,7 @@ export default function HomePage() {
                         </div>
                     </section>
 
-                    <section className="relative mx-auto mb-12 max-w-7xl overflow-hidden rounded-[2.5rem] bg-[#2563eb] px-6 py-20 text-center text-white md:px-20">
+                    <section className="relative mx-auto mb-12 max-w-7xl overflow-hidden rounded-[2.5rem] bg-[#dc2626] px-6 py-20 text-center text-white md:px-20">
                         <div
                             className="pointer-events-none absolute left-0 top-0 h-full w-full opacity-10"
                             style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 0%, transparent 50%), radial-gradient(circle at 80% 80%, white 0%, transparent 50%)' }}
@@ -545,7 +545,7 @@ export default function HomePage() {
                             <div className="flex flex-col gap-3 sm:flex-row">
                                 <Link
                                     href="/register"
-                                    className="flex h-14 min-w-[200px] items-center justify-center rounded-xl bg-white px-10 text-lg font-bold text-[#2563eb] shadow-2xl transition-transform hover:scale-105 active:scale-95"
+                                    className="flex h-14 min-w-[200px] items-center justify-center rounded-xl bg-white px-10 text-lg font-bold text-[#dc2626] shadow-2xl transition-transform hover:scale-105 active:scale-95"
                                 >
                                     Create Free Account
                                 </Link>
@@ -562,13 +562,13 @@ export default function HomePage() {
 
                 <footer className="border-t border-slate-200 bg-white px-6 py-12 md:px-20 dark:border-slate-800 dark:bg-[#121121]">
                     <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-8 md:flex-row">
-                        <div className="flex items-center gap-2 text-[#2563eb]">
+                        <div className="flex items-center gap-2 text-[#dc2626]">
                             <h2 className="text-lg font-bold leading-tight text-slate-900 dark:text-white">Project Aurora</h2>
                         </div>
                         <div className="flex gap-12 text-sm text-slate-500 dark:text-slate-400">
-                            <a className="transition-colors hover:text-[#2563eb]" href="#">Privacy Policy</a>
-                            <a className="transition-colors hover:text-[#2563eb]" href="#">Terms of Service</a>
-                            <a className="transition-colors hover:text-[#2563eb]" href="#">Help Center</a>
+                            <a className="transition-colors hover:text-[#dc2626]" href="#">Privacy Policy</a>
+                            <a className="transition-colors hover:text-[#dc2626]" href="#">Terms of Service</a>
+                            <a className="transition-colors hover:text-[#dc2626]" href="#">Help Center</a>
                         </div>
                         <p className="text-sm text-slate-400">© {new Date().getFullYear()} Project Aurora. All rights reserved.</p>
                     </div>

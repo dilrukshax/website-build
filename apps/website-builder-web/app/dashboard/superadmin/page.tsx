@@ -130,7 +130,7 @@ export default function SuperAdminDashboardPage() {
                 <div className="flex flex-col items-end gap-2">
                     <Link
                         href="/dashboard/superadmin/custom-domains"
-                        className="rounded-lg bg-[#2563eb] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#1d4ed8]"
+                        className="rounded-lg bg-[#dc2626] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#b91c1c]"
                     >
                         Open Custom Domains
                     </Link>
@@ -196,7 +196,7 @@ export default function SuperAdminDashboardPage() {
                                 value={search}
                                 onChange={(event) => setSearch(event.target.value)}
                                 placeholder="Search by instance, domain, tenant, or plan"
-                                className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:border-slate-700 dark:bg-slate-900"
+                                className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm outline-none transition focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 dark:border-slate-700 dark:bg-slate-900"
                             />
                         </div>
                     </label>
@@ -205,7 +205,7 @@ export default function SuperAdminDashboardPage() {
                         <select
                             value={statusFilter}
                             onChange={(event) => setStatusFilter(event.target.value as 'all' | 'active' | 'inactive')}
-                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:border-slate-700 dark:bg-slate-900"
+                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 dark:border-slate-700 dark:bg-slate-900"
                         >
                             <option value="all">All statuses</option>
                             <option value="active">Active</option>
@@ -289,7 +289,7 @@ function SummaryCard({ label, value, icon }: { label: string; value: string; ico
         <div className="be-card p-5">
             <div className="flex items-center justify-between">
                 <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{label}</p>
-                <div className="text-[#2563eb]">{icon}</div>
+                <div className="text-[#dc2626]">{icon}</div>
             </div>
             <p className="mt-2 text-xl font-bold text-slate-900 dark:text-white">{value}</p>
         </div>

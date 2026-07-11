@@ -22,7 +22,7 @@ const PUBLISHER_TAGLINE = (process.env.NEXT_PUBLIC_PUBLISHER_TAGLINE || DEFAULT_
 const PUBLISHER_LINK = (process.env.NEXT_PUBLIC_PUBLISHER_URL || `https://${process.env.NEXT_PUBLIC_SITE_DOMAIN || 'buildmyonlineweb.site'}`).trim();
 
 const DEFAULT_TOKENS = {
-    primary: '#3b82f6',
+    primary: '#ef4444',
     secondary: '#10b981',
     accent: '#f59e0b',
     text: '#1f2937',

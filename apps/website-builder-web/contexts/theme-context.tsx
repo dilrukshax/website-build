@@ -8,7 +8,7 @@ type ResolvedTheme = 'light' | 'dark';
 
 const THEME_STORAGE_KEY = 'be_theme';
 const SHARED_THEME_TOKENS: Record<string, string> = {
-    '--be-primary': '#2563eb',
+    '--be-primary': '#dc2626',
     '--be-bg-light': '#f6f6f8',
     '--be-bg-dark': '#121121',
 };
@@ -21,8 +21,8 @@ const FORM_THEME_TOKENS: Record<ResolvedTheme, Record<string, string>> = {
         '--be-form-heading': '#0f172a',
         '--be-form-muted': '#64748b',
         '--be-form-border': '#cbd5e1',
-        '--be-form-active-bg': '#eff6ff',
-        '--be-form-active-text': '#1d4ed8',
+        '--be-form-active-bg': '#fef2f2',
+        '--be-form-active-text': '#b91c1c',
         '--be-form-swatch-border': 'rgba(15, 23, 42, 0.15)',
         '--be-form-upload-bg': '#ffffff',
         '--be-form-upload-bg-disabled': '#f1f5f9',
@@ -40,7 +40,7 @@ const FORM_THEME_TOKENS: Record<ResolvedTheme, Record<string, string>> = {
         '--be-form-muted': '#94a3b8',
         '--be-form-border': '#334155',
         '--be-form-active-bg': '#1e293b',
-        '--be-form-active-text': '#93c5fd',
+        '--be-form-active-text': '#fca5a5',
         '--be-form-swatch-border': 'rgba(148, 163, 184, 0.45)',
         '--be-form-upload-bg': '#1e293b',
         '--be-form-upload-bg-disabled': '#0f172a',

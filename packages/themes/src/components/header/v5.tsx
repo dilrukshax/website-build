@@ -63,7 +63,7 @@ export default function HeaderV5({ content, tokens }: ThemeComponentProps) {
                 .theme-v5-header-wrap {
                     --v5-bg: ${tokens.background || '#0b1121'};
                     --v5-text: ${tokens.text || '#ffffff'};
-                    --v5-primary: ${tokens.primary || '#3b82f6'};
+                    --v5-primary: ${tokens.primary || '#ef4444'};
                     --v5-accent: ${tokens.accent || '#ec4899'};
                     --v5-secondary: ${tokens.secondary || 'rgba(19, 27, 46, 0.9)'};
                     

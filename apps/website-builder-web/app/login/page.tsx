@@ -130,7 +130,7 @@ export default function LoginPage() {
     return (
         <div className={`${inter.className} min-h-screen bg-[#f6f6f8] text-slate-900 dark:bg-[#121121] dark:text-slate-100`}>
             <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[1.05fr_0.95fr]">
-                <section className="relative hidden overflow-hidden bg-gradient-to-br from-[#2563eb] via-[#1d4ed8] to-[#1e3a8a] p-12 text-white lg:flex lg:flex-col lg:justify-between">
+                <section className="relative hidden overflow-hidden bg-gradient-to-br from-[#dc2626] via-[#b91c1c] to-[#7f1d1d] p-12 text-white lg:flex lg:flex-col lg:justify-between">
                     <div className="pointer-events-none absolute -left-24 top-16 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
                     <div className="pointer-events-none absolute -right-24 bottom-8 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
 
@@ -162,7 +162,7 @@ export default function LoginPage() {
                     <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(80,72,229,0.12),transparent_45%),radial-gradient(circle_at_80%_80%,rgba(80,72,229,0.08),transparent_45%)]" />
                     <div className="relative w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-8 shadow-xl sm:p-10 dark:border-slate-800 dark:bg-slate-900">
                         <div className="mb-8">
-                            <Link href="/" className="inline-flex items-center gap-2 text-[#2563eb] lg:hidden">
+                            <Link href="/" className="inline-flex items-center gap-2 text-[#dc2626] lg:hidden">
                                 <Sparkles className="h-5 w-5" />
                                 <span className="text-base font-semibold">Project Aurora</span>
                             </Link>
@@ -190,7 +190,7 @@ export default function LoginPage() {
                                     autoComplete="email"
                                     value={email}
                                     onChange={(e) => updateField('email', e.target.value)}
-                                    className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:bg-slate-950 dark:text-slate-100 ${fieldErrors.email ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
+                                    className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 dark:bg-slate-950 dark:text-slate-100 ${fieldErrors.email ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
                                     placeholder="you@example.com"
                                 />
                                 {fieldErrors.email && (
@@ -209,7 +209,7 @@ export default function LoginPage() {
                                     autoComplete="current-password"
                                     value={password}
                                     onChange={(e) => updateField('password', e.target.value)}
-                                    className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:bg-slate-950 dark:text-slate-100 ${fieldErrors.password ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
+                                    className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 dark:bg-slate-950 dark:text-slate-100 ${fieldErrors.password ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
                                     placeholder="Enter your password"
                                 />
                                 {fieldErrors.password && (
@@ -218,7 +218,7 @@ export default function LoginPage() {
                             </div>
 
                             <div className="flex items-center justify-end">
-                                <Link href="/forgot-password" className="text-sm font-medium text-[#2563eb] hover:text-[#3e38b6]">
+                                <Link href="/forgot-password" className="text-sm font-medium text-[#dc2626] hover:text-[#3e38b6]">
                                     Forgot your password?
                                 </Link>
                             </div>
@@ -226,7 +226,7 @@ export default function LoginPage() {
                             <button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#2563eb]/25 transition hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-60"
+                                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#dc2626] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#dc2626]/25 transition hover:bg-[#b91c1c] disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {isSubmitting ? 'Signing in...' : 'Sign in'}
                                 {!isSubmitting && <ArrowRight className="h-4 w-4" />}
@@ -235,7 +235,7 @@ export default function LoginPage() {
 
                         <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
                             Don&apos;t have an account?{' '}
-                            <Link href="/register" className="font-semibold text-[#2563eb] hover:text-[#3e38b6]">
+                            <Link href="/register" className="font-semibold text-[#dc2626] hover:text-[#3e38b6]">
                                 Register for free
                             </Link>
                         </p>

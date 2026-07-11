@@ -102,7 +102,7 @@ export default function SuperAdminBillingPage() {
                 <select
                     value={statusFilter}
                     onChange={(event) => setStatusFilter(event.target.value as 'pending' | 'confirmed' | 'rejected')}
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/20 dark:border-slate-700 dark:bg-slate-900"
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 dark:border-slate-700 dark:bg-slate-900"
                 >
                     <option value="pending">Pending</option>
                     <option value="confirmed">Confirmed</option>
