@@ -5,8 +5,8 @@ import './globals.css';
 
 export const metadata: Metadata = {
     title: {
-        template: '%s | iroh',
-        default: 'iroh',
+        template: '%s | Aurora',
+        default: 'Aurora',
     },
     description:
         'A multi-tenant website builder for creating, managing, and publishing websites.',
@@ -21,14 +21,14 @@ export const metadata: Metadata = {
         apple: '/favicon.svg',
     },
     openGraph: {
-        title: 'iroh',
+        title: 'Aurora',
         description:
-            'Create, manage, and publish websites with iroh.',
+            'Create, manage, and publish websites with Aurora.',
         url: '/',
-        siteName: 'iroh',
+        siteName: 'Aurora',
         locale: 'en_US',
         type: 'website',
-        images: [{ url: '/logo.svg', width: 320, height: 80, alt: 'iroh' }],
+        images: [{ url: '/logo.svg', width: 320, height: 80, alt: 'Aurora' }],
     },
     robots: {
         index: true,
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
         },
     },
     twitter: {
-        title: 'iroh',
+        title: 'Aurora',
         card: 'summary_large_image',
         images: ['/logo.svg'],
     },
