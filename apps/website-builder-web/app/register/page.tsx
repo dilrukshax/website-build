@@ -24,7 +24,6 @@ const inter = Inter({
 
 const FINGERPRINT_ENABLED = process.env.NEXT_PUBLIC_FINGERPRINT_ENABLED === 'true';
 const REFERRAL_STORAGE_KEY = 'pendingReferralCode';
-const PRODUCT_BASED_REGISTER_URL = 'https://easyonlineweb.com/user/admin/auth/view/register.php';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_RULES = [
     { key: 'length', label: 'At least 8 characters', test: (value: string) => value.length >= 8 },
@@ -34,7 +33,6 @@ const PASSWORD_RULES = [
 ] as const;
 
 type RegisterField = 'email' | 'password' | 'confirmPassword' | 'fullName' | 'whatsappNumber';
-type RegistrationMode = 'service';
 
 export default function RegisterPage() {
     const router = useRouter();
@@ -53,7 +51,6 @@ export default function RegisterPage() {
     const [error, setError] = useState('');
     const [fieldErrors, setFieldErrors] = useState<Partial<Record<RegisterField, string>>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [registrationMode, setRegistrationMode] = useState<RegistrationMode | null>(null);
     const passwordRuleStatus = PASSWORD_RULES.map((rule) => ({ ...rule, passed: rule.test(formData.password) }));
 
     useEffect(() => {
@@ -249,11 +246,7 @@ export default function RegisterPage() {
         }
     }
 
-    function handleProductBasedRedirect() {
-        if (typeof window !== 'undefined') {
-            window.location.assign(PRODUCT_BASED_REGISTER_URL);
-        }
-    }
+
 
     return (
         <div className={`${inter.className} min-h-screen bg-[#f6f6f8] text-slate-900 dark:bg-[#121121] dark:text-slate-100`}>
@@ -305,197 +298,148 @@ export default function RegisterPage() {
                                 <span className="text-base font-semibold">Aurora</span>
                             </Link>
                             <h2 className="mt-4 text-3xl font-black text-slate-900 dark:text-white">
-                                {registrationMode === 'service' ? 'Create account' : 'Choose your business type'}
+                                Create account
                             </h2>
                             <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                                {registrationMode === 'service'
-                                    ? 'Set up your workspace and start building your live website.'
-                                    : 'Are you service-based or product-based?'}
+                                Set up your workspace and start building your live website.
                             </p>
                         </div>
 
-                        {registrationMode === null ? (
-                            <div className="space-y-3">
-                                <button
-                                    type="button"
-                                    onClick={() => setRegistrationMode('service')}
-                                    className="inline-flex w-full items-center justify-between rounded-xl border border-[#dc2626]/35 bg-[#dc2626]/10 px-4 py-3 text-left text-sm font-semibold text-[#dc2626] transition hover:bg-[#dc2626]/15"
-                                >
-                                    Service-based business
-                                    <ArrowRight className="h-4 w-4" />
-                                </button>
-
-                                <button
-                                    type="button"
-                                    onClick={handleProductBasedRedirect}
-                                    className="inline-flex w-full items-center justify-between rounded-xl border border-slate-300 bg-white px-4 py-3 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-800"
-                                >
-                                    Product-based business
-                                    <ArrowRight className="h-4 w-4" />
-                                </button>
-
-                                <p className="pt-1 text-xs text-slate-500 dark:text-slate-400">
-                                    Product-based registration will continue on easyonlineweb.
-                                </p>
-
-                                <p className="pt-2 text-center text-sm text-slate-600 dark:text-slate-400">
-                                    Already have an account?{' '}
-                                    <Link href="/login" className="font-semibold text-[#dc2626] hover:text-[#3e38b6]">
-                                        Sign in
-                                    </Link>
-                                </p>
+                        {error && (
+                            <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">
+                                {error}
                             </div>
-                        ) : (
-                            <>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setRegistrationMode(null);
-                                        setError('');
-                                        setFieldErrors({});
-                                    }}
-                                    className="mb-4 inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-800"
-                                >
-                                    Change business type
-                                </button>
-
-                                {error && (
-                                    <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">
-                                        {error}
-                                    </div>
-                                )}
-
-                                {referralCode && (
-                                    <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
-                                        Referral code applied: <span className="font-semibold">{referralCode}</span>
-                                    </div>
-                                )}
-
-                                <form onSubmit={handleSubmit} className="space-y-4">
-                                    <div>
-                                        <label htmlFor="fullName" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                                            Full name
-                                        </label>
-                                        <input
-                                            id="fullName"
-                                            type="text"
-                                            required
-                                            value={formData.fullName}
-                                            onChange={(e) => updateField('fullName', e.target.value)}
-                                            className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 dark:bg-slate-950 dark:text-slate-100 ${fieldErrors.fullName ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
-                                            placeholder="John Doe"
-                                        />
-                                        {fieldErrors.fullName && (
-                                            <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.fullName}</p>
-                                        )}
-                                    </div>
-
-                                    <div>
-                                        <label htmlFor="whatsappNumber" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                                            WhatsApp number
-                                        </label>
-                                        <input
-                                            id="whatsappNumber"
-                                            type="tel"
-                                            required
-                                            autoComplete="tel"
-                                            value={formData.whatsappNumber}
-                                            onChange={(e) => updateField('whatsappNumber', e.target.value)}
-                                            className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 dark:bg-slate-950 dark:text-slate-100 ${fieldErrors.whatsappNumber ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
-                                            placeholder="+94 77 123 4567"
-                                        />
-                                        {fieldErrors.whatsappNumber && (
-                                            <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.whatsappNumber}</p>
-                                        )}
-                                    </div>
-
-                                    <div>
-                                        <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                                            Email address
-                                        </label>
-                                        <input
-                                            id="email"
-                                            type="email"
-                                            required
-                                            autoComplete="email"
-                                            value={formData.email}
-                                            onChange={(e) => updateField('email', e.target.value)}
-                                            className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 dark:bg-slate-950 dark:text-slate-100 ${fieldErrors.email ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
-                                            placeholder="you@example.com"
-                                        />
-                                        {fieldErrors.email && (
-                                            <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.email}</p>
-                                        )}
-                                    </div>
-
-                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                        <div>
-                                            <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                                                Password
-                                            </label>
-                                            <input
-                                                id="password"
-                                                type="password"
-                                                required
-                                                autoComplete="new-password"
-                                                value={formData.password}
-                                                onChange={(e) => updateField('password', e.target.value)}
-                                                className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 dark:bg-slate-950 dark:text-slate-100 ${fieldErrors.password ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
-                                                placeholder="Min 8 characters"
-                                            />
-                                            {fieldErrors.password && (
-                                                <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.password}</p>
-                                            )}
-                                            <ul className="mt-2 space-y-1 text-xs">
-                                                {passwordRuleStatus.map((rule) => (
-                                                    <li
-                                                        key={rule.key}
-                                                        className={`inline-flex items-center gap-1.5 ${rule.passed ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`}
-                                                    >
-                                                        {rule.passed ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Circle className="h-3.5 w-3.5" />}
-                                                        {rule.label}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                        <div>
-                                            <label htmlFor="confirmPassword" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                                                Confirm password
-                                            </label>
-                                            <input
-                                                id="confirmPassword"
-                                                type="password"
-                                                required
-                                                autoComplete="new-password"
-                                                value={formData.confirmPassword}
-                                                onChange={(e) => updateField('confirmPassword', e.target.value)}
-                                                className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 dark:bg-slate-950 dark:text-slate-100 ${fieldErrors.confirmPassword ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
-                                                placeholder="Re-enter password"
-                                            />
-                                            {fieldErrors.confirmPassword && (
-                                                <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.confirmPassword}</p>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <button
-                                        type="submit"
-                                        disabled={isSubmitting}
-                                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#dc2626] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#dc2626]/25 transition hover:bg-[#b91c1c] disabled:cursor-not-allowed disabled:opacity-60"
-                                    >
-                                        {isSubmitting ? 'Creating account...' : 'Create account'}
-                                        {!isSubmitting && <ArrowRight className="h-4 w-4" />}
-                                    </button>
-                                </form>
-
-                                <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
-                                    Already have an account?{' '}
-                                    <Link href="/login" className="font-semibold text-[#dc2626] hover:text-[#3e38b6]">
-                                        Sign in
-                                    </Link>
-                                </p>
-                            </>
                         )}
+
+                        {referralCode && (
+                            <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
+                                Referral code applied: <span className="font-semibold">{referralCode}</span>
+                            </div>
+                        )}
+
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div>
+                                <label htmlFor="fullName" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    Full name
+                                </label>
+                                <input
+                                    id="fullName"
+                                    type="text"
+                                    required
+                                    value={formData.fullName}
+                                    onChange={(e) => updateField('fullName', e.target.value)}
+                                    className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 dark:bg-slate-950 dark:text-slate-100 ${fieldErrors.fullName ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
+                                    placeholder="John Doe"
+                                />
+                                {fieldErrors.fullName && (
+                                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.fullName}</p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label htmlFor="whatsappNumber" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    WhatsApp number
+                                </label>
+                                <input
+                                    id="whatsappNumber"
+                                    type="tel"
+                                    required
+                                    autoComplete="tel"
+                                    value={formData.whatsappNumber}
+                                    onChange={(e) => updateField('whatsappNumber', e.target.value)}
+                                    className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 dark:bg-slate-950 dark:text-slate-100 ${fieldErrors.whatsappNumber ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
+                                    placeholder="+94 77 123 4567"
+                                />
+                                {fieldErrors.whatsappNumber && (
+                                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.whatsappNumber}</p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    Email address
+                                </label>
+                                <input
+                                    id="email"
+                                    type="email"
+                                    required
+                                    autoComplete="email"
+                                    value={formData.email}
+                                    onChange={(e) => updateField('email', e.target.value)}
+                                    className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 dark:bg-slate-950 dark:text-slate-100 ${fieldErrors.email ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
+                                    placeholder="you@example.com"
+                                />
+                                {fieldErrors.email && (
+                                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.email}</p>
+                                )}
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <div>
+                                    <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                        Password
+                                    </label>
+                                    <input
+                                        id="password"
+                                        type="password"
+                                        required
+                                        autoComplete="new-password"
+                                        value={formData.password}
+                                        onChange={(e) => updateField('password', e.target.value)}
+                                        className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 dark:bg-slate-950 dark:text-slate-100 ${fieldErrors.password ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
+                                        placeholder="Min 8 characters"
+                                    />
+                                    {fieldErrors.password && (
+                                        <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.password}</p>
+                                    )}
+                                    <ul className="mt-2 space-y-1 text-xs">
+                                        {passwordRuleStatus.map((rule) => (
+                                            <li
+                                                key={rule.key}
+                                                className={`inline-flex items-center gap-1.5 ${rule.passed ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`}
+                                            >
+                                                {rule.passed ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Circle className="h-3.5 w-3.5" />}
+                                                {rule.label}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                                <div>
+                                    <label htmlFor="confirmPassword" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                        Confirm password
+                                    </label>
+                                    <input
+                                        id="confirmPassword"
+                                        type="password"
+                                        required
+                                        autoComplete="new-password"
+                                        value={formData.confirmPassword}
+                                        onChange={(e) => updateField('confirmPassword', e.target.value)}
+                                        className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-[#dc2626] focus:ring-2 focus:ring-[#dc2626]/20 dark:bg-slate-950 dark:text-slate-100 ${fieldErrors.confirmPassword ? 'border-red-300 dark:border-red-700' : 'border-slate-300 dark:border-slate-700'}`}
+                                        placeholder="Re-enter password"
+                                    />
+                                    {fieldErrors.confirmPassword && (
+                                        <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.confirmPassword}</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#dc2626] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#dc2626]/25 transition hover:bg-[#b91c1c] disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                {isSubmitting ? 'Creating account...' : 'Create account'}
+                                {!isSubmitting && <ArrowRight className="h-4 w-4" />}
+                            </button>
+                        </form>
+
+                        <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
+                            Already have an account?{' '}
+                            <Link href="/login" className="font-semibold text-[#dc2626] hover:text-[#3e38b6]">
+                                Sign in
+                            </Link>
+                        </p>
                     </div>
                 </section>
             </div>
