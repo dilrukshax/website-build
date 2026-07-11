@@ -305,7 +305,7 @@ export default function HomePage() {
             <div className="relative flex min-h-screen w-full flex-col">
                 <header className="sticky top-0 z-50 flex items-center justify-between border-b border-slate-200 bg-white/80 px-6 py-4 backdrop-blur-md md:px-20 dark:border-slate-800 dark:bg-[#121121]/80">
                     <div className="flex items-center gap-2 text-[#dc2626]">
-                        <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">iroh</h2>
+                        <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Aurora</h2>
                     </div>
                     <div className="flex flex-1 items-center justify-end gap-3 md:gap-8">
                         <nav className="hidden items-center gap-8 md:flex">
@@ -354,7 +354,7 @@ export default function HomePage() {
                                 <span className="text-[#dc2626]">blog that takes appointments while you sleep.</span>
                             </h1>
                             <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-slate-600 dark:text-slate-400">
-                                iroh is an all-in-one platform to design your site with ready-made themes, accept online bookings and inquiries, publish an SEO-ready blog, and go live on your own custom domain — no code required.
+                                Aurora is an all-in-one platform to design your site with ready-made themes, accept online bookings and inquiries, publish an SEO-ready blog, and go live on your own custom domain — no code required.
                             </p>
                             <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
                                 <Link
@@ -663,14 +663,14 @@ export default function HomePage() {
                 <footer className="border-t border-slate-200 bg-white px-6 py-12 md:px-20 dark:border-slate-800 dark:bg-[#121121]">
                     <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-8 md:flex-row">
                         <div className="flex items-center gap-2 text-[#dc2626]">
-                            <h2 className="text-lg font-bold leading-tight text-slate-900 dark:text-white">iroh</h2>
+                            <h2 className="text-lg font-bold leading-tight text-slate-900 dark:text-white">Aurora</h2>
                         </div>
                         <div className="flex gap-12 text-sm text-slate-500 dark:text-slate-400">
                             <a className="transition-colors hover:text-[#dc2626]" href="#">Privacy Policy</a>
                             <a className="transition-colors hover:text-[#dc2626]" href="#">Terms of Service</a>
                             <a className="transition-colors hover:text-[#dc2626]" href="#">Help Center</a>
                         </div>
-                        <p className="text-sm text-slate-400">© {new Date().getFullYear()} iroh. All rights reserved.</p>
+                        <p className="text-sm text-slate-400">© {new Date().getFullYear()} Aurora. All rights reserved.</p>
                     </div>
                 </footer>
             </div>

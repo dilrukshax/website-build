@@ -1,8 +1,8 @@
-# Iroh — SaaS Booking & Website Builder
+# Aurora — SaaS Booking & Website Builder
 
-![Iroh Website Builder](docs/images/screenshot.png)
+![Aurora Website Builder](docs/images/screenshot.png)
 
-Iroh is a modern, production-ready multi-tenant SaaS website builder and booking platform designed for service-based businesses. It enables users to create beautiful websites, manage blog content, accept online bookings/inquiries, and go live on their own custom domains.
+Aurora is a modern, production-ready multi-tenant SaaS website builder and booking platform designed for service-based businesses. It enables users to create beautiful websites, manage blog content, accept online bookings/inquiries, and go live on their own custom domains.
 
 ---
 
@@ -16,6 +16,39 @@ Iroh is a modern, production-ready multi-tenant SaaS website builder and booking
 - **Static Website Publishing**: Publishes website manifests to Cloudflare R2 / S3-compatible object storage.
 - **Custom Domain Routing**: Resolve custom domains and subdomains dynamically, including nameserver validation and CDN cache purging.
 - **Device Fingerprinting**: Fraud risk scoring for bookings and referrals.
+
+---
+
+## System Architecture
+
+```mermaid
+flowchart TD
+    U["CMS User / Team"] --> Web["apps/website-builder-web (Next.js Dashboard)"]
+    V["Public Visitors"] --> Web
+    Web --> API["apps/website-builder-api (Express API)"]
+    API --> DB["PostgreSQL via Prisma"]
+    API --> R2["Cloudflare R2 / S3 Storage"]
+    API --> CF["Cloudflare Cache Purge APIs"]
+    Web --> R2
+```
+
+1. **Dashboard & Visual Builder (`apps/website-builder-web`)**:
+   - Built on Next.js 14 utilizing the App Router.
+   - Serves as the dashboard (admin interface) for tenant organizations to manage booking workflows, staff roles, and services.
+   - Provides a visual page builder interface that syncs layouts and page content sections.
+
+2. **Backend REST API (`apps/website-builder-api`)**:
+   - An Express.js server written in TypeScript.
+   - Handles core business logic, including authentication, role-based permission enforcement, booking schedules, referral workflows, and device checking.
+
+3. **Data Scoping & Security**:
+   - Powered by PostgreSQL and Prisma ORM.
+   - Implements strict tenant (organization) and instance (website) isolation.
+   - Utilizes a two-level JWT scheme: a session-level token for user authentication, and a tenant-scoped token for workspace actions.
+
+4. **Static Site Publishing & Routing**:
+   - Publishing builds a static JSON manifest of pages and uploads it to Cloudflare R2 / S3-compatible storage.
+   - Dynamic domain routing index matches incoming hosts (subdomains or custom domains) and serves the pages using theme components from `@project-aurora/themes`.
 
 ---
 
@@ -431,3 +464,12 @@ Ensure `apps/website-builder-web/.env.local` has:
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3002
 ```
+
+---
+
+## AI Pair-Programming & Development Tools
+
+This project has been developed, refactored, and maintained in partnership with advanced AI agent systems, primarily using:
+- **Google Antigravity (Gemini)**: Utilized for visual layout builder updates, rich TipTap blog integration, sitemap generations, and multi-tenant scoping fixes.
+- **Claude Code**: Utilized for architecture cleanups, package restructuring, and configuration optimizations.
+
