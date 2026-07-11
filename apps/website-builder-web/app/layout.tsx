@@ -5,8 +5,8 @@ import './globals.css';
 
 export const metadata: Metadata = {
     title: {
-        template: '%s | Project Aurora',
-        default: 'Project Aurora',
+        template: '%s | iroh.domman',
+        default: 'iroh.domman',
     },
     description:
         'A multi-tenant website builder for creating, managing, and publishing websites.',
@@ -15,14 +15,20 @@ export const metadata: Metadata = {
             process.env.CMS_URL ||
             'https://buildmyonlineweb.site'
     ),
+    icons: {
+        icon: '/favicon.svg',
+        shortcut: '/favicon.svg',
+        apple: '/favicon.svg',
+    },
     openGraph: {
-        title: 'Project Aurora',
+        title: 'iroh.domman',
         description:
-            'Create, manage, and publish websites with Project Aurora.',
+            'Create, manage, and publish websites with iroh.domman.',
         url: '/',
-        siteName: 'Project Aurora',
+        siteName: 'iroh.domman',
         locale: 'en_US',
         type: 'website',
+        images: [{ url: '/logo.svg', width: 320, height: 80, alt: 'iroh.domman' }],
     },
     robots: {
         index: true,
@@ -36,8 +42,9 @@ export const metadata: Metadata = {
         },
     },
     twitter: {
-        title: 'Project Aurora',
+        title: 'iroh.domman',
         card: 'summary_large_image',
+        images: ['/logo.svg'],
     },
 };
 
@@ -250,6 +257,9 @@ export default async function RootLayout({
     return (
         <html lang="en" suppressHydrationWarning>
             <head>
+                <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+                <link rel="apple-touch-icon" href="/favicon.svg" />
+                <link rel="manifest" href="/site.webmanifest" />
                 <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
                 <script dangerouslySetInnerHTML={{ __html: chunkRecoveryScript }} />
                 {clarityInitScript ? <script dangerouslySetInnerHTML={{ __html: clarityInitScript }} /> : null}

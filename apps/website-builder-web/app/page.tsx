@@ -10,6 +10,12 @@ import {
     Gift,
     LayoutDashboard,
     ShieldCheck,
+    CalendarCheck,
+    PenLine,
+    Globe,
+    Palette,
+    Rocket,
+    Sparkles,
 } from 'lucide-react';
 import { ThemeToggle } from '../components/theme-toggle';
 
@@ -169,56 +175,127 @@ const PRICING_FACTS = [
     },
 ] as const;
 
-function HeroIllustration() {
+const BUILD_HIGHLIGHTS = [
+    {
+        icon: CalendarCheck,
+        title: 'Online booking system',
+        detail: 'Let customers book appointments and send inquiries straight from your site. Bookings, customers, and stats are managed from one dashboard.',
+    },
+    {
+        icon: PenLine,
+        title: 'SEO-ready blog',
+        detail: 'Write posts in a Word-style editor with images, auto-filled meta tags, sitemaps, and llms.txt so search engines and AI can find you.',
+    },
+    {
+        icon: Palette,
+        title: 'Theme-driven builder',
+        detail: 'Start from professional templates, then edit sections, colors, and content live. Reusable header/footer keep every page consistent.',
+    },
+    {
+        icon: Rocket,
+        title: 'One-click publish',
+        detail: 'Push a versioned, static build to global storage with instant cache purge — and roll back any version whenever you need.',
+    },
+    {
+        icon: Globe,
+        title: 'Custom domains',
+        detail: 'Connect your own domain or use a free subdomain. Routing and SSL status are handled for you across every published site.',
+    },
+    {
+        icon: LayoutDashboard,
+        title: 'Multi-site management',
+        detail: 'Run several websites from a single tenant, invite staff with role-based permissions, and keep each brand fully isolated.',
+    },
+] as const;
+
+function AnimatedHero() {
     return (
-        <svg viewBox="0 0 760 460" className="h-full w-full" role="img" aria-label="Website builder and booking illustration">
-            <defs>
-                <linearGradient id="hero-bg" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#fff5f5" />
-                    <stop offset="100%" stopColor="#fee2e2" />
-                </linearGradient>
-                <linearGradient id="hero-cta" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#dc2626" />
-                    <stop offset="100%" stopColor="#b91c1c" />
-                </linearGradient>
-            </defs>
+        <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-[#fff5f5] to-[#fee2e2] p-6 dark:from-slate-900 dark:to-slate-950 sm:p-10">
+            {/* Animated ambient blobs */}
+            <div className="be-blob pointer-events-none absolute -left-10 top-6 h-40 w-40 bg-[#dc2626]/20 blur-2xl" />
+            <div className="be-blob pointer-events-none absolute -right-8 bottom-4 h-48 w-48 bg-[#f97316]/20 blur-2xl" style={{ animationDelay: '2s' }} />
 
-            <rect x="0" y="0" width="760" height="460" rx="28" fill="url(#hero-bg)" />
+            {/* Builder / browser window */}
+            <div className="be-rise relative z-10 w-full max-w-md rounded-2xl border border-white/70 bg-white/90 shadow-2xl backdrop-blur dark:border-slate-700 dark:bg-slate-900/90">
+                <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+                    <span className="h-2.5 w-2.5 rounded-full bg-[#fca5a5]" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-[#fcd34d]" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-[#86efac]" />
+                    <div className="ml-3 flex h-6 flex-1 items-center rounded-md bg-slate-100 px-3 text-[11px] font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                        yourbrand.com
+                    </div>
+                </div>
+                <div className="space-y-4 p-5">
+                    <div className="be-rise-1 flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-[#dc2626]/15" />
+                        <div className="flex-1 space-y-2">
+                            <div className="h-2.5 w-3/4 rounded-full bg-slate-200 dark:bg-slate-700" />
+                            <div className="h-2 w-1/2 rounded-full bg-slate-100 dark:bg-slate-800" />
+                        </div>
+                    </div>
+                    {/* Live build progress bar */}
+                    <div className="be-rise-2 h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                        <div className="be-progress-bar h-full rounded-full bg-gradient-to-r from-[#dc2626] to-[#f97316]" />
+                    </div>
+                    <div className="be-rise-3 grid grid-cols-2 gap-3">
+                        <div className="relative h-20 overflow-hidden rounded-lg border border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-800/50">
+                            <div className="be-shimmer absolute inset-0" />
+                            <div className="p-3">
+                                <div className="h-2 w-2/3 rounded-full bg-slate-200 dark:bg-slate-700" />
+                                <div className="mt-2 h-2 w-1/2 rounded-full bg-slate-100 dark:bg-slate-800" />
+                            </div>
+                        </div>
+                        <div className="relative h-20 overflow-hidden rounded-lg border border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-800/50">
+                            <div className="be-shimmer absolute inset-0" style={{ animationDelay: '1.2s' }} />
+                            <div className="p-3">
+                                <div className="h-2 w-2/3 rounded-full bg-slate-200 dark:bg-slate-700" />
+                                <div className="mt-2 h-2 w-1/2 rounded-full bg-slate-100 dark:bg-slate-800" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-            <g opacity="0.4">
-                <circle cx="96" cy="78" r="46" fill="#fecaca" />
-                <circle cx="676" cy="92" r="58" fill="#fecaca" />
-                <circle cx="652" cy="392" r="70" fill="#fecaca" />
-            </g>
+            {/* Floating booking card */}
+            <div className="be-float absolute left-2 top-8 z-20 w-44 rounded-xl border border-slate-100 bg-white p-3 shadow-xl dark:border-slate-700 dark:bg-slate-900 sm:left-4">
+                <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#dc2626]/10 text-[#dc2626]">
+                        <CalendarCheck className="h-4 w-4" />
+                    </div>
+                    <div>
+                        <p className="text-[11px] font-bold text-slate-900 dark:text-white">New booking</p>
+                        <p className="text-[10px] text-slate-500">Today · 2:30 PM</p>
+                    </div>
+                </div>
+                <div className="mt-2 flex items-center gap-1.5">
+                    <span className="relative inline-flex h-2 w-2">
+                        <span className="be-pulse-ring absolute inline-flex h-2 w-2" />
+                        <span className="inline-flex h-2 w-2 rounded-full bg-[#22c55e]" />
+                    </span>
+                    <span className="text-[10px] font-medium text-[#16a34a]">Confirmed</span>
+                </div>
+            </div>
 
-            <rect x="92" y="64" width="576" height="332" rx="22" fill="#ffffff" stroke="#fecaca" strokeWidth="2" />
-            <rect x="92" y="64" width="576" height="48" rx="22" fill="#fef2f2" />
-            <circle cx="128" cy="88" r="6" fill="#fca5a5" />
-            <circle cx="150" cy="88" r="6" fill="#fca5a5" />
-            <circle cx="172" cy="88" r="6" fill="#fca5a5" />
-            <rect x="214" y="80" width="236" height="16" rx="8" fill="#fecaca" />
+            {/* Floating blog card */}
+            <div className="be-float-delayed absolute bottom-6 right-2 z-20 w-44 rounded-xl border border-slate-100 bg-white p-3 shadow-xl dark:border-slate-700 dark:bg-slate-900 sm:right-4">
+                <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#dc2626]/10 text-[#dc2626]">
+                        <PenLine className="h-4 w-4" />
+                    </div>
+                    <p className="text-[11px] font-bold text-slate-900 dark:text-white">Blog published</p>
+                </div>
+                <div className="mt-2 space-y-1.5">
+                    <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800" />
+                    <div className="h-2 w-3/4 rounded-full bg-slate-100 dark:bg-slate-800" />
+                </div>
+            </div>
 
-            <rect x="122" y="136" width="208" height="228" rx="16" fill="#ffffff" stroke="#fecaca" />
-            <rect x="146" y="164" width="140" height="18" rx="9" fill="#fca5a5" />
-            <rect x="146" y="196" width="160" height="10" rx="5" fill="#fee2e2" />
-            <rect x="146" y="214" width="148" height="10" rx="5" fill="#fee2e2" />
-            <rect x="146" y="232" width="124" height="10" rx="5" fill="#fee2e2" />
-            <rect x="146" y="266" width="160" height="44" rx="12" fill="url(#hero-cta)" />
-            <text x="190" y="293" fill="#ffffff" fontFamily="Arial, sans-serif" fontSize="13" fontWeight="700">Book Now</text>
-
-            <rect x="350" y="136" width="270" height="146" rx="16" fill="#ffffff" stroke="#fecaca" />
-            <rect x="374" y="164" width="146" height="16" rx="8" fill="#fca5a5" />
-            <rect x="374" y="194" width="226" height="10" rx="5" fill="#fee2e2" />
-            <rect x="374" y="212" width="210" height="10" rx="5" fill="#fee2e2" />
-            <rect x="374" y="230" width="160" height="10" rx="5" fill="#fee2e2" />
-            <rect x="374" y="252" width="96" height="22" rx="11" fill="#fef2f2" />
-
-            <rect x="350" y="298" width="270" height="66" rx="16" fill="#ffffff" stroke="#fecaca" />
-            <rect x="374" y="322" width="140" height="12" rx="6" fill="#fca5a5" />
-            <rect x="374" y="342" width="104" height="10" rx="5" fill="#fee2e2" />
-            <rect x="500" y="318" width="100" height="34" rx="10" fill="url(#hero-cta)" />
-            <text x="526" y="340" fill="#ffffff" fontFamily="Arial, sans-serif" fontSize="12" fontWeight="700">Publish</text>
-        </svg>
+            {/* Floating publish badge */}
+            <div className="be-float-slow absolute -right-1 top-4 z-20 flex items-center gap-1.5 rounded-full bg-[#dc2626] px-3 py-1.5 text-[11px] font-bold text-white shadow-lg shadow-[#dc2626]/30 sm:right-6">
+                <Rocket className="h-3.5 w-3.5" />
+                Live
+            </div>
+        </div>
     );
 }
 
@@ -228,12 +305,15 @@ export default function HomePage() {
             <div className="relative flex min-h-screen w-full flex-col">
                 <header className="sticky top-0 z-50 flex items-center justify-between border-b border-slate-200 bg-white/80 px-6 py-4 backdrop-blur-md md:px-20 dark:border-slate-800 dark:bg-[#121121]/80">
                     <div className="flex items-center gap-2 text-[#dc2626]">
-                        <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Project Aurora</h2>
+                        <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">iroh.domman</h2>
                     </div>
                     <div className="flex flex-1 items-center justify-end gap-3 md:gap-8">
                         <nav className="hidden items-center gap-8 md:flex">
                             <a className="text-sm font-medium text-slate-600 transition-colors hover:text-[#dc2626] dark:text-slate-300" href="#product">
                                 Product
+                            </a>
+                            <a className="text-sm font-medium text-slate-600 transition-colors hover:text-[#dc2626] dark:text-slate-300" href="#build">
+                                Build
                             </a>
                             <a className="text-sm font-medium text-slate-600 transition-colors hover:text-[#dc2626] dark:text-slate-300" href="#pricing">
                                 Pricing
@@ -266,15 +346,15 @@ export default function HomePage() {
                         <div className="pointer-events-none absolute left-1/2 top-0 h-72 w-[42rem] -translate-x-1/2 rounded-full bg-[#dc2626]/10 blur-3xl" />
                         <div className="relative mx-auto max-w-3xl px-6 py-20 text-center md:py-28">
                             <span className="inline-flex items-center gap-2 rounded-full border border-[#dc2626]/20 bg-[#dc2626]/5 px-4 py-1.5 text-sm font-semibold text-[#dc2626]">
-                                <span className="h-1.5 w-1.5 rounded-full bg-[#dc2626]" />
-                                DB-driven plans, billing &amp; referrals
+                                <Sparkles className="h-4 w-4" />
+                                Website builder · Bookings · Blog
                             </span>
                             <h1 className="mx-auto mt-6 max-w-2xl text-4xl font-bold leading-[1.12] tracking-tight text-slate-900 sm:text-5xl md:text-6xl dark:text-white">
-                                Run website growth with{' '}
-                                <span className="text-[#dc2626]">clear limits, verified referrals, and controlled billing.</span>
+                                Build a booking website and{' '}
+                                <span className="text-[#dc2626]">blog that takes appointments while you sleep.</span>
                             </h1>
                             <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-slate-600 dark:text-slate-400">
-                                Project Aurora enforces every plan directly in API and CMS — usage caps, add-on bundles, manual charge approval, wallet credits, and fraud-proof referral claims.
+                                iroh.domman is an all-in-one platform to design your site with ready-made themes, accept online bookings and inquiries, publish an SEO-ready blog, and go live on your own custom domain — no code required.
                             </p>
                             <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
                                 <Link
@@ -290,14 +370,43 @@ export default function HomePage() {
                                     View Pricing
                                 </Link>
                             </div>
-                            <p className="mt-5 text-sm text-slate-500 dark:text-slate-400">No credit card required · Grandfather-safe migration</p>
+                            <p className="mt-5 text-sm text-slate-500 dark:text-slate-400">No credit card required · Free plan to start · Publish in minutes</p>
                         </div>
                         <div className="relative mx-auto max-w-6xl px-6 pb-20">
                             <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl dark:border-slate-700 dark:bg-slate-800">
                                 <div className="aspect-video w-full overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-900">
-                                    <HeroIllustration />
+                                    <AnimatedHero />
                                 </div>
                             </div>
+                        </div>
+                    </section>
+
+                    <section id="build" className="mx-auto max-w-7xl px-6 py-24 md:px-20">
+                        <div className="mb-16 flex flex-col items-center gap-4 text-center">
+                            <span className="inline-flex items-center gap-2 rounded-full border border-[#dc2626]/20 bg-[#dc2626]/5 px-4 py-1.5 text-sm font-semibold text-[#dc2626]">
+                                <Sparkles className="h-4 w-4" />
+                                Everything in one place
+                            </span>
+                            <h2 className="max-w-2xl text-3xl font-extrabold tracking-tight text-slate-900 md:text-4xl dark:text-white">
+                                Everything you need to launch a booking-ready website
+                            </h2>
+                            <p className="max-w-3xl text-lg text-slate-600 dark:text-slate-400">
+                                Whether you run a salon, clinic, studio, or service business, build the whole thing — landing pages, booking flow, and blog — without touching code.
+                            </p>
+                        </div>
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+                            {BUILD_HIGHLIGHTS.map(({ icon: Icon, title, detail }) => (
+                                <div
+                                    key={title}
+                                    className="group flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-7 transition-all hover:-translate-y-1 hover:border-[#dc2626]/30 hover:shadow-xl dark:border-slate-800 dark:bg-slate-900"
+                                >
+                                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#dc2626]/10 text-[#dc2626] transition-colors group-hover:bg-[#dc2626] group-hover:text-white">
+                                        <Icon className="h-6 w-6" />
+                                    </div>
+                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">{title}</h3>
+                                    <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">{detail}</p>
+                                </div>
+                            ))}
                         </div>
                     </section>
 
@@ -554,14 +663,14 @@ export default function HomePage() {
                 <footer className="border-t border-slate-200 bg-white px-6 py-12 md:px-20 dark:border-slate-800 dark:bg-[#121121]">
                     <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-8 md:flex-row">
                         <div className="flex items-center gap-2 text-[#dc2626]">
-                            <h2 className="text-lg font-bold leading-tight text-slate-900 dark:text-white">Project Aurora</h2>
+                            <h2 className="text-lg font-bold leading-tight text-slate-900 dark:text-white">iroh.domman</h2>
                         </div>
                         <div className="flex gap-12 text-sm text-slate-500 dark:text-slate-400">
                             <a className="transition-colors hover:text-[#dc2626]" href="#">Privacy Policy</a>
                             <a className="transition-colors hover:text-[#dc2626]" href="#">Terms of Service</a>
                             <a className="transition-colors hover:text-[#dc2626]" href="#">Help Center</a>
                         </div>
-                        <p className="text-sm text-slate-400">© {new Date().getFullYear()} Project Aurora. All rights reserved.</p>
+                        <p className="text-sm text-slate-400">© {new Date().getFullYear()} iroh.domman. All rights reserved.</p>
                     </div>
                 </footer>
             </div>

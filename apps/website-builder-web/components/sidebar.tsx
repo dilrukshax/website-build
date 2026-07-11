@@ -208,7 +208,7 @@ export function Sidebar() {
                     <Link href="/dashboard" className="flex items-center gap-2 text-[#dc2626]">
                         <Sparkles size={18} />
                         <span className="text-base font-bold tracking-tight text-slate-900 dark:text-white">
-                            Project Aurora
+                            iroh.domman
                         </span>
                     </Link>
                 </div>

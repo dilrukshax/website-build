@@ -956,6 +956,21 @@ If tests are skipped, explicitly record why and residual risk.
 
 ## 23) Change Log
 
+### 2026-07-11 (Landing Page: Animated Hero + Product Capability Section)
+
+- Replaced the static `HeroIllustration` SVG on the public landing page (`apps/website-builder-web/app/page.tsx`) with an animated `AnimatedHero` component: a floating browser/builder mockup with a live build progress bar, shimmering section placeholders, ambient morphing blobs, and floating "New booking" / "Blog published" / "Live" cards (including a pulsing confirmed-booking indicator).
+- Rewrote the hero eyebrow/headline/subcopy to describe what the product actually does (no-code website builder for booking businesses + SEO-ready blog + custom domains) instead of the previous internal billing/referrals framing.
+- Added a new `#build` section ("Everything you need to launch a booking-ready website") with a 6-card `BUILD_HIGHLIGHTS` grid covering: online booking system, SEO-ready blog, theme-driven builder, one-click publish, custom domains, and multi-site management. Added a matching `Build` header nav link.
+- Added reusable landing animation keyframes/utilities to `apps/website-builder-web/app/globals.css` (`be-float`, `be-float-slow`, `be-float-delayed`, `be-rise*`, `be-pulse-ring`, `be-shimmer`, `be-progress-bar`, `be-blob`) with a `prefers-reduced-motion` guard that disables them.
+- Impacted modules/files:
+  - `apps/website-builder-web/app/page.tsx`
+  - `apps/website-builder-web/app/globals.css`
+- Verification:
+  - `pnpm --filter @project-aurora/website-builder-web exec tsc -p tsconfig.json --noEmit --incremental false`
+- Migration/rollout implications:
+  - No database migration required.
+  - Visual/marketing-only change; redeploy the CMS runtime to see the updated landing hero and Build section.
+
 ### 2026-07-10 (Landing Hero Redesign: Modern Minimal)
 
 - Redesigned the public landing hero (`apps/website-builder-web/app/page.tsx`) from a two-column split into a centered modern-minimal layout: eyebrow pill, large headline with red accent, supporting copy, primary/secondary CTAs, and a trust line, followed by a full-width product mockup.
@@ -2931,6 +2946,29 @@ If tests are skipped, explicitly record why and residual risk.
 - Replaced outdated assumptions with current JWT + refresh-cookie auth model.
 - Added password/token back-and-forth flow and baseline guardrails.
 
+### 2026-07-11 (Template Catalog Reconciliation: Guarantee Picker-Visible Templates Active)
+
+- Fixed the empty template picker ("No templates available") symptom caused by `is_active` flag drift across the long chain of re-seed/compensate template migrations.
+- Added `packages/database/prisma/migrations/20260711001000_reconcile_template_catalog_active/migration.sql`:
+  - forces the 8 curated `VISIBLE_TEMPLATE_IDS` (clean-appointments, elegant-concierge, motion-studio, signal-horizon, acquisition-shop, fusion-growth, editorial-pulse, harmozi-vsl) to `is_active = true`
+  - keeps the remaining non-legacy catalog templates active
+  - keeps legacy blog-only templates (blog-authority-hub, editorial-conversion-desk) `is_active = false`
+  - non-destructive: only updates `is_active`, never rewrites `sections_jsonb`, so previously-applied template content is preserved
+- Root-cause note for operators: this migration is applied last in the chain, so a full `prisma migrate deploy` both creates any missing template rows (from earlier migrations) and guarantees their visibility. If the picker is still empty after deploy, the DB was never migrated or `migrate deploy` failed partway.
+- Impacted modules/files:
+  - `packages/database/prisma/migrations/20260711001000_reconcile_template_catalog_active/migration.sql`
+  - `AGENTS.md`
+- Verification:
+  - `pnpm --filter @project-aurora/database prisma migrate deploy`
+  - Confirm active templates:
+    ```sql
+    SELECT id, is_active FROM page_templates ORDER BY id;
+    ```
+    The 8 curated IDs above must report `is_active = true`.
+- Migration/rollout implications:
+  - No schema change; data-only flag reconciliation.
+  - Restart API + CMS runtimes, then reopen the template picker in the builder.
+
 ### 2026-07-11 (GA4 Traffic Analytics Dashboard)
 
 - Added a GA4-based traffic analytics dashboard so tenants can see Google traffic for their published website as charts.
@@ -2962,6 +3000,25 @@ If tests are skipped, explicitly record why and residual risk.
   - Run `pnpm --filter @project-aurora/database prisma migrate deploy` to add the `analytics.view` permission.
   - Set `GA4_SERVICE_ACCOUNT_JSON` in the API runtime (service account with Viewer access to each GA4 property).
   - Tenants add their GA4 Measurement ID + Property ID in Website Settings and publish; charts appear on `/dashboard/analytics`.
+
+### 2026-07-11 (Dashboard Overview: Stat Cards + Activity Charts)
+
+- Added a separate "Overview" section to the tenant CMS dashboard (`/dashboard`) so customers get a normal dashboard view with metrics and charts, distinct from the Getting Started guide.
+- Overview includes:
+  - stat cards for Services, Products, Bookings, Customers, Inquiries, and Blogs (counts; each links to its module; modules are shown only when the user has the matching permission)
+  - a `Bookings by Status` pie chart (via `/cms/bookings/stats`) when `bookings.view` is granted
+  - a `Recent Activity` feed combining latest bookings and inquiries with status badges and relative timestamps
+- All overview fetches are instance-scoped and permission-gated; failures degrade silently to zero/empty rather than breaking the page.
+- When no website instance is selected, the overview shows a "Select a website" prompt instead of empty charts.
+- Reused existing list/stats endpoints (`/cms/services`, `/cms/products`, `/cms/customers`, `/cms/inquiries`, `/cms/blogs`, `/cms/bookings/stats`, `/cms/bookings`) — no new API endpoints or migrations required.
+- Impacted modules/files:
+  - `apps/website-builder-web/app/dashboard/page.tsx`
+  - `AGENTS.md`
+- Verification:
+  - `pnpm --filter @project-aurora/website-builder-web exec tsc -p tsconfig.json --noEmit --incremental false`
+- Migration/rollout implications:
+  - No database migration required.
+  - Redeploy/restart the CMS runtime so the new Overview section is served.
 
 ### 2026-07-10 (Environment Variable Consolidation: Single Source of Truth)
 

@@ -136,7 +136,7 @@ export default function LoginPage() {
 
                     <Link href="/" className="relative z-10 inline-flex items-center gap-2 text-white/95">
                         <Sparkles className="h-5 w-5" />
-                        <span className="text-lg font-semibold">Project Aurora</span>
+                        <span className="text-lg font-semibold">iroh.domman</span>
                     </Link>
 
                     <div className="relative z-10">
@@ -164,7 +164,7 @@ export default function LoginPage() {
                         <div className="mb-8">
                             <Link href="/" className="inline-flex items-center gap-2 text-[#dc2626] lg:hidden">
                                 <Sparkles className="h-5 w-5" />
-                                <span className="text-base font-semibold">Project Aurora</span>
+                                <span className="text-base font-semibold">iroh.domman</span>
                             </Link>
                             <h2 className="mt-4 text-3xl font-black text-slate-900 dark:text-white">Sign in</h2>
                             <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
