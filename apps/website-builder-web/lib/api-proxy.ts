@@ -113,9 +113,8 @@ export async function proxyApiRequest(request: NextRequest, pathSegments: string
         // accidentally compressed upstream response before returning it.
         const responseBody = await upstreamResponse.arrayBuffer();
 
-        return new NextResponse(responseBody, {
+        return new NextResponse(Buffer.from(responseBody), {
             status: upstreamResponse.status,
-            statusText: upstreamResponse.statusText,
             headers: buildResponseHeaders(upstreamResponse.headers),
         });
     } catch (error) {

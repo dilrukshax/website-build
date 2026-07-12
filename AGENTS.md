@@ -960,7 +960,8 @@ If tests are skipped, explicitly record why and residual risk.
 
 - Fixed the API proxy (`apps/website-builder-web/lib/api-proxy.ts`) double decompression issue by:
   - Setting the `Accept-Encoding: identity` header on the upstream request to prevent the upstream service from returning gzip, Brotli, or Zstandard compressed data.
-  - Fetching the upstream response body as an `ArrayBuffer` using `upstreamResponse.arrayBuffer()` to ensure that the Next.js server-side Node runtime completes the decoding of any upstream response before sending it to the client.
+  - Fetching the upstream response body as an `ArrayBuffer` using `upstreamResponse.arrayBuffer()` and converting it to a Node `Buffer` via `Buffer.from(responseBody)` to ensure that the Next.js server-side Node runtime completes the decoding of any upstream response and serializes it correctly without throwing.
+  - Removed `statusText` from the `NextResponse` options in `proxyApiRequest` to prevent runtime serialization and validation errors in Next.js.
 - Removed the template allowlist (`VISIBLE_TEMPLATE_IDS`) in the template picker (`apps/website-builder-web/components/builder/template-picker.tsx`) to display all active templates returned by the API instead of just a hardcoded subset of 8 templates.
 - Impacted modules/files:
   - `apps/website-builder-web/lib/api-proxy.ts`
