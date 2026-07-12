@@ -956,6 +956,20 @@ If tests are skipped, explicitly record why and residual risk.
 
 ## 23) Change Log
 
+### 2026-07-12 (Fix Web API Proxy Double Encoding & Unfilter Templates)
+
+- Fixed the API proxy (`apps/website-builder-web/lib/api-proxy.ts`) double decompression issue by:
+  - Setting the `Accept-Encoding: identity` header on the upstream request to prevent the upstream service from returning gzip, Brotli, or Zstandard compressed data.
+  - Fetching the upstream response body as an `ArrayBuffer` using `upstreamResponse.arrayBuffer()` to ensure that the Next.js server-side Node runtime completes the decoding of any upstream response before sending it to the client.
+- Removed the template allowlist (`VISIBLE_TEMPLATE_IDS`) in the template picker (`apps/website-builder-web/components/builder/template-picker.tsx`) to display all active templates returned by the API instead of just a hardcoded subset of 8 templates.
+- Impacted modules/files:
+  - `apps/website-builder-web/lib/api-proxy.ts`
+  - `apps/website-builder-web/components/builder/template-picker.tsx`
+- Verification:
+  - Ran `pnpm --filter @project-aurora/website-builder-web run build` and verified the build succeeds without compilation errors.
+- Migration/rollout implications:
+  - No database migration required. Redeploy `project-aurora-web` to apply proxy and template picker changes.
+
 ### 2026-07-11 (Remove Registration Business Type Pre-Step)
 
 - Removed the "Choose your business type" pre-step (which asked whether the user's business is service-based or product-based) on the register page.

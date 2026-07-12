@@ -70,6 +70,10 @@ function buildUpstreamHeaders(request: NextRequest): Headers {
         headers.set(key, value);
     });
 
+    // Prevent the upstream API from returning gzip, Brotli, or Zstandard
+    // to the Next.js server-side proxy.
+    headers.set('accept-encoding', 'identity');
+
     return headers;
 }
 
@@ -105,7 +109,11 @@ export async function proxyApiRequest(request: NextRequest, pathSegments: string
             cache: 'no-store',
         });
 
-        return new NextResponse(upstreamResponse.body, {
+        // Reading the body here ensures Node finishes decoding any
+        // accidentally compressed upstream response before returning it.
+        const responseBody = await upstreamResponse.arrayBuffer();
+
+        return new NextResponse(responseBody, {
             status: upstreamResponse.status,
             statusText: upstreamResponse.statusText,
             headers: buildResponseHeaders(upstreamResponse.headers),

@@ -3,17 +3,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../lib/api-client';
 
-const VISIBLE_TEMPLATE_IDS = new Set([
-    'template-2026-clean-appointments',
-    'template-2026-elegant-concierge',
-    'template-2026-motion-studio',
-    'template-2026-signal-horizon',
-    'template-2026-acquisition-shop',
-    'template-2026-fusion-growth',
-    'template-2026-editorial-pulse',
-    'template-2026-harmozi-vsl',
-]);
-
 interface PageTemplate {
     id: string;
     name: string;
@@ -57,7 +46,7 @@ export function TemplatePicker({ open, onClose, onSelect }: TemplatePickerProps)
             api.get<PageTemplate[]>('/cms/catalog/page-templates')
                 .then(res => {
                     if (res.success && res.data) {
-                        setTemplates(res.data.filter((template) => VISIBLE_TEMPLATE_IDS.has(template.id)));
+                        setTemplates(Array.isArray(res.data) ? res.data : []);
                     }
                 })
                 .finally(() => setLoading(false));
