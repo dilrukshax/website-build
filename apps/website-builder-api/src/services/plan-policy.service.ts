@@ -152,8 +152,30 @@ function assertWithinLimit(limit: number | null, nextValue: number, message: str
     }
 }
 
+const planLimitCache = new Map<
+    string,
+    {
+        expiresAt: number;
+        value: EffectivePlanLimits;
+    }
+>();
+
 export class PlanPolicyService {
+    static invalidateCache(tenantId: string): void {
+        planLimitCache.delete(tenantId);
+    }
+
+    static invalidateAllCache(): void {
+        planLimitCache.clear();
+    }
+
     static async getEffectiveLimits(tenantId: string): Promise<EffectivePlanLimits> {
+        const now = Date.now();
+        const cached = planLimitCache.get(tenantId);
+        if (cached && cached.expiresAt > now) {
+            return cached.value;
+        }
+
         await ensurePricingCatalogSeeded();
 
         const tenant = await db.tenant.findUnique({
@@ -177,7 +199,7 @@ export class PlanPolicyService {
 
         const addonBundles = Math.max(0, tenant.addonBundles);
 
-        return {
+        const result: EffectivePlanLimits = {
             plan: tenant.plan as CanonicalPlanTier,
             billingInterval: tenant.billingInterval as CanonicalBillingInterval,
             addonBundles,
@@ -194,6 +216,13 @@ export class PlanPolicyService {
                 ? catalog.addonAnnualPriceCents
                 : catalog.addonMonthlyPriceCents,
         };
+
+        planLimitCache.set(tenantId, {
+            expiresAt: now + 30_000, // 30 seconds cache
+            value: result,
+        });
+
+        return result;
     }
 
     static async getUsageSummary(tenantId: string, instanceId?: string) {

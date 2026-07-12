@@ -1653,3 +1653,12 @@ If tests are skipped, explicitly record why and residual risk.
 - Replaced outdated assumptions with current JWT + refresh-cookie auth model.
 - Added password/token back-and-forth flow and baseline guardrails.
 
+
+
+**ASICOP – Adaptive Smart Irrigation and Crop Optimization Platform** | 2025–2026
+**Tech Stack:** Python, FastAPI, LightGBM, scikit-learn, TensorFlow/Keras, Fuzzy-TOPSIS, PuLP, PostgreSQL, Redis, Next.js, React, TypeScript, Docker
+
+* Co-developed an integrated agricultural decision-support platform combining IoT irrigation control, satellite-based crop-health monitoring, rainfall and reservoir forecasting, and water-constrained crop planning.
+* Led the Adaptive Crop and Area Optimization research stream, combining crop suitability, market-price signals, water quotas, field stress, and agricultural policy constraints to generate practical cultivation recommendations.
+* Implemented a five-criterion Fuzzy-TOPSIS crop-ranking model and price-prediction workflows using 71,737 Sri Lankan retail-price observations to support market-aware crop selection.
+* Designed constrained crop-area allocation and dynamic “Plan B” workflows that consume water availability, crop-stress penalties, and P10/P50/P90 forecast scenarios to produce Top-3 crop plans under changing seasonal conditions.

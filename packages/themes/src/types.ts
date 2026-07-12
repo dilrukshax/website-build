@@ -10,7 +10,14 @@ export interface ThemeComponentProps {
         font: string;
     };
     isEditor?: boolean;
-    context?: { tenantId: string; instanceId: string; pageSlug?: string; subdomain?: string; blogPost?: any };
+    context?: {
+        tenantId: string;
+        instanceId: string;
+        pageSlug?: string;
+        subdomain?: string;
+        blogPost?: any;
+        dataMode?: 'live' | 'preview';
+    };
 }
 
 export interface ThemeTemplate {

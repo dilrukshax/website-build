@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
     resolveCanonicalHost: vi.fn(),
     findManifestPageByRequestedSlug: vi.fn(),
     resolvePublishedPageSeo: vi.fn(),
+    resolveRoutedRequestHost: vi.fn(),
 }));
 
 vi.mock('next/headers', () => ({
@@ -20,6 +21,7 @@ vi.mock('../../lib/published-site', () => ({
     resolveCanonicalHost: mocks.resolveCanonicalHost,
     findManifestPageByRequestedSlug: mocks.findManifestPageByRequestedSlug,
     resolvePublishedPageSeo: mocks.resolvePublishedPageSeo,
+    resolveRoutedRequestHost: mocks.resolveRoutedRequestHost,
 }));
 
 describe('preview blog metadata generation', () => {
@@ -31,6 +33,7 @@ describe('preview blog metadata generation', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         process.env.NEXT_PUBLIC_API_URL = 'https://api.example.com';
+        mocks.resolveRoutedRequestHost.mockReturnValue('www.mysalon.com');
         mocks.normalizeHost.mockReturnValue('www.mysalon.com');
         mocks.isCmsHost.mockReturnValue(false);
         mocks.resolveCanonicalHost.mockReturnValue('www.mysalon.com');

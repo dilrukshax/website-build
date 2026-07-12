@@ -1,8 +1,9 @@
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { SectionRenderer } from '../../components/builder/section-renderer';
 import { TEST_CONTEXT, TEST_TOKENS, buildFixtureForComponent } from './fixtures/theme-component-fixtures';
+import { getRegisteredKeys, getThemeComponent } from '@project-aurora/themes';
 
 function renderSection(
     componentKey: string,
@@ -28,6 +29,22 @@ function renderSection(
 }
 
 describe('SectionRenderer integration', () => {
+    beforeAll(async () => {
+        const keysToPreload = getRegisteredKeys();
+        for (const key of keysToPreload) {
+            const Component = getThemeComponent(key) as any;
+            if (Component && typeof Component === 'object' && '_payload' in Component) {
+                const payload = Component._payload;
+                const loader = payload._result || payload._ctor;
+                if (typeof loader === 'function') {
+                    const module = await loader();
+                    payload._status = 1;
+                    payload._result = module;
+                }
+            }
+        }
+    });
+
     it('renders a known component key', () => {
         const html = renderSection('hero/v1', {
             content: {

@@ -33,7 +33,7 @@ function createResponse() {
     };
     res.status.mockReturnValue(res);
     res.json.mockReturnValue(res);
-    return res as unknown as { status: ReturnType<typeof vi.fn>; json: ReturnType<typeof vi.fn> };
+    return res as any;
 }
 
 function createRequest(overrides: Record<string, unknown> = {}) {

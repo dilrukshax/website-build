@@ -237,6 +237,7 @@ export default function DeveloperTemplatePreviewPage() {
                     content={section.defaultContent}
                     styles={section.defaultStyles}
                     tokens={tokens}
+                    context={{ tenantId: '', instanceId: '', dataMode: 'preview' }}
                     isEditor={false}
                 />
             ))}

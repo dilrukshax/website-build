@@ -12,25 +12,9 @@ function getTenantIdFromRequest(req: Request): string | null {
 }
 
 async function getThemeAccessLimit(req: Request): Promise<number | null> {
-    const tenantId = getTenantIdFromRequest(req);
+    const tenantId = req.tenant?.id || getTenantIdFromRequest(req);
     if (!tenantId) {
         return null;
-    }
-
-    if (req.auth?.userId && req.user?.isSuperAdmin !== true) {
-        const userTenant = await db.userTenant.findUnique({
-            where: {
-                userId_tenantId: {
-                    userId: req.auth.userId,
-                    tenantId,
-                },
-            },
-            select: { status: true },
-        });
-
-        if (!userTenant || userTenant.status !== 'active') {
-            throw new AppError(ERROR_CODES.FORBIDDEN, 'You do not have access to this tenant catalog view', 403);
-        }
     }
 
     const limits = await PlanPolicyService.getEffectiveLimits(tenantId);

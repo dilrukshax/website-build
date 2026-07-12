@@ -39,7 +39,7 @@ import {
     reorderPagesSchema,
 } from '../../validators/pages.validators';
 import { createSectionSchema, updateSectionSchema, reorderSectionsSchema } from '../../validators/sections.validators';
-import { updateWebsiteSettingsSchema } from '../../validators/builder.validators';
+import { updateWebsiteSettingsSchema, applySiteTemplateSchema } from '../../validators/builder.validators';
 import { analyticsSummaryQuery } from '../../validators/analytics.validators';
 import { PagesController } from '../../controllers/pages.controller';
 import { SectionsController } from '../../controllers/sections.controller';
@@ -73,10 +73,19 @@ import {
 } from '../../validators/superadmin-referrals.validators';
 import { RoutingIndexController } from '../../controllers/routing-index.controller';
 
+import { cmsWriteLimiter } from '../../middleware/rate-limit';
+
 const router = Router();
 
 // All CMS routes require authentication
 router.use(requireAuth);
+
+router.use((req, res, next) => {
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+        return cmsWriteLimiter(req, res, next);
+    }
+    next();
+});
 
 // =============================================================
 // Tenant management (no tenant context required — auth only)
@@ -224,40 +233,41 @@ instanceRouter.put('/inquiries/:id/status', requirePermission('inquiries.update_
 instanceRouter.delete('/inquiries/:id', requirePermission('inquiries.delete'), InquiriesController.delete);
 
 // --- Pages (instance-scoped, website builder) ---
-instanceRouter.get('/pages', PagesController.list);
-instanceRouter.post('/pages', validate(createPageSchema), PagesController.create);
-instanceRouter.put('/pages/reorder', validate(reorderPagesSchema), PagesController.reorder);
-instanceRouter.get('/pages/:id', PagesController.getById);
-instanceRouter.put('/pages/:id', validate(updatePageSchema), PagesController.update);
-instanceRouter.delete('/pages/:id', PagesController.delete);
-instanceRouter.post('/pages/:id/apply-template', validate(applyTemplateSchema), PagesController.applyTemplate);
+instanceRouter.get('/pages', requirePermission('website.view'), PagesController.list);
+instanceRouter.post('/pages', requirePermission('website.edit'), validate(createPageSchema), PagesController.create);
+instanceRouter.put('/pages/reorder', requirePermission('website.edit'), validate(reorderPagesSchema), PagesController.reorder);
+instanceRouter.get('/pages/:id', requirePermission('website.view'), PagesController.getById);
+instanceRouter.put('/pages/:id', requirePermission('website.edit'), validate(updatePageSchema), PagesController.update);
+instanceRouter.delete('/pages/:id', requirePermission('website.edit'), PagesController.delete);
+instanceRouter.post('/pages/:id/apply-template', requirePermission('website.edit'), validate(applyTemplateSchema), PagesController.applyTemplate);
 
 // --- Page Sections (instance-scoped, website builder) ---
-instanceRouter.get('/pages/:pageId/sections', SectionsController.listByPage);
-instanceRouter.post('/pages/:pageId/sections', validate(createSectionSchema), SectionsController.create);
-instanceRouter.put('/pages/:pageId/sections/reorder', validate(reorderSectionsSchema), SectionsController.reorder);
-instanceRouter.put('/sections/:id', validate(updateSectionSchema), SectionsController.update);
-instanceRouter.delete('/sections/:id', SectionsController.delete);
+instanceRouter.get('/pages/:pageId/sections', requirePermission('website.view'), SectionsController.listByPage);
+instanceRouter.post('/pages/:pageId/sections', requirePermission('website.edit'), validate(createSectionSchema), SectionsController.create);
+instanceRouter.put('/pages/:pageId/sections/reorder', requirePermission('website.edit'), validate(reorderSectionsSchema), SectionsController.reorder);
+instanceRouter.put('/sections/:id', requirePermission('website.edit'), validate(updateSectionSchema), SectionsController.update);
+instanceRouter.delete('/sections/:id', requirePermission('website.edit'), SectionsController.delete);
 
 // --- Feature Toggles (instance-scoped) ---
-instanceRouter.get('/feature-toggles', FeatureTogglesController.list);
-instanceRouter.put('/feature-toggles', validate(upsertFeatureToggleSchema), FeatureTogglesController.upsert);
-instanceRouter.put('/feature-toggles/bulk', validate(bulkUpdateFeatureTogglesSchema), FeatureTogglesController.bulkUpdate);
-instanceRouter.delete('/feature-toggles/:id', FeatureTogglesController.delete);
+instanceRouter.get('/feature-toggles', requirePermission('website.view'), FeatureTogglesController.list);
+instanceRouter.put('/feature-toggles', requirePermission('website.edit'), validate(upsertFeatureToggleSchema), FeatureTogglesController.upsert);
+instanceRouter.put('/feature-toggles/bulk', requirePermission('website.edit'), validate(bulkUpdateFeatureTogglesSchema), FeatureTogglesController.bulkUpdate);
+instanceRouter.delete('/feature-toggles/:id', requirePermission('website.edit'), FeatureTogglesController.delete);
 
 // --- Media Uploads (instance-scoped) ---
-instanceRouter.post('/uploads/presign', validate(presignUploadSchema), MediaController.presign);
-instanceRouter.post('/uploads/complete', validate(completeUploadSchema), MediaController.complete);
+instanceRouter.post('/uploads/presign', requirePermission('website.edit'), validate(presignUploadSchema), MediaController.presign);
+instanceRouter.post('/uploads/complete', requirePermission('website.edit'), validate(completeUploadSchema), MediaController.complete);
 
 // --- Builder (instance-scoped, website builder) ---
-instanceRouter.get('/builder/pages/:pageId', BuilderController.getPageManifest);
-instanceRouter.get('/builder/settings', BuilderController.getSettings);
-instanceRouter.put('/builder/settings', validate(updateWebsiteSettingsSchema), BuilderController.updateSettings);
-instanceRouter.get('/builder/publish-readiness', BuilderController.publishReadiness);
-instanceRouter.post('/builder/publish', BuilderController.publish);
+instanceRouter.get('/builder/pages/:pageId', requirePermission('website.view'), BuilderController.getPageManifest);
+instanceRouter.get('/builder/settings', requirePermission('website.view'), BuilderController.getSettings);
+instanceRouter.put('/builder/settings', requirePermission('website.edit'), validate(updateWebsiteSettingsSchema), BuilderController.updateSettings);
+instanceRouter.get('/builder/publish-readiness', requirePermission('website.view'), BuilderController.publishReadiness);
+instanceRouter.post('/builder/publish', requirePermission('website.publish'), BuilderController.publish);
 instanceRouter.post('/builder/purge-cache', BuilderController.purgeCache);
-instanceRouter.get('/builder/publish/history', BuilderController.publishHistory);
-instanceRouter.post('/builder/rollback', BuilderController.rollback);
+instanceRouter.get('/builder/publish/history', requirePermission('website.view'), BuilderController.publishHistory);
+instanceRouter.post('/builder/rollback', requirePermission('website.publish'), BuilderController.rollback);
+instanceRouter.post('/builder/apply-site-template', requirePermission('website.edit'), validate(applySiteTemplateSchema), BuilderController.applySiteTemplate);
 
 // Mount instance-scoped routes under tenant router
 tenantRouter.use('/', instanceRouter);

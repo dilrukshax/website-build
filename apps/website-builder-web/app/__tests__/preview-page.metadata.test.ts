@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
     resolveRequestedSlug: vi.fn(),
     normalizeHost: vi.fn(),
     isCmsHost: vi.fn(),
+    resolveRoutedRequestHost: vi.fn(),
 }));
 
 vi.mock('next/headers', () => ({
@@ -20,12 +21,14 @@ vi.mock('../../lib/published-site', () => ({
     resolveRequestedSlug: mocks.resolveRequestedSlug,
     normalizeHost: mocks.normalizeHost,
     isCmsHost: mocks.isCmsHost,
+    resolveRoutedRequestHost: mocks.resolveRoutedRequestHost,
     buildStructuredDataForPublishedPage: vi.fn(() => []),
 }));
 
 describe('preview page metadata generation', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mocks.resolveRoutedRequestHost.mockReturnValue('www.mysalon.com');
         mocks.normalizeHost.mockReturnValue('www.mysalon.com');
         mocks.resolveRequestedSlug.mockImplementation((segments?: string[]) => {
             if (!segments || segments.length === 0) return '/';

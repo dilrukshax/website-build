@@ -3,6 +3,7 @@ import { db, seedDefaultRoles } from '@project-aurora/database';
 import { ERROR_CODES } from '@project-aurora/core';
 import { AppError } from '../middleware/error';
 import { AuthService } from '@project-aurora/auth';
+import { PlanPolicyService } from '../services/plan-policy.service';
 
 const REFRESH_COOKIE_OPTIONS = {
     httpOnly: true,
@@ -154,6 +155,8 @@ export class TenantsController {
                 data: { ...(businessName && { businessName }) },
             });
 
+            PlanPolicyService.invalidateCache(id);
+
             res.json({
                 success: true,
                 data: {
@@ -188,6 +191,8 @@ export class TenantsController {
                 where: { id },
                 data: { status: 'inactive' },
             });
+
+            PlanPolicyService.invalidateCache(id);
 
             res.json({
                 success: true,

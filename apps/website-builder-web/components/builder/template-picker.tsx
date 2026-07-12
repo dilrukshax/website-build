@@ -17,6 +17,31 @@ interface TemplatePickerProps {
     onSelect: (templateId: string) => void;
 }
 
+let cachedTemplatesPromise: Promise<any> | null = null;
+let cachedTemplatesExpiry = 0;
+
+function fetchCachedTemplates() {
+    const now = Date.now();
+    if (cachedTemplatesPromise && cachedTemplatesExpiry > now) {
+        return cachedTemplatesPromise;
+    }
+
+    cachedTemplatesPromise = api.get<PageTemplate[]>('/cms/catalog/page-templates')
+        .then(res => {
+            if (!res.success) {
+                cachedTemplatesPromise = null;
+            }
+            return res;
+        })
+        .catch(err => {
+            cachedTemplatesPromise = null;
+            throw err;
+        });
+
+    cachedTemplatesExpiry = now + 5 * 60 * 1000; // 5 minutes cache
+    return cachedTemplatesPromise;
+}
+
 export function TemplatePicker({ open, onClose, onSelect }: TemplatePickerProps) {
     const [templates, setTemplates] = useState<PageTemplate[]>([]);
     const [loading, setLoading] = useState(false);
@@ -43,7 +68,7 @@ export function TemplatePicker({ open, onClose, onSelect }: TemplatePickerProps)
     useEffect(() => {
         if (open) {
             setLoading(true);
-            api.get<PageTemplate[]>('/cms/catalog/page-templates')
+            fetchCachedTemplates()
                 .then(res => {
                     if (res.success && res.data) {
                         setTemplates(Array.isArray(res.data) ? res.data : []);

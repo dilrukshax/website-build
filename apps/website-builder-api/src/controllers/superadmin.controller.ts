@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { db } from '@project-aurora/database';
 import { ERROR_CODES } from '@project-aurora/core';
 import { AppError } from '../middleware/error';
+import { PlanPolicyService } from '../services/plan-policy.service';
 
 export class SuperAdminController {
     private static computeCustomDomainStatus(input: {
@@ -333,6 +334,9 @@ export class SuperAdminController {
     static async updateTenantStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const { id } = req.params;
+            if (!id) {
+                throw new AppError(ERROR_CODES.VALIDATION_ERROR, 'Tenant ID is required', 400);
+            }
             const { status } = req.body;
 
             if (!['active', 'inactive', 'suspended'].includes(status)) {
@@ -343,6 +347,8 @@ export class SuperAdminController {
                 where: { id },
                 data: { status },
             });
+
+            PlanPolicyService.invalidateCache(id);
 
             res.json({
                 success: true,

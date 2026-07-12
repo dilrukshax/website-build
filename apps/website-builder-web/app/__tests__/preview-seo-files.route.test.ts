@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
     normalizeHost: vi.fn(),
     isCmsHost: vi.fn(),
     resolveCanonicalHost: vi.fn(),
+    resolveRoutedRequestHost: vi.fn(),
 }));
 
 vi.mock('../../lib/published-site', () => ({
@@ -28,6 +29,7 @@ vi.mock('../../lib/published-site', () => ({
     normalizeHost: mocks.normalizeHost,
     isCmsHost: mocks.isCmsHost,
     resolveCanonicalHost: mocks.resolveCanonicalHost,
+    resolveRoutedRequestHost: mocks.resolveRoutedRequestHost,
 }));
 
 describe('preview SEO routes', () => {
@@ -39,6 +41,7 @@ describe('preview SEO routes', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mocks.normalizeHost.mockImplementation((value: string | null | undefined) => (value || '').toLowerCase());
+        mocks.resolveRoutedRequestHost.mockReturnValue('www.mysalon.com');
     });
 
     it('returns per-site sitemap.xml as a sitemap index with child files', async () => {

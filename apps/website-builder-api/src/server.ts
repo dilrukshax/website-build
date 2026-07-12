@@ -4,6 +4,8 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import path from 'path';
+import { performance } from 'node:perf_hooks';
+import { randomUUID } from 'node:crypto';
 import swaggerUi from 'swagger-ui-express';
 import cookieParser from 'cookie-parser';
 import { logger } from '@project-aurora/core';
@@ -26,6 +28,30 @@ const app: Express = express();
 const port = Number(process.env.PORT || 5074);
 app.set('trust proxy', true);
 
+// Performance / Request ID Middleware
+app.use((req, res, next) => {
+    const startedAt = performance.now();
+    const requestId = req.header('x-request-id') || randomUUID();
+
+    req.headers['x-request-id'] = requestId;
+    res.setHeader('x-request-id', requestId);
+
+    res.on('finish', () => {
+        const duration = performance.now() - startedAt;
+
+        logger.info('HTTP request completed', {
+            requestId,
+            method: req.method,
+            path: req.originalUrl,
+            status: res.statusCode,
+            durationMs: Math.round(duration),
+        });
+    });
+
+    next();
+});
+
+
 // Lightweight health endpoint for platform health checks (Coolify/Sevalla).
 // Must respond 200 quickly and bypass auth/CSP so probes succeed.
 app.get('/health', (_req, res) => {
@@ -36,9 +62,17 @@ app.get('/', (_req, res) => {
 });
 
 function buildStaticCorsOrigins(): string {
+    const rawOrigins = process.env.CORS_ORIGIN || '';
+    if (process.env.NODE_ENV === 'production') {
+        const hasWildcard = rawOrigins.split(',').map(o => o.trim()).includes('*');
+        if (hasWildcard) {
+            throw new Error('Forbidden wildcard CORS_ORIGIN=* in production environments.');
+        }
+    }
+
     const values = new Set<string>();
 
-    for (const raw of (process.env.CORS_ORIGIN || '').split(',')) {
+    for (const raw of rawOrigins.split(',')) {
         const value = raw.trim();
         if (value) {
             values.add(value);
@@ -87,8 +121,8 @@ const corsOptionsDelegate = createDynamicCorsOptionsDelegate({
 app.use(cors(corsOptionsDelegate));
 
 app.use(cookieParser());
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 app.use(morgan('short', {
     stream: {
@@ -101,21 +135,23 @@ app.use(morgan('short', {
 // =============================================================
 
 // Swagger UI — development only
-app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-    customSiteTitle: 'Project Aurora — Website Builder API Docs',
-    swaggerOptions: {
-        persistAuthorization: true,
-        displayRequestDuration: true,
-        filter: true,
-        tryItOutEnabled: true,
-    },
-}));
+if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_SWAGGER_IN_PRODUCTION === 'true') {
+    app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+        customSiteTitle: 'Project Aurora — Website Builder API Docs',
+        swaggerOptions: {
+            persistAuthorization: true,
+            displayRequestDuration: true,
+            filter: true,
+            tryItOutEnabled: true,
+        },
+    }));
 
-// Raw OpenAPI JSON spec
-app.get('/docs.json', (_req, res) => {
-    res.setHeader('Content-Type', 'application/json');
-    res.send(swaggerSpec);
-});
+    // Raw OpenAPI JSON spec
+    app.get('/docs.json', (_req, res) => {
+        res.setHeader('Content-Type', 'application/json');
+        res.send(swaggerSpec);
+    });
+}
 
 // Health check
 app.get('/health', (_req, res) => {

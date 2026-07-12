@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { performance } from 'node:perf_hooks';
 import { env } from './env';
 
 const REQUEST_HOP_BY_HOP_HEADERS = new Set([
@@ -70,6 +71,13 @@ function buildUpstreamHeaders(request: NextRequest): Headers {
         headers.set(key, value);
     });
 
+    if (!headers.has('authorization')) {
+        const cookieToken = request.cookies.get('accessToken')?.value;
+        if (cookieToken) {
+            headers.set('authorization', `Bearer ${cookieToken}`);
+        }
+    }
+
     // Prevent the upstream API from returning gzip, Brotli, or Zstandard
     // to the Next.js server-side proxy.
     headers.set('accept-encoding', 'identity');
@@ -102,6 +110,8 @@ export async function proxyApiRequest(request: NextRequest, pathSegments: string
         const hasBody = method !== 'GET' && method !== 'HEAD';
         const body = hasBody ? await request.arrayBuffer() : undefined;
 
+        const startedAt = performance.now();
+
         const upstreamResponse = await fetch(upstreamUrl, {
             method,
             headers: buildUpstreamHeaders(request),
@@ -109,13 +119,21 @@ export async function proxyApiRequest(request: NextRequest, pathSegments: string
             cache: 'no-store',
         });
 
+        const upstreamDuration = performance.now() - startedAt;
+
         // Reading the body here ensures Node finishes decoding any
         // accidentally compressed upstream response before returning it.
         const responseBody = await upstreamResponse.arrayBuffer();
 
+        const responseHeaders = buildResponseHeaders(upstreamResponse.headers);
+        responseHeaders.append(
+            'Server-Timing',
+            `upstream;dur=${upstreamDuration.toFixed(1)}`,
+        );
+
         return new NextResponse(Buffer.from(responseBody), {
             status: upstreamResponse.status,
-            headers: buildResponseHeaders(upstreamResponse.headers),
+            headers: responseHeaders,
         });
     } catch (error) {
         return NextResponse.json({

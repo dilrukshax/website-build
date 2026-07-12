@@ -321,6 +321,8 @@ export class BillingService {
 
         await ReferralRewardsService.processPaidRewardForCharge(charge.id);
 
+        PlanPolicyService.invalidateCache(charge.tenantId);
+
         return db.billingCharge.findUnique({ where: { id: charge.id } });
     }
 

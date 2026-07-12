@@ -91,24 +91,18 @@ export default function BuilderPreviewPage({ params }: { params: { name: string 
         setError(null);
         setTemplate(null);
 
-        api.get<PageTemplateRecord[]>('/cms/catalog/page-templates')
+        api.get<PageTemplateRecord>(`/cms/catalog/page-templates/${encodeURIComponent(identifier)}`)
             .then((res) => {
                 if (!active) {
                     return;
                 }
 
                 if (!res.success || !res.data) {
-                    setError('Unable to load templates for preview.');
-                    return;
-                }
-
-                const match = res.data.find((item) => item.id === identifier || item.name === identifier) || null;
-                if (!match) {
                     setError('Template preview is unavailable for this selection.');
                     return;
                 }
 
-                setTemplate(match);
+                setTemplate(res.data);
             })
             .catch(() => {
                 if (!active) {
@@ -168,6 +162,7 @@ export default function BuilderPreviewPage({ params }: { params: { name: string 
                     content={section.defaultContent}
                     styles={section.defaultStyles}
                     tokens={tokens}
+                    context={{ tenantId: '', instanceId: '', dataMode: 'preview' }}
                     isEditor={false}
                 />
             ))}

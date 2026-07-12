@@ -23,11 +23,75 @@ export async function requireTenant(
             return;
         }
 
-        const tenant = await db.tenant.findUnique({
-            where: { id: tenantId },
-            select: { id: true, businessName: true, status: true, ownerId: true },
+        if (!req.auth?.userId) {
+            const tenant = await db.tenant.findUnique({
+                where: { id: tenantId },
+                select: { id: true, businessName: true, status: true },
+            });
+
+            if (!tenant) {
+                res.status(404).json({
+                    success: false,
+                    error: { code: 'TENANT_NOT_FOUND', message: 'Tenant not found' },
+                });
+                return;
+            }
+
+            if (tenant.status !== 'active') {
+                res.status(403).json({
+                    success: false,
+                    error: { code: 'TENANT_INACTIVE', message: 'Tenant is not active' },
+                });
+                return;
+            }
+
+            req.tenant = {
+                id: tenant.id,
+                businessName: tenant.businessName,
+                status: tenant.status,
+            };
+
+            next();
+            return;
+        }
+
+        const membership = await db.userTenant.findUnique({
+            where: {
+                userId_tenantId: {
+                    userId: req.auth.userId,
+                    tenantId,
+                },
+            },
+            include: {
+                tenant: {
+                    select: {
+                        id: true,
+                        businessName: true,
+                        status: true,
+                        ownerId: true,
+                    },
+                },
+                role: {
+                    include: {
+                        permissions: {
+                            include: {
+                                permission: true,
+                            },
+                        },
+                    },
+                },
+            },
         });
 
+        if (!membership || membership.status !== 'active') {
+            res.status(403).json({
+                success: false,
+                error: { code: 'FORBIDDEN', message: 'You do not have access to this tenant' },
+            });
+            return;
+        }
+
+        const tenant = membership.tenant;
         if (!tenant) {
             res.status(404).json({
                 success: false,
@@ -44,43 +108,13 @@ export async function requireTenant(
             return;
         }
 
-        // Hydrate tenant-scoped auth context from header-selected tenant.
-        // This avoids permission mismatch when session tokens are not tenant-scoped.
-        if (req.auth?.userId) {
-            const userTenant = await db.userTenant.findUnique({
-                where: {
-                    userId_tenantId: {
-                        userId: req.auth.userId,
-                        tenantId,
-                    },
-                },
-                include: {
-                    role: {
-                        include: {
-                            permissions: {
-                                include: { permission: true },
-                            },
-                        },
-                    },
-                },
-            });
-
-            if (!userTenant || userTenant.status !== 'active') {
-                res.status(403).json({
-                    success: false,
-                    error: { code: 'FORBIDDEN', message: 'You do not have access to this tenant' },
-                });
-                return;
-            }
-
-            const isTenantOwner = userTenant.isOwner || tenant.ownerId === req.auth.userId;
-            req.auth = {
-                ...req.auth,
-                tenantId,
-                role: isTenantOwner ? 'owner' : userTenant.role.name.toLowerCase(),
-                permissions: userTenant.role.permissions.map((rp) => rp.permission.key),
-            };
-        }
+        const isTenantOwner = membership.isOwner || tenant.ownerId === req.auth.userId;
+        req.auth = {
+            ...req.auth,
+            tenantId,
+            role: isTenantOwner ? 'owner' : membership.role.name.toLowerCase(),
+            permissions: membership.role.permissions.map((rp) => rp.permission.key),
+        };
 
         req.tenant = {
             id: tenant.id,

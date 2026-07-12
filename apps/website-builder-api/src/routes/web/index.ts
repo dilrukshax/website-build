@@ -36,10 +36,12 @@ router.get('/products/:id', ProductsController.getById);
 router.get('/blogs', BlogsController.listPublic);
 router.get('/blogs/:slug', BlogsController.getBySlugPublic);
 
+import { bookingLimiter, inquiryLimiter } from '../../middleware/rate-limit';
+
 // --- Bookings (public create — customer self-serve) ---
-router.post('/bookings', validate(createBookingSchema), BookingsController.create);
+router.post('/bookings', bookingLimiter, validate(createBookingSchema), BookingsController.create);
 
 // --- Inquiries (public create) ---
-router.post('/inquiries', validate(createInquirySchema), InquiriesController.create);
+router.post('/inquiries', inquiryLimiter, validate(createInquirySchema), InquiriesController.create);
 
 export const webRouter: ExpressRouter = router;

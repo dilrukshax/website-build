@@ -500,7 +500,15 @@ export function usePublicServices(context?: ThemeContext) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const enabled = context?.dataMode !== 'preview';
+
     useEffect(() => {
+        if (!enabled) {
+            setServices([]);
+            setLoading(false);
+            return;
+        }
+
         let mounted = true;
         setLoading(true);
         setError(null);
@@ -524,7 +532,7 @@ export function usePublicServices(context?: ThemeContext) {
         return () => {
             mounted = false;
         };
-    }, [context?.tenantId, context?.instanceId]);
+    }, [enabled, context?.tenantId, context?.instanceId]);
 
     return { services, loading, error };
 }
@@ -534,7 +542,15 @@ export function usePublicProducts(context?: ThemeContext) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const enabled = context?.dataMode !== 'preview';
+
     useEffect(() => {
+        if (!enabled) {
+            setProducts([]);
+            setLoading(false);
+            return;
+        }
+
         let mounted = true;
         setLoading(true);
         setError(null);
@@ -558,7 +574,7 @@ export function usePublicProducts(context?: ThemeContext) {
         return () => {
             mounted = false;
         };
-    }, [context?.tenantId, context?.instanceId]);
+    }, [enabled, context?.tenantId, context?.instanceId]);
 
     return { products, loading, error };
 }
@@ -568,7 +584,15 @@ export function usePublicBlogs(context?: ThemeContext) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const enabled = context?.dataMode !== 'preview';
+
     useEffect(() => {
+        if (!enabled) {
+            setBlogs([]);
+            setLoading(false);
+            return;
+        }
+
         let mounted = true;
         setLoading(true);
         setError(null);
@@ -592,7 +616,7 @@ export function usePublicBlogs(context?: ThemeContext) {
         return () => {
             mounted = false;
         };
-    }, [context?.tenantId, context?.instanceId]);
+    }, [enabled, context?.tenantId, context?.instanceId]);
 
     return { blogs, loading, error };
 }

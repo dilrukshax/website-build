@@ -44,3 +44,10 @@ export const updateWebsiteSettingsSchema = z.object({
         ga4PropertyId: z.string().trim().regex(/^\d{1,12}$/, 'GA4 Property ID must be numeric').optional().nullable(),
     }).optional(),
 });
+
+export const applySiteTemplateSchema = z.object({
+    templateId: z.string()
+        .describe('Template ID or Name to apply'),
+    replaceSharedLayoutContent: z.boolean().optional().default(false),
+    selectedPageId: z.string().uuid().optional(),
+});

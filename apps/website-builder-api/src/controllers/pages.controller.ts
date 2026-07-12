@@ -556,25 +556,26 @@ export class PagesController {
                 await tx.pageSection.deleteMany({ where: { pageId: id } });
 
                 // Create final sections (header/body/footer), preserving shared layout when present.
-                const created = [];
-                for (let i = 0; i < sectionsToCreate.length; i++) {
-                    const sectionData = sectionsToCreate[i]!;
-                    const newSection = await tx.pageSection.create({
-                        data: {
-                            tenantId,
-                            instanceId,
-                            pageId: id,
-                            themeId: sectionData.themeId,
-                            themeVersionUsed: sectionData.themeVersionUsed,
-                            position: i,
-                            enabled: sectionData.enabled,
-                            contentJsonb: sectionData.contentJsonb as any,
-                            stylesJsonb: sectionData.stylesJsonb as any,
-                            ...(sectionData.conditionsJsonb !== undefined && { conditionsJsonb: sectionData.conditionsJsonb as any }),
-                        },
-                    });
-                    created.push(newSection);
-                }
+                // Create final sections (header/body/footer), preserving shared layout when present.
+                await tx.pageSection.createMany({
+                    data: sectionsToCreate.map((sectionData, i) => ({
+                        tenantId,
+                        instanceId,
+                        pageId: id,
+                        themeId: sectionData.themeId,
+                        themeVersionUsed: sectionData.themeVersionUsed,
+                        position: i,
+                        enabled: sectionData.enabled,
+                        contentJsonb: sectionData.contentJsonb as any,
+                        stylesJsonb: sectionData.stylesJsonb as any,
+                        ...(sectionData.conditionsJsonb !== undefined && { conditionsJsonb: sectionData.conditionsJsonb as any }),
+                    })),
+                });
+
+                const created = await tx.pageSection.findMany({
+                    where: { pageId: id },
+                    orderBy: { position: 'asc' },
+                });
 
                 if (Object.keys(templateTokenOverrides).length > 0) {
                     const instance = await tx.instance.findUnique({

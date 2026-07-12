@@ -576,6 +576,378 @@ export class BuilderController {
             next(error);
         }
     }
+
+    static async applySiteTemplate(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const instanceId = req.instance!.id;
+            const tenantId = req.tenant!.id;
+            const {
+                templateId,
+                replaceSharedLayoutContent: _replaceSharedLayoutContent = false,
+                selectedPageId,
+            } = req.body;
+
+            const template = await db.pageTemplate.findFirst({
+                where: {
+                    OR: [
+                        { id: templateId },
+                        { name: templateId },
+                    ],
+                    isActive: true,
+                },
+            });
+            if (!template) {
+                throw new AppError(ERROR_CODES.INVALID_INPUT, 'Template not found or inactive', 404);
+            }
+
+            const sections = template.sectionsJsonb as unknown as any[];
+            if (!Array.isArray(sections) || sections.length === 0) {
+                throw new AppError(ERROR_CODES.INVALID_INPUT, 'Template has no sections to apply', 400);
+            }
+
+            // Extract token overrides
+            const templateTokenOverrides: Record<string, string> = {};
+            for (const section of sections) {
+                const raw = section.defaultStyles?.themeTokens;
+                if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+                    Object.assign(templateTokenOverrides, raw);
+                }
+            }
+
+            const isBlogTemplate = template.id === 'template-2026-editorial-pulse' || template.name === 'template-2026-editorial-pulse';
+            let activePageId = selectedPageId;
+
+            // Run database updates inside a transaction
+            await db.$transaction(async (tx) => {
+                if (isBlogTemplate) {
+                    // 1. Ensure pages exist
+                    const desiredPages = [
+                        { slug: '/', title: 'Home' },
+                        { slug: 'about', title: 'About Us' },
+                        { slug: 'contact', title: 'Contact Us' },
+                        { slug: 'blog', title: 'Blog' },
+                    ];
+
+                    const existingPages = await tx.page.findMany({
+                        where: { instanceId },
+                    });
+
+                    const pagesToCreate = [];
+                    for (const dp of desiredPages) {
+                        const exists = existingPages.some(
+                            (p) => p.slug === dp.slug || (dp.slug !== '/' && p.slug === `/${dp.slug}`)
+                        );
+                        if (!exists) {
+                            pagesToCreate.push(dp);
+                        }
+                    }
+
+                    if (pagesToCreate.length > 0) {
+                        let nextSortOrder = existingPages.length > 0 
+                            ? Math.max(...existingPages.map((p) => p.sortOrder)) + 1 
+                            : 0;
+                        
+                        for (const pc of pagesToCreate) {
+                            const newPage = await tx.page.create({
+                                data: {
+                                    tenantId,
+                                    instanceId,
+                                    slug: pc.slug,
+                                    title: pc.title,
+                                    sortOrder: nextSortOrder++,
+                                    isPublished: false,
+                                },
+                            });
+                            existingPages.push(newPage);
+                        }
+                    }
+
+                    const allPages = await tx.page.findMany({
+                        where: { instanceId },
+                    });
+                    const homePage = allPages.find((p) => p.slug === '/' || p.slug === '')!;
+                    const aboutPage = allPages.find((p) => p.slug === 'about' || p.slug === '/about')!;
+                    const contactPage = allPages.find((p) => p.slug === 'contact' || p.slug === '/contact')!;
+                    const blogPage = allPages.find((p) => p.slug === 'blog' || p.slug === '/blog')!;
+
+                    if (!activePageId) {
+                        activePageId = homePage.id;
+                    }
+
+                    // 2. Fetch required themes for v15 editorial pulse
+                    const desiredComponentKeys = [
+                        'header/v15', 'hero/v15', 'blog/v15', 'footer/v15',
+                        'about/v15', 'contact/v15'
+                    ];
+                    const themes = await tx.theme.findMany({
+                        where: { componentKey: { in: desiredComponentKeys }, isActive: true },
+                    });
+                    const themeMap = new Map(themes.map((t) => [t.componentKey, t]));
+
+                    const getThemeId = (componentKey: string) => {
+                        const theme = themeMap.get(componentKey);
+                        if (!theme) {
+                            throw new AppError(ERROR_CODES.INVALID_INPUT, `Theme ${componentKey} is missing from catalog`, 400);
+                        }
+                        return { id: theme.id, version: theme.version };
+                    };
+
+                    const homeThemeKeys = ['header/v15', 'hero/v15', 'blog/v15', 'footer/v15'];
+                    const blogThemeKeys = ['header/v15', 'blog/v15', 'footer/v15'];
+                    const aboutThemeKeys = ['header/v15', 'about/v15', 'footer/v15'];
+                    const contactThemeKeys = ['header/v15', 'contact/v15', 'footer/v15'];
+
+                    // 3. Clear existing sections
+                    await tx.pageSection.deleteMany({
+                        where: { pageId: { in: [homePage.id, aboutPage.id, contactPage.id, blogPage.id] } },
+                    });
+
+                    // 4. Create sections for home page
+                    await tx.pageSection.createMany({
+                        data: homeThemeKeys.map((key, i) => {
+                            const { id: themeId, version } = getThemeId(key);
+                            return {
+                                tenantId,
+                                instanceId,
+                                pageId: homePage.id,
+                                themeId,
+                                themeVersionUsed: version,
+                                position: i,
+                                enabled: true,
+                                contentJsonb: key === 'blog/v15' ? {
+                                    showAllPosts: true,
+                                    featuredCount: 3,
+                                    ctaText: '',
+                                    ctaLink: '/blog',
+                                } : {},
+                                stylesJsonb: {},
+                            };
+                        }),
+                    });
+
+                    // 5. Create sections for blog page
+                    await tx.pageSection.createMany({
+                        data: blogThemeKeys.map((key, i) => {
+                            const { id: themeId, version } = getThemeId(key);
+                            return {
+                                tenantId,
+                                instanceId,
+                                pageId: blogPage.id,
+                                themeId,
+                                themeVersionUsed: version,
+                                position: i,
+                                enabled: true,
+                                contentJsonb: key === 'blog/v15' ? {
+                                    showAllPosts: true,
+                                    featuredCount: 3,
+                                    ctaText: '',
+                                    ctaLink: '/blog',
+                                } : {},
+                                stylesJsonb: {},
+                            };
+                        }),
+                    });
+
+                    // 6. Create sections for about page
+                    await tx.pageSection.createMany({
+                        data: aboutThemeKeys.map((key, i) => {
+                            const { id: themeId, version } = getThemeId(key);
+                            return {
+                                tenantId,
+                                instanceId,
+                                pageId: aboutPage.id,
+                                themeId,
+                                themeVersionUsed: version,
+                                position: i,
+                                enabled: true,
+                                contentJsonb: {},
+                                stylesJsonb: {},
+                            };
+                        }),
+                    });
+
+                    // 7. Create sections for contact page
+                    await tx.pageSection.createMany({
+                        data: contactThemeKeys.map((key, i) => {
+                            const { id: themeId, version } = getThemeId(key);
+                            return {
+                                tenantId,
+                                instanceId,
+                                pageId: contactPage.id,
+                                themeId,
+                                themeVersionUsed: version,
+                                position: i,
+                                enabled: true,
+                                contentJsonb: {},
+                                stylesJsonb: {},
+                            };
+                        }),
+                    });
+                } else {
+                    // Normal Template
+                    if (!activePageId) {
+                        const homePage = await tx.page.findFirst({
+                            where: { instanceId, slug: '/' },
+                        });
+                        if (!homePage) {
+                            throw new AppError(ERROR_CODES.PAGE_NOT_FOUND, 'Home page not found', 404);
+                        }
+                        activePageId = homePage.id;
+                    }
+
+                    const page = await tx.page.findFirst({
+                        where: { id: activePageId, instanceId },
+                    });
+                    if (!page) {
+                        throw new AppError(ERROR_CODES.PAGE_NOT_FOUND, 'Page not found', 404);
+                    }
+
+                    const componentKeys = Array.from(new Set(sections.map((s) => s.themeComponentKey).filter(Boolean)));
+                    const themes = await tx.theme.findMany({
+                        where: { componentKey: { in: componentKeys }, isActive: true }
+                    });
+                    const themeMap = new Map(themes.map(t => [t.componentKey, t]));
+
+                    const missingComponentKeys = componentKeys.filter((key) => !themeMap.has(key));
+                    if (missingComponentKeys.length > 0) {
+                        const missingFeatureSlugs = Array.from(
+                            new Set(missingComponentKeys.map((key) => key.split('/')[0]).filter(Boolean))
+                        );
+
+                        if (missingFeatureSlugs.length > 0) {
+                            const fallbackThemes = await tx.theme.findMany({
+                                where: {
+                                    isActive: true,
+                                    OR: missingFeatureSlugs.map((slug) => ({
+                                        componentKey: { startsWith: `${slug}/` },
+                                    })),
+                                },
+                                orderBy: { version: 'desc' },
+                            });
+
+                            const fallbackByFeature = new Map<string, (typeof fallbackThemes)[number]>();
+                            for (const ft of fallbackThemes) {
+                                const slug = ft.componentKey.split('/')[0];
+                                if (slug && !fallbackByFeature.has(slug)) {
+                                    fallbackByFeature.set(slug, ft);
+                                }
+                            }
+
+                            for (const key of missingComponentKeys) {
+                                const slug = key.split('/')[0];
+                                const fallback = fallbackByFeature.get(slug);
+                                if (fallback) {
+                                    themeMap.set(key, fallback);
+                                }
+                            }
+                        }
+                    }
+
+                    const sectionsToCreate = [];
+                    for (const sec of sections) {
+                        const theme = themeMap.get(sec.themeComponentKey);
+                        if (!theme) {
+                            throw new AppError(ERROR_CODES.INVALID_INPUT, `Theme ${sec.themeComponentKey} is missing from catalog`, 400);
+                        }
+                        sectionsToCreate.push({
+                            themeId: theme.id,
+                            themeVersionUsed: theme.version,
+                            enabled: true,
+                            contentJsonb: sec.defaultContent || {},
+                            stylesJsonb: sec.defaultStyles || {},
+                        });
+                    }
+
+                    await tx.pageSection.deleteMany({
+                        where: { pageId: activePageId },
+                    });
+
+                    await tx.pageSection.createMany({
+                        data: sectionsToCreate.map((sec, i) => ({
+                            tenantId,
+                            instanceId,
+                            pageId: activePageId!,
+                            themeId: sec.themeId,
+                            themeVersionUsed: sec.themeVersionUsed,
+                            position: i,
+                            enabled: sec.enabled,
+                            contentJsonb: sec.contentJsonb,
+                            stylesJsonb: sec.stylesJsonb,
+                        })),
+                    });
+                }
+
+                // Update instance overrides
+                if (Object.keys(templateTokenOverrides).length > 0) {
+                    const instance = await tx.instance.findUnique({
+                        where: { id: instanceId },
+                        select: { settingsJsonb: true },
+                    });
+
+                    if (instance) {
+                        const currentSettings = (instance.settingsJsonb as WebsiteSettings | null)
+                            || (DEFAULT_WEBSITE_SETTINGS as unknown as WebsiteSettings);
+                        const mergedSettings: WebsiteSettings = {
+                            ...currentSettings,
+                            tokens: {
+                                ...(currentSettings.tokens || (DEFAULT_WEBSITE_SETTINGS.tokens as WebsiteSettings['tokens'])),
+                                ...templateTokenOverrides,
+                            },
+                        };
+
+                        await tx.instance.update({
+                            where: { id: instanceId },
+                            data: { settingsJsonb: JSON.parse(JSON.stringify(mergedSettings)) },
+                        });
+                    }
+                }
+            });
+
+            const updatedPages = await db.page.findMany({
+                where: { instanceId },
+                orderBy: { sortOrder: 'asc' },
+            });
+
+            const updatedSections = await db.pageSection.findMany({
+                where: { pageId: activePageId },
+                include: {
+                    theme: {
+                        select: {
+                            id: true,
+                            name: true,
+                            componentKey: true,
+                            version: true,
+                            schemaJsonb: true,
+                            defaultStylesJsonb: true,
+                        },
+                    },
+                },
+                orderBy: { position: 'asc' },
+            });
+
+            const updatedSettings = await db.instance.findUnique({
+                where: { id: instanceId },
+                select: { settingsJsonb: true },
+            });
+
+            const usage = await PlanPolicyService.getUsageSummary(tenantId, instanceId);
+            const readiness = await getPublishReadinessForInstance(tenantId, instanceId);
+
+            res.json({
+                success: true,
+                data: {
+                    selectedPageId: activePageId,
+                    pages: updatedPages,
+                    sections: updatedSections,
+                    settings: updatedSettings?.settingsJsonb,
+                    billingUsage: usage,
+                    publishReadiness: readiness,
+                },
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 /**

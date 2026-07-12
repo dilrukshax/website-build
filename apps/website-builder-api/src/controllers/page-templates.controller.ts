@@ -12,22 +12,6 @@ export class PageTemplatesController {
 
         let allowPremiumTemplates = true;
         if (tenantId) {
-            if (req.auth?.userId && req.user?.isSuperAdmin !== true) {
-                const userTenant = await db.userTenant.findUnique({
-                    where: {
-                        userId_tenantId: {
-                            userId: req.auth.userId,
-                            tenantId,
-                        },
-                    },
-                    select: { status: true },
-                });
-
-                if (!userTenant || userTenant.status !== 'active') {
-                    throw new AppError(ERROR_CODES.FORBIDDEN, 'You do not have access to this tenant templates list', 403);
-                }
-            }
-
             const limits = await PlanPolicyService.getEffectiveLimits(tenantId);
             allowPremiumTemplates = limits.allowPremiumTemplates;
         }
@@ -78,6 +62,14 @@ export class PageTemplatesController {
                 where: {
                     isActive: true,
                 },
+                select: {
+                    id: true,
+                    name: true,
+                    description: true,
+                    previewImageUrl: true,
+                    isPremium: true,
+                    isActive: true,
+                },
                 orderBy: { name: 'asc' },
             });
 
@@ -100,7 +92,10 @@ export class PageTemplatesController {
 
             const template = await db.pageTemplate.findFirst({
                 where: {
-                    id: templateId,
+                    OR: [
+                        { id: templateId },
+                        { name: templateId },
+                    ],
                     isActive: true,
                 },
             });

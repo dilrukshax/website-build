@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
     dbTransaction: vi.fn(),
     txPageSectionDeleteMany: vi.fn(),
     txPageSectionCreate: vi.fn(),
+    txPageSectionCreateMany: vi.fn(),
     txInstanceFindUnique: vi.fn(),
     txInstanceUpdate: vi.fn(),
 }));
@@ -60,6 +61,17 @@ describe('PagesController.applyTemplate', () => {
             };
         });
 
+        mocks.txPageSectionCreateMany.mockImplementation(async ({ data }: any) => {
+            if (Array.isArray(data)) {
+                for (const item of data) {
+                    await mocks.txPageSectionCreate({ data: item });
+                }
+            } else if (data) {
+                await mocks.txPageSectionCreate({ data });
+            }
+            return { count: Array.isArray(data) ? data.length : 0 };
+        });
+
         mocks.txPageSectionDeleteMany.mockResolvedValue({ count: 0 });
         mocks.txInstanceFindUnique.mockResolvedValue({
             settingsJsonb: {
@@ -79,6 +91,8 @@ describe('PagesController.applyTemplate', () => {
             pageSection: {
                 deleteMany: mocks.txPageSectionDeleteMany,
                 create: mocks.txPageSectionCreate,
+                createMany: mocks.txPageSectionCreateMany,
+                findMany: mocks.pageSectionFindMany,
             },
             instance: {
                 findUnique: mocks.txInstanceFindUnique,

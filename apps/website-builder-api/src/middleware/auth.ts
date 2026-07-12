@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
 import { JWTService } from '@project-aurora/auth';
-import { db } from '@project-aurora/database';
 import { logger, ERROR_CODES } from '@project-aurora/core';
 
 /**
@@ -25,54 +24,12 @@ export async function requireAuth(
         const token = authHeader.substring(7);
         const payload = JWTService.verifyAccessToken(token);
 
-        // If token has tenantId, verify the user still has access and load permissions
-        if (payload.tenantId) {
-            const userTenant = await db.userTenant.findUnique({
-                where: {
-                    userId_tenantId: {
-                        userId: payload.userId,
-                        tenantId: payload.tenantId,
-                    },
-                },
-                include: {
-                    tenant: {
-                        select: { ownerId: true },
-                    },
-                    role: {
-                        include: {
-                            permissions: {
-                                include: { permission: true },
-                            },
-                        },
-                    },
-                },
-            });
-
-            if (!userTenant || userTenant.status !== 'active') {
-                res.status(403).json({
-                    success: false,
-                    error: { code: ERROR_CODES.FORBIDDEN, message: 'Access to this tenant has been revoked' },
-                });
-                return;
-            }
-
-            const isTenantOwner = userTenant.isOwner || userTenant.tenant.ownerId === payload.userId;
-
-            req.auth = {
-                userId: payload.userId,
-                tenantId: payload.tenantId,
-                role: isTenantOwner ? 'owner' : userTenant.role.name.toLowerCase(),
-                permissions: userTenant.role.permissions.map((rp) => rp.permission.key),
-            };
-        } else {
-            // Session-level token (no tenant context selected yet)
-            req.auth = {
-                userId: payload.userId,
-                tenantId: '',
-                role: '',
-                permissions: [],
-            };
-        }
+        req.auth = {
+            userId: payload.userId,
+            tenantId: payload.tenantId || '',
+            role: '',
+            permissions: [],
+        };
 
         // Also set req.user for compatibility with packages/auth middleware
         req.user = payload;

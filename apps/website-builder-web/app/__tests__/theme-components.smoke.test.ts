@@ -5,18 +5,27 @@ import { getRegisteredKeys, getThemeComponent } from '@project-aurora/themes';
 import { buildFixtureForComponent } from './fixtures/theme-component-fixtures';
 
 describe('Theme component smoke checks', () => {
-    it('renders every registered component key without crashing', () => {
+    it('renders every registered component key without crashing', async () => {
         const keys = getRegisteredKeys();
 
         expect(keys.length).toBeGreaterThan(0);
 
         for (const key of keys) {
-            const Component = getThemeComponent(key);
+            const Component = getThemeComponent(key) as any;
             expect(Component, `Missing component registration for ${key}`).not.toBeNull();
+
+            let RealComponent = Component;
+            if (Component && typeof Component === 'object' && '_payload' in Component) {
+                const loader = Component._payload._result || Component._payload._ctor;
+                if (typeof loader === 'function') {
+                    const module = await loader();
+                    RealComponent = module.default;
+                }
+            }
 
             const props = buildFixtureForComponent(key);
             const markup = renderToStaticMarkup(
-                React.createElement(Component!, props)
+                React.createElement(RealComponent, props)
             );
 
             expect(markup.trim().length, `Empty markup for ${key}`).toBeGreaterThan(0);

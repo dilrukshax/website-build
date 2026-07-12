@@ -361,213 +361,6 @@ function formatFirstValidationDetailMessage(
         : firstDetail.message;
 }
 
-async function ensureBuilderPageBySlug({
-    pages,
-    aliases,
-    title,
-    slug,
-}: {
-    pages: PageData[];
-    aliases: Set<string>;
-    title: string;
-    slug: string;
-}): Promise<{ page: PageData | null; created: boolean; errorMessage: string | null }> {
-    const existingPage = findPageBySlugAliases(pages, aliases);
-    if (existingPage) {
-        return { page: existingPage, created: false, errorMessage: null };
-    }
-
-    const createRes = await api.post<PageData>('/cms/pages', { title, slug });
-    if (!createRes.success || !createRes.data) {
-        return {
-            page: null,
-            created: false,
-            errorMessage: formatFirstValidationDetailMessage(
-                createRes.error?.details,
-                createRes.error?.message || `Failed to create ${title} page`,
-            ),
-        };
-    }
-
-    return { page: createRes.data, created: true, errorMessage: null };
-}
-
-async function resolveCatalogThemeByComponentKey({
-    featureId,
-    componentKey,
-}: {
-    featureId: string;
-    componentKey: string;
-}): Promise<{ theme: ThemeCatalogTheme | null; errorMessage: string | null }> {
-    const themeRes = await api.get<ThemeCatalogTheme[]>(
-        `/cms/catalog/themes?featureId=${encodeURIComponent(featureId)}&includePremiumPreview=true`,
-    );
-
-    if (!themeRes.success || !themeRes.data) {
-        return {
-            theme: null,
-            errorMessage: themeRes.error?.message || 'Failed to load theme catalog',
-        };
-    }
-
-    const theme = themeRes.data.find((entry) => entry.componentKey === componentKey) || null;
-    if (!theme) {
-        return {
-            theme: null,
-            errorMessage: `Theme ${componentKey} is missing from catalog`,
-        };
-    }
-
-    return { theme, errorMessage: null };
-}
-
-function getFeatureSlugFromComponentKey(componentKey: string): string {
-    return componentKey.split('/')[0] || '';
-}
-
-async function applyTemplateToPage({
-    pageId,
-    templateId,
-    replaceSharedLayoutContent,
-}: {
-    pageId: string;
-    templateId: string;
-    replaceSharedLayoutContent?: boolean;
-}): Promise<{ success: boolean; errorMessage: string | null }> {
-    const response = await api.post(`/cms/pages/${pageId}/apply-template`, {
-        templateId,
-        ...(replaceSharedLayoutContent ? { replaceSharedLayoutContent: true } : {}),
-    });
-
-    if (!response.success) {
-        return {
-            success: false,
-            errorMessage: formatFirstValidationDetailMessage(
-                response.error?.details,
-                response.error?.message || 'Failed to apply template',
-            ),
-        };
-    }
-
-    return {
-        success: true,
-        errorMessage: null,
-    };
-}
-
-async function normalizePageSectionsToStack({
-    pageId,
-    desiredComponentKeys,
-    themesByComponentKey,
-    defaultContentByComponentKey = {},
-}: {
-    pageId: string;
-    desiredComponentKeys: readonly string[];
-    themesByComponentKey: Record<string, ThemeCatalogTheme>;
-    defaultContentByComponentKey?: Record<string, Record<string, unknown>>;
-}): Promise<{ success: boolean; errorMessage: string | null }> {
-    const initialSectionsRes = await api.get<SectionData[]>(`/cms/pages/${pageId}/sections`);
-    if (!initialSectionsRes.success || !initialSectionsRes.data) {
-        return {
-            success: false,
-            errorMessage: initialSectionsRes.error?.message || 'Failed to load page sections',
-        };
-    }
-
-    const selectedSectionIds: string[] = [];
-    const initialSections = initialSectionsRes.data;
-
-    for (const desiredComponentKey of desiredComponentKeys) {
-        const existingExact = initialSections.find((section) =>
-            !selectedSectionIds.includes(section.id) && section.theme.componentKey === desiredComponentKey
-        );
-        if (existingExact) {
-            selectedSectionIds.push(existingExact.id);
-            continue;
-        }
-
-        const desiredTheme = themesByComponentKey[desiredComponentKey];
-        if (!desiredTheme) {
-            return {
-                success: false,
-                errorMessage: `Theme ${desiredComponentKey} is missing from catalog`,
-            };
-        }
-
-        const desiredFeatureSlug = getFeatureSlugFromComponentKey(desiredComponentKey);
-        const existingFeatureMatch = initialSections.find((section) =>
-            !selectedSectionIds.includes(section.id)
-            && getFeatureSlugFromComponentKey(section.theme.componentKey) === desiredFeatureSlug
-        );
-
-        if (existingFeatureMatch) {
-            if (existingFeatureMatch.theme.componentKey !== desiredComponentKey) {
-                const updateRes = await api.put<SectionData>(`/cms/sections/${existingFeatureMatch.id}`, {
-                    themeId: desiredTheme.id,
-                });
-                if (!updateRes.success) {
-                    return {
-                        success: false,
-                        errorMessage: updateRes.error?.message || `Failed to update ${desiredComponentKey} section`,
-                    };
-                }
-            }
-
-            selectedSectionIds.push(existingFeatureMatch.id);
-            continue;
-        }
-
-        const createRes = await api.post<SectionData>(`/cms/pages/${pageId}/sections`, {
-            themeId: desiredTheme.id,
-            ...(defaultContentByComponentKey[desiredComponentKey]
-                ? { contentJsonb: defaultContentByComponentKey[desiredComponentKey] }
-                : {}),
-        });
-        if (!createRes.success || !createRes.data) {
-            return {
-                success: false,
-                errorMessage: createRes.error?.message || `Failed to create ${desiredComponentKey} section`,
-            };
-        }
-
-        selectedSectionIds.push(createRes.data.id);
-    }
-
-    const refreshedSectionsRes = await api.get<SectionData[]>(`/cms/pages/${pageId}/sections`);
-    if (!refreshedSectionsRes.success || !refreshedSectionsRes.data) {
-        return {
-            success: false,
-            errorMessage: refreshedSectionsRes.error?.message || 'Failed to load sections for stack normalization',
-        };
-    }
-
-    const selectedSet = new Set(selectedSectionIds);
-    const sectionsToDelete = refreshedSectionsRes.data.filter((section) => !selectedSet.has(section.id));
-    for (const section of sectionsToDelete) {
-        const deleteRes = await api.del(`/cms/sections/${section.id}`);
-        if (!deleteRes.success) {
-            return {
-                success: false,
-                errorMessage: deleteRes.error?.message || `Failed to remove ${section.theme.componentKey} section`,
-            };
-        }
-    }
-
-    const reorderPayload = selectedSectionIds.map((id, position) => ({ id, position }));
-    const reorderRes = await api.put(`/cms/pages/${pageId}/sections/reorder`, { sections: reorderPayload });
-    if (!reorderRes.success) {
-        return {
-            success: false,
-            errorMessage: reorderRes.error?.message || 'Failed to reorder sections',
-        };
-    }
-
-    return {
-        success: true,
-        errorMessage: null,
-    };
-}
-
 export default function BuilderPage() {
     const { currentTenant, currentInstance } = useAuth();
     const router = useRouter();
@@ -1260,240 +1053,46 @@ export default function BuilderPage() {
         try {
             await flushPendingSectionSave();
             setTemplatePickerOpen(false);
-            let targetPageId = selectedPageId;
-            let createdPageCount = 0;
 
-            if (BLOG_TEMPLATE_IDS.has(templateId)) {
-                const desiredBlogComponentKey = BLOG_SECTION_COMPONENT_KEY_BY_TEMPLATE[templateId] || 'blog/v15';
-                const shouldReplaceSharedLayout = BLOG_TEMPLATE_FORCE_REPLACE_SHARED_LAYOUT_IDS.has(templateId);
+            const res = await api.post<{
+                selectedPageId: string;
+                pages: PageData[];
+                sections: SectionData[];
+                settings: WebsiteSettings;
+                billingUsage: BillingUsageSnapshot;
+                publishReadiness: PublishReadinessSnapshot;
+            }>('/cms/builder/apply-site-template', {
+                templateId,
+                replaceSharedLayoutContent: BLOG_TEMPLATE_FORCE_REPLACE_SHARED_LAYOUT_IDS.has(templateId),
+                selectedPageId,
+            });
 
-                const homePageResult = await ensureBuilderPageBySlug({
-                    pages,
-                    aliases: HOME_PAGE_SLUG_ALIASES,
-                    title: HOME_PAGE_TITLE,
-                    slug: HOME_PAGE_SLUG,
-                });
-
-                if (!homePageResult.page) {
-                    alert(homePageResult.errorMessage || 'Failed to resolve Home page');
-                    return;
-                }
-
-                targetPageId = homePageResult.page.id;
-                if (homePageResult.created) {
-                    createdPageCount += 1;
-                }
-
-                // Apply Home first so fresh instances satisfy the API rule that non-home
-                // pages can only be created after Home has at least one section.
-                const homeApplyResult = await applyTemplateToPage({
-                    pageId: homePageResult.page.id,
-                    templateId,
-                    replaceSharedLayoutContent: shouldReplaceSharedLayout,
-                });
-                if (!homeApplyResult.success) {
-                    alert(homeApplyResult.errorMessage || 'Failed to apply template to Home');
-                    return;
-                }
-
-                const latestPagesRes = await api.get<PageData[]>('/cms/pages');
-                const latestPages = latestPagesRes.success && latestPagesRes.data
-                    ? latestPagesRes.data
-                    : pages;
-                let workingPages = latestPages;
-
-                const aboutPageResult = await ensureBuilderPageBySlug({
-                    pages: workingPages,
-                    aliases: ABOUT_PAGE_SLUG_ALIASES,
-                    title: ABOUT_PAGE_TITLE,
-                    slug: ABOUT_PAGE_SLUG,
-                });
-                if (!aboutPageResult.page) {
-                    alert(aboutPageResult.errorMessage || 'Failed to resolve About page');
-                    return;
-                }
-                if (aboutPageResult.created) {
-                    createdPageCount += 1;
-                    workingPages = [...workingPages, aboutPageResult.page];
-                }
-
-                const contactPageResult = await ensureBuilderPageBySlug({
-                    pages: workingPages,
-                    aliases: CONTACT_PAGE_SLUG_ALIASES,
-                    title: CONTACT_PAGE_TITLE,
-                    slug: CONTACT_PAGE_SLUG,
-                });
-                if (!contactPageResult.page) {
-                    alert(contactPageResult.errorMessage || 'Failed to resolve Contact page');
-                    return;
-                }
-                if (contactPageResult.created) {
-                    createdPageCount += 1;
-                    workingPages = [...workingPages, contactPageResult.page];
-                }
-
-                const blogPageResult = await ensureBuilderPageBySlug({
-                    pages: workingPages,
-                    aliases: BLOG_PAGE_SLUG_ALIASES,
-                    title: BLOG_PAGE_TITLE,
-                    slug: BLOG_PAGE_SLUG,
-                });
-                if (!blogPageResult.page) {
-                    alert(blogPageResult.errorMessage || 'Failed to resolve Blog page');
-                    return;
-                }
-                if (blogPageResult.created) {
-                    createdPageCount += 1;
-                    workingPages = [...workingPages, blogPageResult.page];
-                }
-                const blogPage = blogPageResult.page;
-
-                const blogThemeResult = await resolveCatalogThemeByComponentKey({
-                    featureId: BLOG_FEATURE_ID,
-                    componentKey: desiredBlogComponentKey,
-                });
-
-                if (!blogThemeResult.theme) {
-                    alert(blogThemeResult.errorMessage || 'Failed to resolve blog section theme');
-                    return;
-                }
-
-                const stackComponentKeys = Array.from(new Set([
-                    ...TRAIN_OF_THOUGHT_STACK.home,
-                    ...TRAIN_OF_THOUGHT_STACK.about,
-                    ...TRAIN_OF_THOUGHT_STACK.contact,
-                    ...TRAIN_OF_THOUGHT_STACK.blog,
-                ]));
-                const themesByComponentKey: Record<string, ThemeCatalogTheme> = {
-                    [desiredBlogComponentKey]: blogThemeResult.theme,
-                };
-
-                for (const componentKey of stackComponentKeys) {
-                    if (themesByComponentKey[componentKey]) {
-                        continue;
-                    }
-
-                    const featureSlug = getFeatureSlugFromComponentKey(componentKey);
-                    const featureId = `feature-${featureSlug}`;
-
-                    const resolvedThemeResult = await resolveCatalogThemeByComponentKey({
-                        featureId,
-                        componentKey,
-                    });
-
-                    if (!resolvedThemeResult.theme) {
-                        alert(resolvedThemeResult.errorMessage || `Failed to resolve ${componentKey} theme`);
-                        return;
-                    }
-
-                    themesByComponentKey[componentKey] = resolvedThemeResult.theme;
-                }
-
-                const homeNormalizeResult = await normalizePageSectionsToStack({
-                    pageId: homePageResult.page.id,
-                    desiredComponentKeys: TRAIN_OF_THOUGHT_STACK.home,
-                    themesByComponentKey,
-                    defaultContentByComponentKey: {
-                        [desiredBlogComponentKey]: {
-                            ...BLOG_SECTION_DEFAULT_CONTENT,
-                            ctaLink: '/blog',
-                        },
-                    },
-                });
-                if (!homeNormalizeResult.success) {
-                    alert(homeNormalizeResult.errorMessage || 'Failed to normalize Home page sections');
-                    return;
-                }
-
-                const aboutApplyResult = await applyTemplateToPage({
-                    pageId: aboutPageResult.page.id,
-                    templateId,
-                    replaceSharedLayoutContent: shouldReplaceSharedLayout,
-                });
-                if (!aboutApplyResult.success) {
-                    alert(aboutApplyResult.errorMessage || 'Failed to apply template');
-                    return;
-                }
-
-                const aboutNormalizeResult = await normalizePageSectionsToStack({
-                    pageId: aboutPageResult.page.id,
-                    desiredComponentKeys: TRAIN_OF_THOUGHT_STACK.about,
-                    themesByComponentKey,
-                });
-                if (!aboutNormalizeResult.success) {
-                    alert(aboutNormalizeResult.errorMessage || 'Failed to normalize About page sections');
-                    return;
-                }
-
-                const contactApplyResult = await applyTemplateToPage({
-                    pageId: contactPageResult.page.id,
-                    templateId,
-                    replaceSharedLayoutContent: shouldReplaceSharedLayout,
-                });
-                if (!contactApplyResult.success) {
-                    alert(contactApplyResult.errorMessage || 'Failed to apply template');
-                    return;
-                }
-
-                const contactNormalizeResult = await normalizePageSectionsToStack({
-                    pageId: contactPageResult.page.id,
-                    desiredComponentKeys: TRAIN_OF_THOUGHT_STACK.contact,
-                    themesByComponentKey,
-                });
-                if (!contactNormalizeResult.success) {
-                    alert(contactNormalizeResult.errorMessage || 'Failed to normalize Contact page sections');
-                    return;
-                }
-
-                const applyResult = await applyTemplateToPage({
-                    pageId: blogPage.id,
-                    templateId,
-                    replaceSharedLayoutContent: shouldReplaceSharedLayout,
-                });
-                if (!applyResult.success) {
-                    alert(applyResult.errorMessage || 'Failed to apply template');
-                    return;
-                }
-
-                const blogNormalizeResult = await normalizePageSectionsToStack({
-                    pageId: blogPage.id,
-                    desiredComponentKeys: TRAIN_OF_THOUGHT_STACK.blog,
-                    themesByComponentKey,
-                    defaultContentByComponentKey: {
-                        [desiredBlogComponentKey]: {
-                            ...BLOG_SECTION_DEFAULT_CONTENT,
-                            ctaLink: '/blog',
-                        },
-                    },
-                });
-                if (!blogNormalizeResult.success) {
-                    alert(blogNormalizeResult.errorMessage || 'Failed to normalize Blog page sections');
-                    return;
-                }
-            } else {
-                const applyResult = await applyTemplateToPage({ pageId: targetPageId, templateId });
-                if (!applyResult.success) {
-                    alert(applyResult.errorMessage || 'Failed to apply template');
-                    return;
-                }
+            if (!res.success || !res.data) {
+                alert(res.error?.message || 'Failed to apply template.');
+                return;
             }
 
-            setSelectedPageId(targetPageId);
-            selectedPageIdRef.current = targetPageId;
+            const {
+                selectedPageId: activePageId,
+                pages: nextPages,
+                sections: nextSections,
+                settings: nextSettings,
+                billingUsage: nextUsage,
+                publishReadiness: nextReadiness,
+            } = res.data;
+
+            setSelectedPageId(activePageId);
+            selectedPageIdRef.current = activePageId;
             setSelectedSectionId(null);
             setShowSettings(false);
 
-            await loadPages(targetPageId);
-            const sectionsRes = await api.get<SectionData[]>(`/cms/pages/${targetPageId}/sections`);
-            if (sectionsRes.success && sectionsRes.data) {
-                setSections(sectionsRes.data);
-            }
-
-            if (createdPageCount > 0) {
-                await loadInstanceUsage();
-            }
-            await loadSettings();
-            await loadPublishReadiness();
+            setPages(nextPages);
+            setSections(nextSections);
+            setSettings(nextSettings);
+            setBillingUsage(nextUsage);
+            setPublishReadiness(nextReadiness);
+        } catch (err) {
+            alert('Failed to apply template due to an unexpected error.');
         } finally {
             endOperation();
         }

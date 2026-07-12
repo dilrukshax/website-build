@@ -457,15 +457,15 @@ async function syncGlobalLayoutSectionAcrossPages(params: {
             });
         }
 
-        for (const pageId of missingPageIds) {
+        if (missingPageIds.length > 0) {
             if (sharedLayoutFeature === 'header') {
                 await tx.pageSection.updateMany({
-                    where: { pageId },
+                    where: { pageId: { in: missingPageIds } },
                     data: { position: { increment: 1 } },
                 });
 
-                await tx.pageSection.create({
-                    data: {
+                await tx.pageSection.createMany({
+                    data: missingPageIds.map((pageId) => ({
                         tenantId,
                         instanceId,
                         pageId,
@@ -476,31 +476,35 @@ async function syncGlobalLayoutSectionAcrossPages(params: {
                         contentJsonb: sourceSection.contentJsonb as any,
                         stylesJsonb: sourceSection.stylesJsonb as any,
                         conditionsJsonb: sourceSection.conditionsJsonb as any,
-                    },
+                    })),
+                });
+            } else {
+                const maxPositions = await tx.pageSection.groupBy({
+                    by: ['pageId'],
+                    where: { pageId: { in: missingPageIds } },
+                    _max: { position: true },
                 });
 
-                continue;
+                const maxPosMap = new Map(maxPositions.map((p) => [p.pageId, p._max.position]));
+
+                await tx.pageSection.createMany({
+                    data: missingPageIds.map((pageId) => {
+                        const maxPos = maxPosMap.get(pageId);
+                        return {
+                            tenantId,
+                            instanceId,
+                            pageId,
+                            themeId: sourceSection.themeId,
+                            themeVersionUsed: sourceSection.themeVersionUsed,
+                            position: (maxPos ?? -1) + 1,
+                            enabled: sourceSection.enabled,
+                            contentJsonb: sourceSection.contentJsonb as any,
+                            stylesJsonb: sourceSection.stylesJsonb as any,
+                            conditionsJsonb: sourceSection.conditionsJsonb as any,
+                        };
+                    }),
+                });
             }
-
-            const maxPos = await tx.pageSection.aggregate({
-                where: { pageId },
-                _max: { position: true },
-            });
-
-            await tx.pageSection.create({
-                data: {
-                    tenantId,
-                    instanceId,
-                    pageId,
-                    themeId: sourceSection.themeId,
-                    themeVersionUsed: sourceSection.themeVersionUsed,
-                    position: (maxPos._max.position ?? -1) + 1,
-                    enabled: sourceSection.enabled,
-                    contentJsonb: sourceSection.contentJsonb as any,
-                    stylesJsonb: sourceSection.stylesJsonb as any,
-                    conditionsJsonb: sourceSection.conditionsJsonb as any,
-                },
-            });
         }
     });
 }

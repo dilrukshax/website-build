@@ -349,7 +349,7 @@ interface SectionRendererProps {
     conditions?: SDUICondition[] | null;
     features?: Record<string, boolean>;
     isEditor?: boolean;
-    context?: { tenantId: string; instanceId: string; pageSlug?: string; subdomain?: string; blogPost?: any };
+    context?: { tenantId: string; instanceId: string; pageSlug?: string; subdomain?: string; blogPost?: any; dataMode?: 'live' | 'preview' };
 }
 
 export function SectionRenderer({ componentKey, content, styles, tokens, conditions, features, isEditor, context: rContext }: SectionRendererProps) {

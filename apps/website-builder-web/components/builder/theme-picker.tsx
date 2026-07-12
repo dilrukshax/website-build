@@ -133,6 +133,31 @@ function buildPreviewContent(theme: ThemeCatalogTheme): Record<string, unknown> 
     }
 }
 
+let cachedThemesPromise: Promise<any> | null = null;
+let cachedThemesExpiry = 0;
+
+function fetchCachedThemes() {
+    const now = Date.now();
+    if (cachedThemesPromise && cachedThemesExpiry > now) {
+        return cachedThemesPromise;
+    }
+
+    cachedThemesPromise = api.get<ThemeCatalogTheme[]>('/cms/catalog/themes')
+        .then(res => {
+            if (!res.success) {
+                cachedThemesPromise = null;
+            }
+            return res;
+        })
+        .catch(err => {
+            cachedThemesPromise = null;
+            throw err;
+        });
+
+    cachedThemesExpiry = now + 5 * 60 * 1000; // 5 minutes cache
+    return cachedThemesPromise;
+}
+
 export function ThemePicker({
     open,
     onClose,
@@ -155,7 +180,7 @@ export function ThemePicker({
         }
 
         setLoading(true);
-        api.get<ThemeCatalogTheme[]>('/cms/catalog/themes')
+        fetchCachedThemes()
             .then((res) => {
                 if (res.success && res.data) {
                     setThemes(res.data);
@@ -381,6 +406,7 @@ export function ThemePicker({
                                                     content={selectedThemePreviewContent}
                                                     styles={selectedThemePreviewStyles}
                                                     tokens={PREVIEW_TOKENS}
+                                                    context={{ tenantId: '', instanceId: '', dataMode: 'preview' }}
                                                     isEditor={false}
                                                 />
                                             </div>
