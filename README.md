@@ -2,7 +2,7 @@
 
 ![Aurora Website Builder](docs/images/screenshot.png)
 
-Aurora is a modern, production-ready multi-tenant SaaS website builder and booking platform designed for service-based businesses. It enables users to create beautiful websites, manage blog content, accept online bookings/inquiries, and go live on their own custom domains.
+Aurora is a multi-tenant SaaS website builder and booking platform designed for service-based businesses. It enables users to create websites, manage blog content, accept online bookings/inquiries, and go live on their own custom domains.
 
 ---
 
@@ -472,4 +472,16 @@ NEXT_PUBLIC_API_URL=http://localhost:3002
 This project has been developed, refactored, and maintained in partnership with advanced AI agent systems, primarily using:
 - **Google Antigravity (Gemini)**: Utilized for visual layout builder updates, rich TipTap blog integration, sitemap generations, and multi-tenant scoping fixes.
 - **Claude Code**: Utilized for architecture cleanups, package restructuring, and configuration optimizations.
+
+## License
+
+This project is licensed under the MIT License — see [LICENSE](LICENSE).
+
+## Author
+
+Dilan Dilruksha  
+Software Engineer | Backend & Full-Stack Development  
+Portfolio: https://dilandilruksha.dev  
+LinkedIn: https://www.linkedin.com/in/dilan-dilruksha  
+GitHub: https://github.com/dilrukshax
 
