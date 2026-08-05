@@ -294,11 +294,7 @@ Until active middleware wraps all requests with tenant context, explicit scoping
   - `bodyTop`: rendered from the root document body slot immediately after `<body>` on public-host requests; CMS preview paths render it at the top of preview page content
   - `bodyBottom`: rendered from the root document body slot immediately before `</body>` on public-host requests; CMS preview paths render it after preview page content even when the selected page has no visible theme footer section
   - CMS runtime normalizes pasted wrappers like `<head>...</head>` or `<body>...</body>` down to inner fragments before render so pasted snippets can still publish cleanly
-<<<<<<< HEAD
-
-=======
 - dedicated CMS Website Settings page (`/dashboard/website-settings`) owns Head HTML, Body HTML, and Footer HTML editing for `instance.settingsJsonb.customCode`, including warnings when meta tags are placed in body/footer slots
->>>>>>> bb6daa2 (Add dedicated website settings page)
 - shared layout synchronization (`header/v1`, `footer/v1`)
 
 ### 9.4 Website publishing
